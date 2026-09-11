@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harcama ve Borç Takibi</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --box-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #1f4e78;
+            --card-bg: #f2f5f8;
+            --border-color: #ddd;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #3498db;
+            --card-bg: #2d2d2d;
+            --border-color: #444;
+        }
+
+        [data-theme="colorful"] {
+            --bg-color: #eef2f3;
+            --box-bg: #ffffff;
+            --text-color: #2c3e50;
+            --primary-color: #8e44ad;
+            --card-bg: #f5eef8;
+            --border-color: #d7bde2;
+        }
+
+        body { font-family: sans-serif; background: var(--bg-color); color: var(--text-color); padding: 15px; margin: 0; transition: background 0.3s, color 0.3s; }
+        .box { max-width: 1100px; margin: auto; background: var(--box-bg); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary-color); font-size: 20px; text-align: center; margin-bottom: 15px; }
+        h2 { font-size: 14px; color: var(--primary-color); margin: 10px 0 6px 0; border-bottom: 2px solid var(--card-bg); padding-bottom: 4px; }
+        
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: start; }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } body { padding: 6px; } .box { padding: 10px; border-radius: 8px; } .cards { flex-direction: column; } .excel-btns { flex-wrap: wrap; } .excel-btns > * { min-width: 45%; } table { min-width: 760px; } .modal-content { max-width: calc(100vw - 24px) !important; box-sizing: border-box; } }
+
+        .draggable-module {
+            background: var(--box-bg);
+            border: 1px dashed var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: grab;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .draggable-module:active { cursor: grabbing; }
+        .draggable-module.dragging { opacity: 0.4; border: 2px dashed var(--primary-color); }
+        .draggable-module::before { content: "⠿"; position: absolute; top: 5px; right: 8px; color: #aaa; font-size: 16px; font-weight: bold; }
+
+        .cards { display: flex; gap: 10px; }
+        .card { flex: 1; background: var(--card-bg); padding: 10px; border-radius: 5px; border-left: 4px solid var(--primary-color); }
+        .card p { font-size: 14px; font-weight: bold; color: var(--primary-color); margin: 5px 0 0 0; }
+        input, select { width: 100%; padding: 7px; margin-bottom: 6px; border: 1px solid var(--border-color); background: var(--box-bg); color: var(--text-color); border-radius: 4px; box-sizing: border-box; font-size: 13px; }
+        .btn-container { display: flex; gap: 5px; }
+        button { flex: 1; background: #27ae60; color: white; border: none; padding: 8px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        #cancelEdit { background: #e67e22; display: none; }
+        
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+        .bank-summary-card { background: var(--box-bg); border: 1px solid var(--border-color); padding: 6px; border-radius: 6px; font-size: 11px; }
+        .bank-summary-card b { display: block; color: var(--primary-color); margin-bottom: 2px; font-size: 12px; }
+
+        .cutoff-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .cutoff-table th, .cutoff-table td { padding: 4px; border: 1px solid var(--border-color); text-align: left; }
+        .cutoff-table th { background: var(--primary-color); color: white; }
+        .cutoff-table input { width: 50px; padding: 2px; margin: 0; text-align: center; }
+
+        .bank-checkboxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 5px; background: var(--card-bg); padding: 8px; border-radius: 6px; font-size: 12px; }
+        .bank-checkboxes label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: normal; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { padding: 5px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        th { background: var(--primary-color); color: white; }
+        .action-btns { display: flex; gap: 2px; }
+
+        .badge-current { background: #d35400; color: white; padding: 2px 5px; border-radius: 3px; font-size: 9px; font-weight: bold; }
+        .badge-next { background: #27ae60; color: white; padding: 2px 5px; border-radius: 3px; font-size: 9px; font-weight: bold; }
+
+        .income-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px; }
+        .income-card { background:var(--card-bg); border-left:4px solid var(--primary-color); padding:10px; border-radius:6px; }
+        .income-card small { display:block; font-size:11px; opacity:.8; }
+        .income-card b { display:block; font-size:16px; margin-top:4px; }
+        .income-form-grid { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:6px; align-items:end; }
+        .income-list { margin-top:8px; max-height:180px; overflow:auto; }
+        .income-row { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border-color); font-size:12px; }
+        .filtered-total { margin:8px 0; padding:10px; border-radius:6px; background:var(--card-bg); border-left:4px solid var(--primary-color); font-weight:bold; }
+        @media (max-width:768px) { .income-cards { grid-template-columns:1fr 1fr; } .income-form-grid { grid-template-columns:1fr 1fr; } }
+        .user-menu-container { position: relative; display: inline-block; }
+        .user-badge { background: var(--primary-color); color: white; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background: var(--box-bg); min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid var(--border-color); z-index: 10; overflow: hidden; }
+        .dropdown-content div.dropdown-item { color: var(--text-color); padding: 10px 14px; display: block; font-size: 13px; cursor: pointer; }
+        .dropdown-content div.dropdown-item:hover { background: var(--card-bg); }
+        .user-menu-container:hover .dropdown-content { display: block; }
+
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: var(--box-bg); padding: 20px; border-radius: 8px; width: 320px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        #loginScreen { display: block; }
+        #appScreen { display: none; }
+        .auth-box { max-width: 350px; margin: 80px auto; background: var(--box-bg); padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); text-align: center; }
+        .auth-toggle { font-size: 12px; color: #2980b9; cursor: pointer; margin-top: 10px; display: inline-block; }
+        
+        .excel-btns { display: flex; gap: 5px; }
+        .excel-btns button { background: #27ae60; font-size: 12px; padding: 7px; }
+        .excel-btns label { flex: 1; background: #2980b9; color: white; text-align: center; padding: 7px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+        /* PDF Yazdırma Ayarları */
+        @media print {
+            .excel-btns, .user-menu-container, .draggable-module::before, button, form, .action-btns {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .box {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .draggable-module {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin-bottom: 15px !important;
+            }
+        }
+
+/* ===== MTmuhasebe PREMIUM DARK UI ===== */
+:root{--bg-color:#07111f;--box-bg:#0b1b2d;--text-color:#e8f0fa;--primary-color:#2f8cff;--card-bg:#10253d;--border-color:#1d3b5a;--muted:#8fa7bf;--glow:rgba(47,140,255,.28)}
+[data-theme="dark"]{--bg-color:#050b14;--box-bg:#081525;--text-color:#edf5ff;--primary-color:#38a0ff;--card-bg:#0d2137;--border-color:#1b3c5d;--muted:#8da7c1;--glow:rgba(56,160,255,.3)}
+[data-theme="light"],[data-theme="colorful"]{--bg-color:#07111f;--box-bg:#0b1b2d;--text-color:#e8f0fa;--primary-color:#2f8cff;--card-bg:#10253d;--border-color:#1d3b5a;--muted:#8fa7bf;--glow:rgba(47,140,255,.28)}
+*{box-sizing:border-box}
+html{background:#050b14}
+body{font-family:Inter,Segoe UI,Arial,sans-serif;background:radial-gradient(circle at 15% 0%,rgba(22,104,180,.18),transparent 32%),radial-gradient(circle at 85% 10%,rgba(123,63,190,.13),transparent 28%),#050b14;color:var(--text-color);padding:24px;margin:0;min-height:100vh}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(47,140,255,.035),transparent 45%,rgba(130,70,220,.035));z-index:0}
+.box{position:relative;z-index:1;max-width:1450px;margin:auto;background:linear-gradient(145deg,rgba(12,31,52,.97),rgba(6,17,30,.97));padding:20px;border:1px solid #1b3c5b;border-radius:22px;box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 45px rgba(30,120,220,.08);backdrop-filter:blur(18px)}
+#appScreen{overflow:hidden}
+#appScreen>div:first-child{padding:4px 8px 18px!important;margin-bottom:12px!important;border-bottom:1px solid rgba(82,130,174,.18)}
+#appScreen h1{font-size:24px;letter-spacing:.2px;color:#f3f8ff!important;text-align:left;text-shadow:0 0 24px rgba(47,140,255,.25)}
+#cloudStatus{color:#79d7a5!important}
+.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:16px;align-items:start}
+.draggable-module{background:linear-gradient(145deg,rgba(15,38,63,.92),rgba(8,25,43,.92));border:1px solid rgba(55,104,149,.5);padding:16px;border-radius:16px;margin-bottom:14px;cursor:grab;position:relative;box-shadow:0 10px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.025);transition:.2s ease}
+.draggable-module:hover{transform:translateY(-2px);border-color:rgba(61,151,255,.7);box-shadow:0 14px 34px rgba(0,0,0,.3),0 0 24px rgba(47,140,255,.08)}
+.draggable-module::before{content:"⠿";top:11px;right:13px;color:#557995;font-size:18px}
+h2{font-size:15px!important;color:#bcd7ef!important;border-bottom:1px solid rgba(82,130,174,.18)!important;padding-bottom:9px!important;margin:4px 0 12px!important}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:linear-gradient(145deg,#112d49,#0b2035);padding:16px;border-radius:14px;border:1px solid #214765;border-left:0!important;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.card:after{content:"";position:absolute;width:90px;height:90px;right:-35px;top:-35px;border-radius:50%;background:var(--glow);filter:blur(8px)}
+.card h3{font-size:12px;margin:0;color:#91abc3;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.card p{font-size:21px!important;margin:8px 0 0!important;color:#f5fbff!important;position:relative;z-index:1}
+.income-cards{grid-template-columns:repeat(3,1fr)!important;gap:12px!important}
+.income-card{background:linear-gradient(145deg,#103553,#0a2238)!important;border:1px solid #245173!important;border-left:0!important;padding:15px!important;border-radius:14px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+.income-card small{color:#91abc3!important;font-size:11px!important;text-transform:uppercase;letter-spacing:.5px}.income-card b{font-size:20px!important;color:#f5fbff!important}
+input,select{padding:10px 12px!important;margin-bottom:8px!important;border:1px solid #244867!important;background:#091d31!important;color:#edf6ff!important;border-radius:9px!important;outline:none;transition:.2s}
+input:focus,select:focus{border-color:#3798ff!important;box-shadow:0 0 0 3px rgba(55,152,255,.12)}
+button{background:linear-gradient(135deg,#1678ed,#3b9eff)!important;border:1px solid rgba(109,190,255,.35)!important;padding:10px 12px!important;border-radius:9px!important;box-shadow:0 5px 16px rgba(25,121,235,.18);transition:.2s}
+button:hover{transform:translateY(-1px);filter:brightness(1.08)}
+#cancelEdit{background:linear-gradient(135deg,#b65320,#e77b35)!important}
+.excel-btns button{background:linear-gradient(135deg,#13895f,#22bd83)!important}.excel-btns label{background:linear-gradient(135deg,#176fd1,#3e9bff)!important;border-radius:9px!important}
+table{font-size:12px!important;border-collapse:separate!important;border-spacing:0 4px!important}
+th{background:#123451!important;color:#b9d8f1!important;padding:9px!important;border:0!important;text-transform:uppercase;font-size:10px;letter-spacing:.5px}
+td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px solid rgba(48,86,119,.25)!important}tr td:first-child{border-radius:7px 0 0 7px}tr td:last-child{border-radius:0 7px 7px 0}
+.summary-grid{gap:9px!important}.bank-summary-card{background:#0c2339!important;border:1px solid #1e425f!important;padding:10px!important;border-radius:10px!important}.bank-summary-card b{color:#69b5ff!important}
+.cutoff-table th{background:#123451!important}.cutoff-table th,.cutoff-table td{border-color:#214664!important}
+.bank-checkboxes{background:#0a2035!important;border:1px solid #1d405e;padding:10px!important;border-radius:10px}
+.filtered-total{background:linear-gradient(90deg,rgba(24,105,182,.2),rgba(16,45,70,.55))!important;border:1px solid #27628c!important;border-left:4px solid #37a1ff!important;border-radius:12px!important;color:#dff1ff}
+.user-badge{background:linear-gradient(135deg,#1678ed,#7546d8)!important;border:1px solid rgba(150,205,255,.28);padding:9px 14px!important;box-shadow:0 5px 20px rgba(46,116,224,.22)}
+.dropdown-content{background:#0b2035!important;border:1px solid #244866!important;box-shadow:0 18px 40px rgba(0,0,0,.45)!important;border-radius:11px!important}.dropdown-content div.dropdown-item{color:#dcecfb!important;padding:11px 14px!important}.dropdown-content div.dropdown-item:hover{background:#123452!important}
+.modal{background:rgba(1,7,14,.78)!important;backdrop-filter:blur(8px)}.modal-content{background:linear-gradient(145deg,#0d243b,#071625)!important;border:1px solid #285274!important;border-radius:16px!important;box-shadow:0 25px 70px rgba(0,0,0,.6)!important}
+.auth-box{background:linear-gradient(145deg,#0d253e,#071625)!important;border:1px solid #244b6c;box-shadow:0 25px 70px rgba(0,0,0,.5),0 0 35px rgba(47,140,255,.1)!important;border-radius:20px!important}.auth-box h2{font-size:18px!important}.auth-toggle{color:#57aaff!important}
+@media(max-width:900px){body{padding:8px}.box{padding:12px;border-radius:16px}.dashboard-grid{grid-template-columns:1fr}.cards,.income-cards{grid-template-columns:1fr 1fr!important}}
+@media(max-width:520px){.cards,.income-cards{grid-template-columns:1fr!important}.box{border-radius:12px}}
+
+    
+
+/* ===== PRO DASHBOARD LAYOUT ===== */
+#appScreen{max-width:none!important;width:100%;min-height:calc(100vh - 48px);padding-left:248px!important;position:relative!important;background:linear-gradient(145deg,#061326,#081a2e 55%,#06111f)!important;border-radius:0!important;border:1px solid #173b5b!important;overflow:visible!important}
+.pro-sidebar{position:absolute;left:0;top:0;bottom:0;width:220px;padding:22px 14px 18px;background:linear-gradient(180deg,#061a30,#041326);border-right:1px solid #173b5b;z-index:20}
+.pro-mark{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;background:linear-gradient(135deg,#0b8cff,#3d5bff);font-size:28px;font-weight:800;color:#fff;box-shadow:0 10px 28px rgba(23,121,237,.3)}
+.pro-sidebar nav,.pro-side-bottom{display:flex;flex-direction:column;gap:6px}
+.pro-sidebar button,.pro-side-bottom button{flex:none!important;display:flex;align-items:center;gap:13px;width:100%;background:transparent!important;border:1px solid transparent!important;box-shadow:none!important;color:#a9c1d8!important;text-align:left;padding:11px 12px!important;border-radius:11px!important;font-size:13px!important;font-weight:600!important}
+.pro-sidebar button:first-child{background:linear-gradient(90deg,#087cff,#0b5fe8)!important;color:#fff!important;box-shadow:0 8px 24px rgba(12,113,240,.25)!important}
+.pro-sidebar button:hover,.pro-side-bottom button:hover{background:#0b2945!important;color:#fff!important;transform:translateX(2px)}
+.pro-sidebar button span,.pro-side-bottom button span{white-space:nowrap}
+.pro-side-bottom{position:absolute;left:14px;right:14px;bottom:22px;border-top:1px solid rgba(100,145,184,.14);padding-top:14px}
+#appScreen>div:first-of-type:not(.pro-banner){margin-left:0!important}
+#appScreen>div:first-of-type:not(.pro-banner) h1{font-size:0!important;width:54px;height:42px;margin:0!important;position:relative}
+#appScreen>div:first-of-type:not(.pro-banner) h1:before{content:'▥';font-size:31px;color:#38a0ff;text-shadow:0 0 18px rgba(56,160,255,.55);position:absolute;left:0;top:0}
+#appScreen>div:first-of-type:not(.pro-banner) h1 span{display:none!important}
+.pro-banner{margin:0 0 16px!important;min-height:100px;border:1px solid #245278;border-radius:16px;background:radial-gradient(circle at 75% 20%,rgba(54,122,220,.3),transparent 25%),linear-gradient(120deg,#10365b,#0a2139 55%,#091b30);display:flex;align-items:center;gap:16px;padding:20px 24px;box-shadow:inset 0 1px rgba(255,255,255,.04),0 12px 32px rgba(0,0,0,.25);position:relative;overflow:hidden}
+.pro-banner:after{content:'';position:absolute;right:-50px;bottom:-100px;width:500px;height:220px;border-radius:50%;background:linear-gradient(120deg,transparent,#1d5d91);opacity:.28;transform:rotate(-10deg)}
+.banner-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(18,153,111,.25);border:1px solid rgba(77,212,165,.35);color:#4be0a8;font-size:27px;z-index:1}
+.pro-banner strong{display:block;font-size:20px;color:#f2f8ff;letter-spacing:.1px}.pro-banner small{display:block;color:#91b0ca;margin-top:6px}.banner-date{margin-left:auto;z-index:1;border:1px solid #2a5275;background:rgba(5,22,38,.55);border-radius:12px;padding:12px 16px;color:#d7ebff;font-size:13px}
+.dashboard-grid{grid-template-columns:minmax(0,1.65fr) minmax(310px,.78fr)!important;gap:16px!important}
+#colLeft,#colRight{min-width:0}
+.draggable-module{border-radius:15px!important;background:linear-gradient(145deg,rgba(12,34,57,.96),rgba(6,22,38,.96))!important;border-color:#214a6b!important;box-shadow:0 12px 30px rgba(0,0,0,.23),inset 0 1px rgba(255,255,255,.025)!important}
+.draggable-module:hover{border-color:#2d7fba!important;box-shadow:0 15px 38px rgba(0,0,0,.3),0 0 25px rgba(28,126,219,.08)!important}
+#mod_income{order:-10!important}.income-card:nth-child(1){background:linear-gradient(145deg,#064f51,#06363c)!important;border-color:#079d8f!important}.income-card:nth-child(2){background:linear-gradient(145deg,#681c3c,#3b132c)!important;border-color:#d42d63!important}.income-card:nth-child(3){background:linear-gradient(145deg,#0d4ca2,#092c68)!important;border-color:#287fff!important}
+.income-card b{font-size:22px!important}.income-card small{color:#c2d8e9!important}
+#mod_summary{order:-9!important}.card{min-height:86px!important}.card p{font-size:22px!important}
+#mod_history{order:-8!important}
+.pro-highlight{animation:proPulse .9s ease}.pro-highlight{border-color:#43aaff!important}
+@keyframes proPulse{0%{box-shadow:0 0 0 0 rgba(56,160,255,.55)}100%{box-shadow:0 0 0 14px rgba(56,160,255,0)}}
+@media(max-width:1000px){#appScreen{padding-left:88px!important}.pro-sidebar{width:74px;padding:18px 9px}.pro-mark{width:44px;height:44px}.pro-sidebar button,.pro-side-bottom button{justify-content:center;padding:11px 8px!important}.pro-sidebar button span,.pro-side-bottom button span{display:none}.pro-side-bottom{left:8px;right:8px}.pro-banner{margin-top:2px}.dashboard-grid{grid-template-columns:1fr!important}}
+@media(max-width:600px){body{padding:0!important}.box{border-radius:0!important}.pro-sidebar{display:none}#appScreen{padding-left:12px!important;padding-right:12px!important}.pro-banner{min-height:84px;padding:14px}.banner-date{display:none}.pro-banner strong{font-size:16px}.dashboard-grid{display:block!important}.draggable-module{margin-bottom:12px!important}}
+
+    </style>
+</head>
+<body id="mainBody" data-theme="light">
+
+    <!-- GİRİŞ EKRANI -->
+    <div id="loginScreen" class="auth-box">
+        <h2 id="authTitle" style="color:var(--primary-color); margin-top:0;">🔐 Giriş Yap</h2>
+        <form id="authForm">
+            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" required>
+            <input type="password" id="authPassword" placeholder="Şifre" required>
+            <button type="submit" id="authBtn">Giriş Yap</button>
+        </form>
+        <span class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">Hesabın yok mu? Yeni kullanıcı ekle</span>
+    </div>
+
+    <!-- ANA UYGULAMA EKRANI -->
+    <div id="appScreen" class="box" style="display:none;">
+
+        <aside class="pro-sidebar" aria-label="Ana menü">
+            <div class="pro-mark">▥</div>
+            <nav>
+                <button type="button" onclick="proGo('mod_summary')">⌂ <span>Ana Sayfa</span></button>
+                <button type="button" onclick="proGo('mod_addexpense')">＋ <span>Harcama Ekle</span></button>
+                <button type="button" onclick="proGo('mod_income')">₺ <span>Gelir Ekle</span></button>
+                <button type="button" onclick="proGo('mod_history')">☷ <span>Tüm Harcamalar</span></button>
+                <button type="button" onclick="proGo('mod_excel')">▣ <span>Raporlar</span></button>
+                <button type="button" onclick="proGo('mod_banks')">▤ <span>Banka Hesapları</span></button>
+                <button type="button" onclick="proGo('mod_cutoffs')">◫ <span>Kesim Günleri</span></button>
+                <button type="button" onclick="proGo('mod_addinstallment')">◈ <span>Borç & Taksitler</span></button>
+            </nav>
+            <div class="pro-side-bottom">
+                <button type="button" onclick="openThemeModal()">◉ <span>Tema Değiştir</span></button>
+                <button type="button" onclick="openProfileModal()">● <span>Profil</span></button>
+            </div>
+        </aside>
+        <div class="pro-banner">
+            <div class="banner-icon">▥</div>
+            <div><strong>Planlı harcama, güçlü gelecek...</strong><small>Finansal durumunu kolayca takip et.</small></div>
+            <div class="banner-date">▣ <span id="proToday">Bugün</span></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div><h1 style="margin:0;">MTmuhasebe <span style="font-size:12px;color:#62b5ff;background:rgba(47,140,255,.10);border:1px solid rgba(70,150,230,.25);padding:4px 8px;border-radius:20px;vertical-align:middle;">PREMIUM</span></h1><div id="cloudStatus" style="font-size:11px;margin-top:5px;color:#666;">📱 PC + Telefon senkronu hazırlanıyor...</div></div>
+            
+            <div class="user-menu-container">
+                <div class="user-badge">👤 <span id="currentUsernameDisplay">Kullanıcı</span> ▼</div>
+                <div class="dropdown-content">
+                    <div class="dropdown-item" onclick="openProfileModal()">⚙️ Bilgileri Güncelle</div>
+                    <div class="dropdown-item" onclick="openThemeModal()">🎨 Renk / Tema Değiştir</div>
+                    <div class="dropdown-item" onclick="openFirebaseModal()">☁️ Bulut Senkronizasyonu</div>
+                    <div class="dropdown-item" onclick="resetLayoutDefault()" style="color:#2980b9;">🔄 Düzeni Sıfırla</div>
+                    <div class="dropdown-item" onclick="logout()" style="color:#e74c3c;">🚪 Çıkış Yap</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div id="colLeft" class="drop-column" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+            <div id="colRight" class="drop-column" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+        </div>
+    </div>
+
+    <!-- GİZLİ ŞABLON BLOKLARI -->
+    <div id="templatesStore" style="display:none;">
+        <div id="mod_summary" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <div class="cards">
+                <div class="card"><h3>Bugün</h3><p id="t">0.00 TL</p></div>
+                <div class="card" style="border-left-color:#27ae60;"><h3>Bu Ay</h3><p id="m">0.00 TL</p></div>
+                <div class="card" style="border-left-color:#e67e22;"><h3>Gelecek Dönem Borç</h3><p id="futureTotalCard">0.00 TL</p></div>
+            </div>
+        </div>
+
+        <div id="mod_excel" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <div class="excel-btns">
+                <button onclick="exportToExcel()">📊 Excel</button>
+                <button onclick="saveAsPDF()" style="background: #e74c3c;">📄 PDF Kaydet</button>
+                <label for="excelFileInput">📥 Yükle
+                    <input type="file" id="excelFileInput" accept=".csv" style="display:none" onchange="importFromExcel(event)">
+                </label>
+            </div>
+        </div>
+
+        <div id="mod_banks" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <h2>🏦 Kullandığım Bankalar / Kartlar</h2>
+            <div class="bank-checkboxes" id="bankCheckboxes"></div>
+        </div>
+
+        <div id="mod_cutoffs" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <h2>⚙️ Seçili Banka Kesim Günleri</h2>
+            <div style="overflow-x:auto;">
+                <table class="cutoff-table">
+                    <thead><tr><th>Banka / Hesap</th><th>Kesim Günü</th></tr></thead>
+                    <tbody id="cutoffTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="mod_bankstats" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <h2>💳 Banka Ekstre Durumu</h2>
+            <div class="summary-grid" id="bankSummaryGrid"></div>
+        </div>
+
+        <div id="mod_addexpense" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <h2>✍️ Yeni Harcama Ekle</h2>
+            <form id="f">
+                <input type="hidden" id="editIndex" value="-1">
+                <input type="date" id="d" required>
+                <select id="c">
+                    <option>Market</option>
+                    <option>Yemek</option>
+                    <option>Ulaşım</option>
+                    <option>Fatura</option>
+                    <option>Alışveriş</option>
+                    <option>Diğer</option>
+                </select>
+                <select id="b"></select>
+                <input type="text" inputmode="decimal" id="a" placeholder="Tutar (TL)" onkeypress="return isNumberKey(event)" required>
+                <input type="text" id="x" placeholder="Açıklama (İsteğe bağlı)">
+                <div class="btn-container">
+                    <button type="submit" id="saveBtn">Kaydet</button>
+                    <button type="button" id="cancelEdit" onclick="resetForm()">İptal</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="mod_addinstallment" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <h2>📅 Taksitli Harcama Ekle</h2>
+            <form id="installmentForm">
+                <input type="date" id="idStartD" required>
+                <select id="idC">
+                    <option>Market</option>
+                    <option>Yemek</option>
+                    <option>Ulaşım</option>
+                    <option>Fatura</option>
+                    <option>Alışveriş</option>
+                    <option>Diğer</option>
+                </select>
+                <select id="idB"></select>
+                <input type="text" inputmode="decimal" id="idTotalA" placeholder="Toplam Tutar (TL)" onkeypress="return isNumberKey(event)" required>
+                <input type="number" id="idCount" min="2" max="36" placeholder="Taksit Sayısı" required>
+                <input type="text" id="idX" placeholder="Açıklama">
+                <button type="submit" style="background:#8e44ad;">Taksitleri Oluştur</button>
+            </form>
+        </div>
+
+        <div id="mod_income" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <h2>💰 Gelir ve Kalan Param</h2>
+            <div class="income-cards">
+                <div class="income-card"><small>Bu Ay Gelir</small><b id="incomeTotalCard">0.00 TL</b></div>
+                <div class="income-card"><small>Bu Ay Harcama</small><b id="incomeExpenseCard">0.00 TL</b></div>
+                <div class="income-card"><small>Kalan Param</small><b id="incomeRemainingCard">0.00 TL</b></div>
+                            </div>
+            <h3 style="font-size:13px;margin:8px 0 5px;">Maaş</h3>
+            <div style="display:flex;gap:6px;">
+                <input type="text" id="salaryAmount" inputmode="decimal" placeholder="Aylık maaş (TL)" style="margin:0;">
+                <button type="button" onclick="saveSalary()" style="background:#2980b9;">Maaşı Kaydet</button>
+            </div>
+            <h3 style="font-size:13px;margin:10px 0 5px;">Ek Gelir Ekle</h3>
+            <div class="income-form-grid">
+                <input type="date" id="extraIncomeDate">
+                <input type="text" id="extraIncomeAmount" inputmode="decimal" placeholder="Tutar (TL)">
+                <input type="text" id="extraIncomeDesc" placeholder="Açıklama">
+                <button type="button" onclick="addExtraIncome()" style="background:#27ae60;">Ekle</button>
+            </div>
+            <div id="extraIncomeList" class="income-list"></div>
+        </div>
+
+        <div id="mod_history" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 5px; flex-wrap: wrap;">
+                <h2 style="margin: 0; border: none;">📜 Harcama Geçmişi</h2>
+                <div style="display: flex; gap: 5px;">
+                    <select id="statusFilter" style="width: 120px; margin: 0; padding: 3px;" onchange="rd()">
+                        <option value="all">Tüm Durumlar</option>
+                        <option value="current">Güncel Ekstre</option>
+                        <option value="next">Gelecek Dönem</option>
+                    </select>
+                    <select id="monthFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="rd()">
+                        <option value="all">Tüm Aylar</option>
+                    </select>
+                </div>
+            </div>
+            <div id="filteredTotalBox" class="filtered-total">📊 Seçilen dönemin toplam harcaması: 0.00 TL</div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih (Son Ödeme)</th>
+                            <th>Kategori</th>
+                            <th>Banka</th>
+                            <th>Tutar</th>
+                            <th>Taksit</th>
+                            <th>Güncel Borç</th>
+                            <th>Gelecek Borç</th>
+                            <th>Açıklama</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALLAR -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <h3>Bilgileri Güncelle</h3>
+            <input type="text" id="newUsernameInput" placeholder="Yeni Kullanıcı Adı">
+            <input type="password" id="newPasswordInput" placeholder="Yeni Şifre">
+            <div style="display:flex; gap:5px; margin-top:10px;">
+                <button onclick="updateProfile()" style="background:#27ae60;">Kaydet</button>
+                <button onclick="closeProfileModal()" style="background:#e74c3c;">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="themeModal" class="modal">
+        <div class="modal-content">
+            <h3>Tema Seç</h3>
+            <select id="themeSelector" style="margin-bottom:15px;">
+                <option value="light">☀️ Açık Tema</option>
+                <option value="dark">🌙 Koyu Tema</option>
+                <option value="colorful">🎨 Şık Mor</option>
+            </select>
+            <div style="display:flex; gap:5px;">
+                <button onclick="saveTheme()" style="background:#27ae60;">Uygula</button>
+                <button onclick="closeThemeModal()" style="background:#e74c3c;">İptal</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+
+    function proGo(id){
+        const el=document.getElementById(id);
+        if(!el) return;
+        el.scrollIntoView({behavior:'smooth',block:'start'});
+        el.classList.add('pro-highlight');
+        setTimeout(()=>el.classList.remove('pro-highlight'),900);
+    }
+    function proSetDate(){
+        const d=document.getElementById('proToday');
+        if(d) d.textContent=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+    }
+    // Sadece sayı ve ondalık ayracı (nokta/virgül) girişine izin veren fonksiyon
+    function isNumberKey(evt) {
+        let charCode = (evt.which) ? evt.which : evt.keyCode;
+        // 0-9 rakamlar (48-57), Nokta (46), Virgül (44)
+        if ((charCode >= 48 && charCode <= 57) || charCode === 46 || charCode === 44) {
+            return true;
+        }
+        return false;
+    }
+
+    let users = JSON.parse(localStorage.getItem('appUsers') || '[]');
+    if (!users.some(x => x.u && x.u.toLowerCase() === "mete")) {
+        users.push({u: "Mete", p: "admin"});
+        localStorage.setItem('appUsers', JSON.stringify(users));
+    }
+
+    let currentUser = null;
+    let isRegisterMode = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        let activeUserSession = sessionStorage.getItem('activeUserSession');
+        if (activeUserSession && users.some(x => x.u === activeUserSession)) {
+            currentUser = activeUserSession;
+            showApp();
+        } else {
+            logout();
+        }
+    });
+
+    const defaultLayout = {
+        left: ['mod_income', 'mod_summary', 'mod_history', 'mod_excel', 'mod_addexpense'],
+        right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment']
+    };
+
+    function toggleAuthMode() {
+        isRegisterMode = !isRegisterMode;
+        document.getElementById('authTitle').textContent = isRegisterMode ? "➕ Yeni Kullanıcı Ekle" : "🔐 Giriş Yap";
+        document.getElementById('authBtn').textContent = isRegisterMode ? "Kayıt Ol" : "Giriş Yap";
+        document.getElementById('authToggleText').textContent = isRegisterMode ? "Zaten hesabın var mı? Giriş yap" : "Hesabın yok mu? Yeni kullanıcı ekle";
+    }
+
+    document.getElementById('authForm').addEventListener('submit', e => {
+        e.preventDefault();
+        let uInput = document.getElementById('authUsername').value.trim();
+        let p = document.getElementById('authPassword').value.trim();
+
+        users = JSON.parse(localStorage.getItem('appUsers') || '[]');
+
+        if (isRegisterMode) {
+            if(users.some(x => x.u.toLowerCase() === uInput.toLowerCase())) { alert("Bu kullanıcı adı alınmış!"); return; }
+            users.push({u: uInput, p: p});
+            localStorage.setItem('appUsers', JSON.stringify(users));
+            alert("Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
+            toggleAuthMode();
+            document.getElementById('authForm').reset();
+            return;
+        }
+        
+        let found = users.find(x => x.u.toLowerCase() === uInput.toLowerCase() && x.p === p);
+        if (found) {
+            currentUser = found.u;
+            window.currentUser = currentUser;
+            sessionStorage.setItem('activeUserSession', currentUser);
+            showApp();
+        } else {
+            alert("Hatalı kullanıcı adı veya şifre! (Varsayılan kullanıcı: Mete / Şifre: admin)");
+        }
+    });
+
+    function logout() {
+        sessionStorage.removeItem('activeUserSession');
+        currentUser = null;
+        document.getElementById('appScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('authForm').reset();
+    }
+
+    function showApp() {
+        window.currentUser = currentUser;
+        proSetDate();
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appScreen').style.display = 'block';
+        document.getElementById('currentUsernameDisplay').textContent = currentUser;
+        
+        renderLayout();
+        
+        let dInput = document.getElementById('d');
+        let idStartD = document.getElementById('idStartD');
+        if(dInput && !dInput.value) dInput.valueAsDate = new Date();
+        if(idStartD && !idStartD.value) idStartD.valueAsDate = new Date();
+        
+        loadTheme();
+        if (window.cloudSync && window.cloudSync.firebaseReady) window.cloudSync.listen();
+        rd();
+    }
+
+    function drag(ev) {
+        ev.dataTransfer.setData("text", ev.target.id);
+        ev.target.classList.add('dragging');
+    }
+
+    document.addEventListener('dragend', function(ev) {
+        if (ev.target.classList && ev.target.classList.contains('draggable-module')) {
+            ev.target.classList.remove('dragging');
+        }
+    });
+
+    function allowDrop(ev) { ev.preventDefault(); }
+
+    function drop(ev) {
+        ev.preventDefault();
+        let data = ev.dataTransfer.getData("text");
+        let draggedElement = document.getElementById(data);
+        let dropZone = ev.target.closest('.drop-column');
+        if (dropZone && draggedElement) {
+            dropZone.appendChild(draggedElement);
+            saveLayout();
+        }
+    }
+
+    function getLayout() {
+        let saved = localStorage.getItem('layout_' + currentUser);
+        if (saved) {
+            try { return JSON.parse(saved); } catch(e) {}
+        }
+        return defaultLayout;
+    }
+
+    function saveLayout() {
+        let leftCol = document.getElementById('colLeft');
+        let rightCol = document.getElementById('colRight');
+        let leftIds = Array.from(leftCol.children).map(el => el.id);
+        let rightIds = Array.from(rightCol.children).map(el => el.id);
+        let layout = { left: leftIds, right: rightIds };
+        localStorage.setItem('layout_' + currentUser, JSON.stringify(layout));
+        if (window.cloudSync) window.cloudSync.pushAll();
+        rd();
+    }
+
+    function renderLayout() {
+        let layout = getLayout();
+        layout.left = Array.isArray(layout.left) ? layout.left : [];
+        layout.right = Array.isArray(layout.right) ? layout.right : [];
+        if (!layout.left.includes('mod_income') && !layout.right.includes('mod_income')) {
+            layout.left.splice(2, 0, 'mod_income');
+        }
+        let colLeft = document.getElementById('colLeft');
+        let colRight = document.getElementById('colRight');
+        colLeft.innerHTML = '';
+        colRight.innerHTML = '';
+        layout.left.forEach(id => {
+            let el = document.getElementById(id);
+            if(el) colLeft.appendChild(el);
+        });
+        layout.right.forEach(id => {
+            let el = document.getElementById(id);
+            if(el) colRight.appendChild(el);
+        });
+    }
+
+    function resetLayoutDefault() {
+        localStorage.removeItem('layout_' + currentUser);
+        renderLayout();
+        rd();
+    }
+
+    function openProfileModal() {
+        document.getElementById('newUsernameInput').value = currentUser;
+        document.getElementById('newPasswordInput').value = '';
+        document.getElementById('profileModal').style.display = 'flex';
+    }
+    function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
+    function updateProfile() {
+        let newU = document.getElementById('newUsernameInput').value.trim();
+        let newP = document.getElementById('newPasswordInput').value.trim();
+        if(!newU) { alert("Boş olamaz!"); return; }
+
+        users = JSON.parse(localStorage.getItem('appUsers') || '[]');
+        let userObj = users.find(x => x.u === currentUser);
+        if (userObj) {
+            if (newU !== currentUser && users.some(x => x.u.toLowerCase() === newU.toLowerCase())) {
+                alert("Bu isim kullanımda!"); return;
+            }
+            userObj.u = newU;
+            if(newP) userObj.p = newP;
+            localStorage.setItem('appUsers', JSON.stringify(users));
+            
+            let oldEx = localStorage.getItem('ex_' + currentUser);
+            let oldBanks = localStorage.getItem('activeBanks_' + currentUser);
+            let oldCutoffs = localStorage.getItem('bankCutoffDays_' + currentUser);
+            let oldLayout = localStorage.getItem('layout_' + currentUser);
+            let oldSalary = localStorage.getItem('salary_' + currentUser);
+            let oldExtraIncomes = localStorage.getItem('extraIncomes_' + currentUser);
+
+            currentUser = newU;
+            window.currentUser = currentUser;
+            sessionStorage.setItem('activeUserSession', currentUser);
+
+            if(oldEx) localStorage.setItem('ex_' + currentUser, oldEx);
+            if(oldBanks) localStorage.setItem('activeBanks_' + currentUser, oldBanks);
+            if(oldCutoffs) localStorage.setItem('bankCutoffDays_' + currentUser, oldCutoffs);
+            if(oldLayout) localStorage.setItem('layout_' + currentUser, oldLayout);
+            if(oldSalary !== null) localStorage.setItem('salary_' + currentUser, oldSalary);
+            if(oldExtraIncomes !== null) localStorage.setItem('extraIncomes_' + currentUser, oldExtraIncomes);
+
+            document.getElementById('currentUsernameDisplay').textContent = currentUser;
+            closeProfileModal();
+            alert("Güncellendi!");
+            rd();
+        }
+    }
+
+    function openThemeModal() {
+        document.getElementById('themeSelector').value = localStorage.getItem('theme_' + currentUser) || 'light';
+        document.getElementById('themeModal').style.display = 'flex';
+    }
+    function closeThemeModal() { document.getElementById('themeModal').style.display = 'none'; }
+    function saveTheme() {
+        let selectedTheme = document.getElementById('themeSelector').value;
+        localStorage.setItem('theme_' + currentUser, selectedTheme);
+        if (window.cloudSync) window.cloudSync.pushAll();
+        loadTheme();
+        closeThemeModal();
+    }
+    function loadTheme() {
+        let savedTheme = localStorage.getItem('theme_' + currentUser) || 'light';
+        document.getElementById('mainBody').setAttribute('data-theme', savedTheme);
+    }
+
+    const allBanks = {
+        "Akbank": 25, "Garanti BBVA": 28, "İş Bankası": 20, 
+        "Yapı Kredi": 15, "Ziraat": 10, "Enpara": 1, "Papara": 31, "Nakit / Diğer": 0
+    };
+
+    let activeBanks = [], bankCutoffDays = {}, ex = [];
+    let salary = 0, extraIncomes = [];
+
+    function loadUserData() {
+        if(!currentUser) return;
+        activeBanks = JSON.parse(localStorage.getItem('activeBanks_' + currentUser) || JSON.stringify(Object.keys(allBanks)));
+        bankCutoffDays = JSON.parse(localStorage.getItem('bankCutoffDays_' + currentUser) || JSON.stringify(allBanks));
+        ex = JSON.parse(localStorage.getItem('ex_' + currentUser) || '[]');
+        salary = Number(String(localStorage.getItem('salary_' + currentUser) || '0').replace(',', '.')) || 0;
+        extraIncomes = JSON.parse(localStorage.getItem('extraIncomes_' + currentUser) || '[]');
+        window.currentUser = currentUser;
+        window.activeBanks = activeBanks;
+        window.bankCutoffDays = bankCutoffDays;
+        window.ex = ex;
+        window.salary = salary;
+        window.extraIncomes = extraIncomes;
+    }
+
+    function renderBankSelections() {
+        let div = document.getElementById('bankCheckboxes');
+        if(!div) return;
+        div.innerHTML = '';
+        Object.keys(allBanks).forEach(bank => {
+            let isChecked = activeBanks.includes(bank) ? 'checked' : '';
+            div.innerHTML += `<label><input type="checkbox" value="${bank}" ${isChecked} onchange="toggleBank('${bank}', this.checked)"> ${bank}</label>`;
+        });
+    }
+
+    window.toggleBank = function(bank, isChecked) {
+        if (isChecked) { if (!activeBanks.includes(bank)) activeBanks.push(bank); }
+        else { activeBanks = activeBanks.filter(b => b !== bank); }
+        localStorage.setItem('activeBanks_' + currentUser, JSON.stringify(activeBanks));
+        window.activeBanks = activeBanks;
+        if (window.cloudSync) window.cloudSync.pushAll();
+        rd();
+    }
+
+    function renderCutoffTableAndDropdown() {
+        let cutoffTableBody = document.getElementById('cutoffTableBody');
+        let bankSelect = document.getElementById('b');
+        let idBankSelect = document.getElementById('idB');
+        
+        if(!cutoffTableBody) return;
+
+        cutoffTableBody.innerHTML = '';
+        if(bankSelect) bankSelect.innerHTML = '';
+        if(idBankSelect) idBankSelect.innerHTML = '';
+
+        activeBanks.forEach(bank => {
+            let cutoff = bankCutoffDays[bank] !== undefined ? bankCutoffDays[bank] : 0;
+            cutoffTableBody.innerHTML += `<tr><td><b>${bank}</b></td><td><input type="number" min="0" max="31" value="${cutoff}" onchange="updateCutoff('${bank}', this.value)"></td></tr>`;
+            if(bankSelect) bankSelect.innerHTML += `<option value="${bank}">${bank}</option>`;
+            if(idBankSelect) idBankSelect.innerHTML += `<option value="${bank}">${bank}</option>`;
+        });
+    }
+
+    window.updateCutoff = function(bank, val) {
+        bankCutoffDays[bank] = parseInt(val) || 0;
+        localStorage.setItem('bankCutoffDays_' + currentUser, JSON.stringify(bankCutoffDays));
+        window.bankCutoffDays = bankCutoffDays;
+        if (window.cloudSync) window.cloudSync.pushAll();
+        rd();
+    }
+
+    function getDueDateDetails(expenseDateStr, cutoffDay) {
+        const expDate = new Date(expenseDateStr);
+        const day = expDate.getDate();
+        const month = expDate.getMonth();
+        const year = expDate.getFullYear();
+
+        if (!cutoffDay || cutoffDay === 0) {
+            return { dueDateStr: expenseDateStr, cycle: 'current' };
+        }
+
+        let cycleMonth = month;
+        let cycleYear = year;
+        
+        if (day > cutoffDay) {
+            cycleMonth += 1;
+            if (cycleMonth > 11) { cycleMonth = 0; cycleYear += 1; }
+        }
+
+        let dueMonth = cycleMonth;
+        let dueYear = cycleYear;
+        let dueDateNum = cutoffDay + 10; 
+        
+        let lastDayOfDueMonth = new Date(dueYear, dueMonth + 1, 0).getDate();
+        if (dueDateNum > lastDayOfDueMonth) {
+            dueDateNum -= lastDayOfDueMonth;
+            dueMonth += 1;
+            if (dueMonth > 11) { dueMonth = 0; dueYear += 1; }
+        }
+
+        let mmStr = String(dueMonth + 1).padStart(2, '0');
+        let ddStr = String(dueDateNum).padStart(2, '0');
+        let dueDateStr = `${dueYear}-${mmStr}-${ddStr}`;
+
+        const now = new Date();
+        let cycle = 'past';
+        if (cycleYear === now.getFullYear() && cycleMonth === now.getMonth()) {
+            cycle = 'thisMonth';
+        } else if (cycleYear > now.getFullYear() || (cycleYear === now.getFullYear() && cycleMonth > now.getMonth())) {
+            cycle = 'nextMonth';
+        }
+
+        return { dueDateStr, cycle };
+    }
+
+    function money(v) {
+        return (Number(v) || 0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' TL';
+    }
+
+    function monthKey(dateStr) {
+        return String(dateStr || '').substring(0, 7);
+    }
+
+    function updateIncomeCards() {
+        if(!currentUser) return;
+        loadUserData();
+        const now = new Date();
+        const cm = now.toISOString().split('T')[0].substring(0,7);
+        const monthlyExtra = extraIncomes
+            .filter(x => monthKey(x.date) === cm)
+            .reduce((sum, x) => sum + (Number(x.amount) || 0), 0);
+        const monthlyIncome = salary + monthlyExtra;
+        const monthlyExpense = ex
+            .filter(x => monthKey(x.d) === cm)
+            .reduce((sum, x) => sum + (Number(String(x.a).replace(',', '.')) || 0), 0);
+        const remaining = monthlyIncome - monthlyExpense;
+
+
+        const setText = (id, value) => { const el=document.getElementById(id); if(el) el.textContent=money(value); };
+        setText('incomeTotalCard', monthlyIncome);
+        setText('incomeExpenseCard', monthlyExpense);
+        setText('incomeRemainingCard', remaining);
+
+        const salaryInput = document.getElementById('salaryAmount');
+        if(salaryInput && document.activeElement !== salaryInput) salaryInput.value = salary ? salary.toFixed(2) : '';
+
+        renderExtraIncomeList();
+    }
+
+    function saveSalary() {
+        if(!currentUser) return;
+        const value = Number(String(document.getElementById('salaryAmount').value || '').replace(',', '.')) || 0;
+        salary = value;
+        localStorage.setItem('salary_' + currentUser, String(salary));
+        window.salary = salary;
+        if(window.cloudSync) window.cloudSync.pushAll();
+        updateIncomeCards();
+        alert('Maaş bilgisi kaydedildi.');
+    }
+
+    function addExtraIncome() {
+        if(!currentUser) return;
+        const date = document.getElementById('extraIncomeDate').value || new Date().toISOString().split('T')[0];
+        const amount = Number(String(document.getElementById('extraIncomeAmount').value || '').replace(',', '.')) || 0;
+        const desc = document.getElementById('extraIncomeDesc').value.trim();
+        if(amount <= 0) { alert('Lütfen geçerli bir ek gelir tutarı girin.'); return; }
+
+        extraIncomes.push({id: Date.now(), date, amount, desc});
+        localStorage.setItem('extraIncomes_' + currentUser, JSON.stringify(extraIncomes));
+        window.extraIncomes = extraIncomes;
+        document.getElementById('extraIncomeAmount').value = '';
+        document.getElementById('extraIncomeDesc').value = '';
+        if(window.cloudSync) window.cloudSync.pushAll();
+        updateIncomeCards();
+    }
+
+    function deleteExtraIncome(id) {
+        extraIncomes = extraIncomes.filter(x => String(x.id) !== String(id));
+        localStorage.setItem('extraIncomes_' + currentUser, JSON.stringify(extraIncomes));
+        window.extraIncomes = extraIncomes;
+        if(window.cloudSync) window.cloudSync.pushAll();
+        updateIncomeCards();
+    }
+
+    function renderExtraIncomeList() {
+        const box = document.getElementById('extraIncomeList');
+        if(!box) return;
+        if(!extraIncomes.length) {
+            box.innerHTML = '<div style="font-size:11px;opacity:.7;">Henüz ek gelir kaydı yok.</div>';
+            return;
+        }
+        const sorted = [...extraIncomes].sort((a,b) => String(b.date).localeCompare(String(a.date)));
+        box.innerHTML = sorted.map(x => `
+            <div class="income-row">
+                <span><b>${x.date}</b> — ${x.desc || 'Ek Gelir'}</span>
+                <span><b>${money(x.amount)}</b>
+                <button type="button" onclick="deleteExtraIncome('${x.id}')" style="flex:0 0 auto;background:#e74c3c;padding:4px 7px;font-size:10px;">Sil</button></span>
+            </div>`).join('');
+    }
+
+    function rd() {
+        if(!currentUser) return;
+        loadUserData();
+        renderBankSelections();
+        renderCutoffTableAndDropdown();
+
+        let ts = 0, ms = 0, futureTotal = 0, filteredTotal = 0;
+        let ds = new Date().toISOString().split('T')[0];
+        let cm = ds.substring(0, 7);
+        
+        let tb = document.getElementById('tb');
+        if(tb) tb.innerHTML = '';
+
+        let monthFilterSelect = document.getElementById('monthFilter');
+        let statusFilterSelect = document.getElementById('statusFilter');
+        
+        let selectedMonth = monthFilterSelect ? monthFilterSelect.value : 'all';
+        let selectedStatus = statusFilterSelect ? statusFilterSelect.value : 'all';
+
+        let availableMonths = new Set();
+        
+        let indexedEx = ex.map((item, index) => {
+            let cutoff = bankCutoffDays[item.b] !== undefined ? bankCutoffDays[item.b] : 0;
+            let details = getDueDateDetails(item.d, cutoff);
+            let sortPriority = (details.cycle === 'nextMonth') ? 1 : 0;
+            
+            let itemMonth = details.dueDateStr.substring(0, 7);
+            availableMonths.add(itemMonth);
+
+            return { ...item, originalIndex: index, sortPriority: sortPriority, dueDate: details.dueDateStr, cycle: details.cycle, itemMonth: itemMonth };
+        });
+
+        if(monthFilterSelect) {
+            let currentSelection = monthFilterSelect.value;
+            let sortedMonths = Array.from(availableMonths).sort().reverse();
+            
+            monthFilterSelect.innerHTML = `<option value="all">Tüm Aylar</option>`;
+            sortedMonths.forEach(m => {
+                let parts = m.split('-');
+                let monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+                let label = `${monthNames[parseInt(parts[1])-1]} ${parts[0]}`;
+                monthFilterSelect.innerHTML += `<option value="${m}">${label}</option>`;
+            });
+            monthFilterSelect.value = sortedMonths.includes(currentSelection) ? currentSelection : 'all';
+            selectedMonth = monthFilterSelect.value;
+        }
+
+        indexedEx.sort((i, j) => {
+            if (i.sortPriority !== j.sortPriority) {
+                return i.sortPriority - j.sortPriority;
+            }
+            return new Date(j.dueDate) - new Date(i.dueDate);
+        });
+
+        let bankStats = {};
+        activeBanks.forEach(b => { bankStats[b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 }; });
+
+        indexedEx.forEach((item) => {
+            let amtNum = Number(String(item.a).replace(',', '.')) || 0;
+
+            if (item.d === ds) ts += amtNum;
+            if (item.d.startsWith(cm)) ms += amtNum;
+
+            if (!bankStats[item.b]) bankStats[item.b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 };
+            bankStats[item.b].total += amtNum;
+
+            if (item.cycle === 'thisMonth' || item.cycle === 'past') {
+                bankStats[item.b].thisMonthBill += amtNum;
+            } else if (item.cycle === 'nextMonth') {
+                bankStats[item.b].nextMonthBill += amtNum;
+                futureTotal += amtNum; 
+            }
+
+            // Durum Filtresi Kontrolü
+            let isCurrentStatus = (item.cycle === 'thisMonth' || item.cycle === 'past');
+            let isNextStatus = (item.cycle === 'nextMonth');
+
+            if (selectedStatus === 'current' && !isCurrentStatus) return;
+            if (selectedStatus === 'next' && !isNextStatus) return;
+
+            // Ay Filtresi Kontrolü
+            if (selectedMonth !== 'all' && item.itemMonth !== selectedMonth) {
+                return; 
+            }
+
+            filteredTotal += amtNum;
+            let k = item.originalIndex;
+            let installmentText = item.inst || "-";
+            let currentCell = "-";
+            let nextCell = "-";
+
+            if (isCurrentStatus) {
+                currentCell = `${amtNum.toFixed(2)} TL <span class="badge-current">Güncel</span>`;
+            } else if (isNextStatus) {
+                nextCell = `${amtNum.toFixed(2)} TL <span class="badge-next">Gelecek</span>`;
+            } else {
+                currentCell = `${amtNum.toFixed(2)} TL`;
+            }
+
+            if(tb) {
+                tb.innerHTML += `<tr>
+                    <td><b>${item.dueDate}</b><br><span style="font-size:9px;color:#7f8c8d;">İşlem: ${item.d}</span></td>
+                    <td>${item.c}</td>
+                    <td><b>${item.b}</b></td>
+                    <td>${amtNum.toFixed(2)} TL</td>
+                    <td>${installmentText}</td>
+                    <td>${currentCell}</td>
+                    <td>${nextCell}</td>
+                    <td>${item.x || ''}</td>
+                    <td><div class="action-btns">
+                        <button style="background:#2980b9;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="editExpense(${k})">Düzenle</button>
+                        <button style="background:#e74c3c;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="dl(${k})">Sil</button>
+                    </div></td>
+                </tr>`;
+            }
+        });
+
+        let tt = document.getElementById('t');
+        let mt = document.getElementById('m');
+        let futureCard = document.getElementById('futureTotalCard');
+        
+        if(tt) tt.textContent = ts.toFixed(2) + ' TL'; 
+        if(mt) mt.textContent = ms.toFixed(2) + ' TL';
+        if(futureCard) futureCard.textContent = futureTotal.toFixed(2) + ' TL';
+        let filteredBox = document.getElementById('filteredTotalBox');
+        if(filteredBox) filteredBox.textContent = '📊 Seçilen dönemin toplam harcaması: ' + money(filteredTotal);
+        updateIncomeCards();
+
+        localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+
+        let bankSummaryGrid = document.getElementById('bankSummaryGrid');
+        if(bankSummaryGrid) {
+            bankSummaryGrid.innerHTML = '';
+            activeBanks.forEach(bank => {
+                let data = bankStats[bank];
+                if (data && data.total > 0) {
+                    bankSummaryGrid.innerHTML += `
+                        <div class="bank-summary-card">
+                            <b>${bank}</b>
+                            <div>Toplam: ${data.total.toFixed(2)} TL</div>
+                            <div style="color:#d35400;">Bu Ekstre: ${data.thisMonthBill.toFixed(2)} TL</div>
+                            <div style="color:#27ae60;">Gelecek Ekstre: ${data.nextMonthBill.toFixed(2)} TL</div>
+                        </div>`;
+                }
+            });
+        }
+    }
+
+    function exportToExcel() {
+        if(ex.length === 0) { alert("Veri yok!"); return; }
+        let csvContent = "\uFEFFTarih,Kategori,Banka,Tutar,Taksit,Aciklama\n";
+        ex.forEach(item => {
+            csvContent += `"${item.d}","${item.c}","${item.b}","${item.a}","${item.inst || ''}","${item.x || ''}"\n`;
+        });
+        let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = `harcamalar_${currentUser}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function saveAsPDF() {
+        window.print();
+    }
+
+    function importFromExcel(event) {
+        let file = event.target.files[0];
+        if(!file) return;
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let lines = e.target.result.split('\n');
+            let newEx = [];
+            for(let i = 1; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if(!line) continue;
+                let cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                if(cols.length >= 4) {
+                    newEx.push({
+                        d: cols[0].replace(/"/g, ''),
+                        c: cols[1].replace(/"/g, ''),
+                        b: cols[2].replace(/"/g, ''),
+                        a: cols[3].replace(/"/g, ''),
+                        inst: cols[4] ? cols[4].replace(/"/g, '') : '-',
+                        x: cols[5] ? cols[5].replace(/"/g, '') : ''
+                    });
+                }
+            }
+            if(newEx.length > 0) {
+                if(confirm(`${newEx.length} kayıt eklensin mi?`)) {
+                    loadUserData();
+                    ex = ex.concat(newEx);
+                    localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+                    rd();
+                    alert("Yüklendi!");
+                }
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    window.editExpense = function(index) {
+        let item = ex[index];
+        if(!item) return;
+        document.getElementById('editIndex').value = index;
+        document.getElementById('d').value = item.d;
+        document.getElementById('c').value = item.c;
+        document.getElementById('b').value = item.b;
+        document.getElementById('a').value = item.a;
+        document.getElementById('x').value = item.x || '';
+        document.getElementById('saveBtn').textContent = "Güncelle";
+        document.getElementById('cancelEdit').style.display = 'block';
+    }
+
+    window.resetForm = function() {
+        document.getElementById('f').reset();
+        document.getElementById('editIndex').value = "-1";
+        document.getElementById('saveBtn').textContent = "Kaydet";
+        document.getElementById('cancelEdit').style.display = 'none';
+        let dInput = document.getElementById('d');
+        if(dInput) dInput.valueAsDate = new Date();
+    }
+
+    window.dl = function(index) {
+        if(confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
+            loadUserData();
+            ex.splice(index, 1);
+            localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+            window.ex = ex;
+            if (window.cloudSync) window.cloudSync.pushAll();
+            rd();
+        }
+    }
+
+    document.addEventListener('submit', e => {
+        if(e.target && e.target.id === 'f') {
+            e.preventDefault();
+            loadUserData();
+            const itemData = {
+                d: document.getElementById('d').value, 
+                c: document.getElementById('c').value, 
+                b: document.getElementById('b').value, 
+                a: document.getElementById('a').value.replace(',', '.'), 
+                inst: "-",
+                x: document.getElementById('x').value
+            };
+            
+            const idx = parseInt(document.getElementById('editIndex').value);
+            if (idx === -1) {
+                ex.push(itemData);
+            } else { 
+                ex[idx] = itemData; 
+            }
+            localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+            window.ex = ex;
+            if (window.cloudSync) window.cloudSync.pushAll();
+            resetForm();
+            rd();
+        }
+    });
+
+    document.addEventListener('submit', e => {
+        if(e.target && e.target.id === 'installmentForm') {
+            e.preventDefault();
+            loadUserData();
+            let startD = document.getElementById('idStartD').value;
+            let c = document.getElementById('idC').value;
+            let b = document.getElementById('idB').value;
+            let totalA = parseFloat(document.getElementById('idTotalA').value.replace(',', '.')) || 0;
+            let count = parseInt(document.getElementById('idCount').value);
+            let x = document.getElementById('idX').value;
+
+            if(!startD || !totalA || !count || count < 2) {
+                alert("Lütfen alanları doğru doldurun.");
+                return;
+            }
+
+            let monthlyA = (totalA / count).toFixed(2);
+            let startDate = new Date(startD);
+
+            for(let i = 0; i < count; i++) {
+                let dCopy = new Date(startDate);
+                dCopy.setMonth(dCopy.getMonth() + i);
+                let dateStr = dCopy.toISOString().split('T')[0];
+
+                ex.push({
+                    d: dateStr,
+                    c: c,
+                    b: b,
+                    a: monthlyA,
+                    inst: `${i + 1}/${count} Taksit`,
+                    x: x ? `${x} (${i + 1}/${count})` : `${i + 1}/${count} Taksit`
+                });
+            }
+
+            localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+            window.ex = ex;
+            if (window.cloudSync) window.cloudSync.pushAll();
+            document.getElementById('installmentForm').reset();
+            let idStartD = document.getElementById('idStartD');
+            if(idStartD) idStartD.valueAsDate = new Date();
+            rd();
+            alert("Taksitler başarıyla oluşturuldu!");
+        }
+    });
+</script>
+
+    <div id="firebaseModal" class="modal">
+        <div class="modal-content" style="width:min(420px,92vw);">
+            <h3>☁️ Bulut Senkronizasyonu</h3>
+            <p style="font-size:12px;line-height:1.5;">
+                PC ve telefonun aynı verileri görmesi için Firebase Realtime Database gerekir.
+                Firebase Console'dan Web uygulaması bilgilerini buraya girin.
+            </p>
+            <input id="fbApiKey" placeholder="apiKey">
+            <input id="fbAuthDomain" placeholder="authDomain">
+            <input id="fbDatabaseURL" placeholder="databaseURL">
+            <input id="fbProjectId" placeholder="projectId">
+            <input id="fbAppId" placeholder="appId">
+            <div style="display:flex;gap:5px;margin-top:10px;">
+                <button onclick="saveFirebaseConfig()" style="background:#27ae60;">☁️ Bağla ve Senkronize Et</button>
+                <button onclick="closeFirebaseModal()" style="background:#e74c3c;">İptal</button>
+            </div>
+            <p style="font-size:10px;color:#777;margin-bottom:0;">
+                Not: Bu sürümde mevcut kullanıcı sistemi korunur; üretim ortamında gerçek Firebase Authentication kullanılması önerilir.
+            </p>
+        </div>
+    </div>
+
+<!-- BULUT SENKRONİZASYON: Firebase Realtime Database -->
+<script type="module">
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+window.cloudSync = {
+    firebaseReady: false,
+    db: null,
+    uid: null,
+    unsubscribe: null,
+    applyingRemote: false,
+    syncing: false,
+
+    async init(config) {
+        try {
+            let app;
+            if (getApps().length) {
+                app = getApp();
+            } else {
+                app = initializeApp(config);
+            }
+            this.db = getDatabase(app);
+            this.firebaseReady = true;
+            localStorage.setItem("firebaseConfig", JSON.stringify(config));
+            return true;
+        } catch (e) {
+            console.error("Firebase başlatılamadı:", e);
+            this.firebaseReady = false;
+            return false;
+        }
+    },
+
+    userKey() {
+        return (window.currentUser || "").toLowerCase().replace(/[^a-z0-9_-]/gi, "_");
+    },
+
+    dataRef() {
+        return ref(this.db, "harcama/users/" + this.userKey());
+    },
+
+    async readRemote() {
+        if (!this.firebaseReady || !this.db || !window.currentUser) return null;
+        try {
+            const snap = await get(this.dataRef());
+            return snap.exists() ? snap.val() : null;
+        } catch (e) {
+            console.error("Firebase okuma hatası:", e);
+            window.setCloudStatus("⚠️ Buluttan okuma hatası", false);
+            return null;
+        }
+    },
+
+    applyRemote(data) {
+        if (!data) return;
+        this.applyingRemote = true;
+        try {
+            if (Array.isArray(data.ex)) {
+                ex = data.ex;
+                window.ex = ex;
+                localStorage.setItem("ex_" + window.currentUser, JSON.stringify(ex));
+            }
+            if (Array.isArray(data.activeBanks)) {
+                activeBanks = data.activeBanks;
+                window.activeBanks = activeBanks;
+                localStorage.setItem("activeBanks_" + window.currentUser, JSON.stringify(activeBanks));
+            }
+            if (data.bankCutoffDays && typeof data.bankCutoffDays === "object") {
+                bankCutoffDays = data.bankCutoffDays;
+                window.bankCutoffDays = bankCutoffDays;
+                localStorage.setItem("bankCutoffDays_" + window.currentUser, JSON.stringify(bankCutoffDays));
+            }
+            if (typeof data.salary === "number") {
+                salary = data.salary;
+                window.salary = salary;
+                localStorage.setItem("salary_" + window.currentUser, String(salary));
+            }
+            if (Array.isArray(data.extraIncomes)) {
+                extraIncomes = data.extraIncomes;
+                window.extraIncomes = extraIncomes;
+                localStorage.setItem("extraIncomes_" + window.currentUser, JSON.stringify(extraIncomes));
+            }
+            if (data.layout) {
+                localStorage.setItem("layout_" + window.currentUser, JSON.stringify(data.layout));
+            }
+            if (data.theme) {
+                localStorage.setItem("theme_" + window.currentUser, data.theme);
+            }
+        } finally {
+            this.applyingRemote = false;
+        }
+    },
+
+    async save(payload) {
+        if (!this.firebaseReady || !this.db || !window.currentUser || this.applyingRemote) return false;
+        try {
+            await set(this.dataRef(), payload);
+            window.setCloudStatus("☁️ Buluta kaydedildi", true);
+            return true;
+        } catch (e) {
+            console.error("Firebase yazma hatası:", e);
+            window.setCloudStatus("⚠️ Buluta kayıt hatası", false);
+            return false;
+        }
+    },
+
+    async pushAll() {
+        if (!this.firebaseReady || !window.currentUser || this.applyingRemote) return;
+        const layout = typeof window.getLayout === "function" ? window.getLayout() : null;
+        const theme = localStorage.getItem("theme_" + window.currentUser) || "light";
+        await this.save({
+            ex: window.ex || [],
+            activeBanks: window.activeBanks || [],
+            bankCutoffDays: window.bankCutoffDays || {},
+            salary: Number(window.salary || 0),
+            extraIncomes: Array.isArray(window.extraIncomes) ? window.extraIncomes : [],
+            layout,
+            theme,
+            updatedAt: Date.now()
+        });
+    },
+
+    async syncCurrentUser() {
+        if (!this.firebaseReady || !this.db || !window.currentUser || this.syncing) return;
+        this.syncing = true;
+        try {
+            window.setCloudStatus("🔄 Bulut verisi kontrol ediliyor...", true);
+
+            // ÖNEMLİ: Telefon/PC açılırken önce bulutu oku.
+            // Böylece boş cihaz mevcut verilerin üzerine yazamaz.
+            const remote = await this.readRemote();
+
+            if (remote) {
+                this.applyRemote(remote);
+                if (typeof window.loadUserData === "function") window.loadUserData();
+                if (typeof window.renderLayout === "function") window.renderLayout();
+                if (typeof window.loadTheme === "function") window.loadTheme();
+                if (typeof window.rd === "function") window.rd();
+                window.setCloudStatus("🔄 Veriler buluttan alındı", true);
+            } else {
+                await this.pushAll();
+            }
+
+            this.listen();
+        } finally {
+            this.syncing = false;
+        }
+    },
+
+    listen() {
+        if (!this.firebaseReady || !this.db || !window.currentUser) return;
+        if (this.unsubscribe) this.unsubscribe();
+
+        this.unsubscribe = onValue(this.dataRef(), snap => {
+            const data = snap.val();
+            if (!data || this.syncing) return;
+
+            this.applyRemote(data);
+
+            if (typeof window.loadUserData === "function") window.loadUserData();
+            if (typeof window.renderLayout === "function") window.renderLayout();
+            if (typeof window.loadTheme === "function") window.loadTheme();
+            if (typeof window.rd === "function") window.rd();
+
+            window.setCloudStatus("🔄 Veriler senkronize", true);
+        }, err => {
+            console.error("Firebase dinleme hatası:", err);
+            window.setCloudStatus("⚠️ Senkronizasyon hatası", false);
+        });
+    }
+};
+
+window.setCloudStatus = function(text, ok) {
+    const el = document.getElementById("cloudStatus");
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = ok ? "#16803c" : "#b42318";
+};
+
+window.loadFirebaseConfig = async function() {
+    const raw = localStorage.getItem("firebaseConfig");
+    if (!raw) return false;
+
+    try {
+        const config = JSON.parse(raw);
+        const ok = await window.cloudSync.init(config);
+
+        if (ok && window.currentUser) {
+            await window.cloudSync.syncCurrentUser();
+        }
+
+        return ok;
+    } catch(e) {
+        console.error("Firebase ayarı okunamadı:", e);
+        return false;
+    }
+};
+
+window.saveFirebaseConfig = async function() {
+    const apiKey = document.getElementById("fbApiKey").value.trim();
+    const authDomain = document.getElementById("fbAuthDomain").value.trim();
+    const databaseURL = document.getElementById("fbDatabaseURL").value.trim();
+    const projectId = document.getElementById("fbProjectId").value.trim();
+    const appId = document.getElementById("fbAppId").value.trim();
+
+    if (!apiKey || !authDomain || !databaseURL || !projectId || !appId) {
+        alert("Firebase bilgilerinin tamamını doldurun.");
+        return;
+    }
+
+    const ok = await window.cloudSync.init({
+        apiKey,
+        authDomain,
+        databaseURL,
+        projectId,
+        appId
+    });
+
+    if (!ok) {
+        alert("Firebase bağlantısı kurulamadı. Bilgileri kontrol edin.");
+        return;
+    }
+
+    // İlk bağlantıda daima önce buluttaki kayıt okunur.
+    // Bulutta kayıt yoksa mevcut cihazdaki veriler oluşturulur.
+    await window.cloudSync.syncCurrentUser();
+
+    document.getElementById("firebaseModal").style.display = "none";
+    alert("Bulut senkronizasyonu aktif. PC ve telefon aynı veriyi kullanabilir.");
+};
+
+window.openFirebaseModal = function() {
+    const raw = localStorage.getItem("firebaseConfig");
+
+    if (raw) {
+        try {
+            const c = JSON.parse(raw);
+            document.getElementById("fbApiKey").value = c.apiKey || "";
+            document.getElementById("fbAuthDomain").value = c.authDomain || "";
+            document.getElementById("fbDatabaseURL").value = c.databaseURL || "";
+            document.getElementById("fbProjectId").value = c.projectId || "";
+            document.getElementById("fbAppId").value = c.appId || "";
+        } catch(e) {}
+    }
+
+    document.getElementById("firebaseModal").style.display = "flex";
+};
+
+window.closeFirebaseModal = function() {
+    document.getElementById("firebaseModal").style.display = "none";
+};
+
+window.addEventListener("online", async () => {
+    try {
+        if (window.cloudSync && window.cloudSync.firebaseReady && window.currentUser) {
+            await window.cloudSync.syncCurrentUser();
+        }
+    } catch(e) {
+        console.warn("Online senkron hatası:", e);
+    }
+});
+
+document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState !== "visible") return;
+
+    try {
+        if (window.cloudSync && window.cloudSync.firebaseReady && window.currentUser) {
+            await window.cloudSync.syncCurrentUser();
+        }
+    } catch(e) {
+        console.warn("Görünürlük senkron hatası:", e);
+    }
+});
+
+window.addEventListener("DOMContentLoaded", async () => {
+    await window.loadFirebaseConfig();
+});
+</script>
+
+</body>
+</html>

@@ -596,23 +596,65 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     function renderLayout() {
         let layout = getLayout();
-        layout.left = Array.isArray(layout.left) ? layout.left : [];
-        layout.right = Array.isArray(layout.right) ? layout.right : [];
-        if (!layout.left.includes('mod_income') && !layout.right.includes('mod_income')) {
-            layout.left.splice(2, 0, 'mod_income');
+        if (!layout || typeof layout !== 'object') {
+            layout = JSON.parse(JSON.stringify(defaultLayout));
         }
+
+        layout.left = Array.isArray(layout.left) ? layout.left.filter(Boolean) : [];
+        layout.right = Array.isArray(layout.right) ? layout.right.filter(Boolean) : [];
+
+        const allModules = [
+            'mod_income',
+            'mod_summary',
+            'mod_history',
+            'mod_excel',
+            'mod_addexpense',
+            'mod_banks',
+            'mod_cutoffs',
+            'mod_bankstats',
+            'mod_addinstallment'
+        ];
+
+        // Buluttan boş/eksik düzen gelirse ekranın boş kalmasını engelle.
+        const present = new Set([...layout.left, ...layout.right]);
+        defaultLayout.left.forEach(id => {
+            if (!present.has(id)) {
+                layout.left.push(id);
+                present.add(id);
+            }
+        });
+        defaultLayout.right.forEach(id => {
+            if (!present.has(id)) {
+                layout.right.push(id);
+                present.add(id);
+            }
+        });
+
+        // Artık var olmayan modülleri temizle ve tekrarları kaldır.
+        const seen = new Set();
+        layout.left = layout.left.filter(id => allModules.includes(id) && !seen.has(id) && seen.add(id));
+        layout.right = layout.right.filter(id => allModules.includes(id) && !seen.has(id) && seen.add(id));
+
         let colLeft = document.getElementById('colLeft');
         let colRight = document.getElementById('colRight');
+        if (!colLeft || !colRight) return;
+
         colLeft.innerHTML = '';
         colRight.innerHTML = '';
+
         layout.left.forEach(id => {
             let el = document.getElementById(id);
-            if(el) colLeft.appendChild(el);
+            if (el) colLeft.appendChild(el);
         });
         layout.right.forEach(id => {
             let el = document.getElementById(id);
-            if(el) colRight.appendChild(el);
+            if (el) colRight.appendChild(el);
         });
+
+        // Düzeltilmiş yerleşimi yerelde sakla.
+        if (currentUser) {
+            localStorage.setItem('layout_' + currentUser, JSON.stringify(layout));
+        }
     }
 
     function resetLayoutDefault() {

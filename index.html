@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harcama ve Borç Takibi</title>
+    <!-- MTmuhasebe build: room-sync-layout-fix-20260912 -->
     <style>
         :root {
             --bg-color: #f8f9fa;
@@ -639,15 +640,23 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         let colRight = document.getElementById('colRight');
         if (!colLeft || !colRight) return;
 
+        // ÖNEMLİ: Kolonları temizlemeden önce modül referanslarını al.
+        // Aksi halde innerHTML='' mevcut modülleri DOM'dan tamamen siler.
+        const moduleRefs = {};
+        allModules.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) moduleRefs[id] = el;
+        });
+
         colLeft.innerHTML = '';
         colRight.innerHTML = '';
 
         layout.left.forEach(id => {
-            let el = document.getElementById(id);
+            const el = moduleRefs[id];
             if (el) colLeft.appendChild(el);
         });
         layout.right.forEach(id => {
-            let el = document.getElementById(id);
+            const el = moduleRefs[id];
             if (el) colRight.appendChild(el);
         });
 

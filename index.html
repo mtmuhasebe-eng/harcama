@@ -260,7 +260,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <div class="dropdown-content">
                     <div class="dropdown-item" onclick="openProfileModal()">⚙️ Bilgileri Güncelle</div>
                     <div class="dropdown-item" onclick="openThemeModal()">🎨 Renk / Tema Değiştir</div>
-                    <div class="dropdown-item" onclick="openFirebaseModal()">☁️ Bulut Senkronizasyonu</div>
+                    <div class="dropdown-item" onclick="openCloudModal()">🏠 Oda Senkronizasyonu</div>
                     <div class="dropdown-item" onclick="resetLayoutDefault()" style="color:#2980b9;">🔄 Düzeni Sıfırla</div>
                     <div class="dropdown-item" onclick="logout()" style="color:#e74c3c;">🚪 Çıkış Yap</div>
                 </div>
@@ -547,7 +547,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(idStartD && !idStartD.value) idStartD.valueAsDate = new Date();
         
         loadTheme();
-        if (window.cloudSync && window.cloudSync.firebaseReady) window.cloudSync.listen();
+        if (window.cloudSync && window.cloudSync.cloudReady) window.cloudSync.syncCurrentUser();
         rd();
     }
 
@@ -1192,304 +1192,364 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     });
 </script>
 
-    <div id="firebaseModal" class="modal">
-        <div class="modal-content" style="width:min(420px,92vw);">
-            <h3>☁️ Bulut Senkronizasyonu</h3>
+    <div id="cloudModal" class="modal">
+        <div class="modal-content" style="width:min(430px,92vw);">
+            <h3>🏠 Oda Senkronizasyonu</h3>
             <p style="font-size:12px;line-height:1.5;">
-                PC ve telefonun aynı verileri görmesi için Firebase Realtime Database gerekir.
-                Firebase Console'dan Web uygulaması bilgilerini buraya girin.
+                PC ve telefonu eşleştirmek için bir oda kur veya mevcut odaya bağlan.
             </p>
-            <input id="fbApiKey" placeholder="apiKey">
-            <input id="fbAuthDomain" placeholder="authDomain">
-            <input id="fbDatabaseURL" placeholder="databaseURL">
-            <input id="fbProjectId" placeholder="projectId">
-            <input id="fbAppId" placeholder="appId">
-            <div style="display:flex;gap:5px;margin-top:10px;">
-                <button onclick="saveFirebaseConfig()" style="background:#27ae60;">☁️ Bağla ve Senkronize Et</button>
-                <button onclick="closeFirebaseModal()" style="background:#e74c3c;">İptal</button>
+
+            <div style="display:flex;gap:8px;margin:10px 0 14px;">
+                <button type="button" onclick="createRoom()" style="background:#27ae60;">🏠 Oda Kur</button>
+                <button type="button" onclick="showJoinRoom()" style="background:#2980b9;">🔗 Odaya Bağlan</button>
             </div>
-            <p style="font-size:10px;color:#777;margin-bottom:0;">
-                Not: Bu sürümde mevcut kullanıcı sistemi korunur; üretim ortamında gerçek Firebase Authentication kullanılması önerilir.
-            </p>
+
+            <div id="roomCreateBox" style="display:none;padding:12px;border:1px solid #244867;border-radius:10px;background:#091d31;">
+                <div style="font-size:11px;color:#8fa7bf;margin-bottom:6px;">Oda Kodun</div>
+                <div id="createdRoomCode" style="font-size:24px;font-weight:800;letter-spacing:2px;text-align:center;padding:10px;color:#fff;"></div>
+                <button type="button" onclick="copyRoomCode()">📋 Kodu Kopyala</button>
+                <div style="font-size:10px;color:#8fa7bf;margin-top:8px;">
+                    Telefonda “Odaya Bağlan” seçip bu kodu gir.
+                </div>
+            </div>
+
+            <div id="roomJoinBox" style="display:none;">
+                <input id="roomCodeInput" placeholder="Oda Kodunu Gir" style="text-transform:uppercase;">
+                <button type="button" onclick="joinRoom()">🔗 Odaya Bağlan</button>
+            </div>
+
+            <div style="display:flex;gap:5px;margin-top:12px;">
+                <button onclick="closeCloudModal()" style="background:#e74c3c;">Kapat</button>
+            </div>
         </div>
     </div>
 
-<!-- BULUT SENKRONİZASYON: Firebase Realtime Database -->
-<script type="module">
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getDatabase, ref, onValue, get, set } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+    const POLL_MS = 5000;
 
-window.cloudSync = {
-    firebaseReady: false,
-    db: null,
-    uid: null,
-    unsubscribe: null,
-    applyingRemote: false,
-    syncing: false,
+    window.setCloudStatus = function(text, ok) {
+        const el = document.getElementById("cloudStatus");
+        if (!el) return;
+        el.textContent = text;
+        el.style.color = ok ? "#79d7a5" : "#ff8d8d";
+    };
 
-    async init(config) {
-        try {
-            let app;
-            if (getApps().length) {
-                app = getApp();
-            } else {
-                app = initializeApp(config);
+    window.cloudSync = {
+        cloudReady: false,
+        client: null,
+        syncCode: "",
+        applyingRemote: false,
+        syncing: false,
+        lastRemoteUpdatedAt: 0,
+        pollTimer: null,
+
+        async init(config) {
+            try {
+                if (!window.supabase || !window.supabase.createClient) {
+                    throw new Error("Supabase kütüphanesi yüklenemedi.");
+                }
+                this.client = window.supabase.createClient("https://psmfwetypeeetrjzdxzb.supabase.co", "sb_publishable_PAAJCMDbrxhl9WXlAUp4qA_ikad_Oi5");
+                this.syncCode = String(config.syncCode || "").trim().toUpperCase();
+                if (this.syncCode.length < 8) throw new Error("Senkron kodu en az 8 karakter olmalı.");
+                this.cloudReady = true;
+                localStorage.setItem("supabaseConfig", JSON.stringify({ syncCode: this.syncCode }));
+                window.setCloudStatus("☁️ Bulut bağlantısı hazır", true);
+                this.startPolling();
+                return true;
+            } catch (e) {
+                console.error("Bulut başlatılamadı:", e);
+                this.cloudReady = false;
+                window.setCloudStatus("⚠️ Bulut bağlantısı kurulamadı", false);
+                return false;
             }
-            this.db = getDatabase(app);
-            this.firebaseReady = true;
-            localStorage.setItem("firebaseConfig", JSON.stringify(config));
-            return true;
-        } catch (e) {
-            console.error("Firebase başlatılamadı:", e);
-            this.firebaseReady = false;
-            return false;
-        }
-    },
+        },
 
-    userKey() {
-        return (window.currentUser || "").toLowerCase().replace(/[^a-z0-9_-]/gi, "_");
-    },
-
-    dataRef() {
-        return ref(this.db, "harcama/users/" + this.userKey());
-    },
-
-    async readRemote() {
-        if (!this.firebaseReady || !this.db || !window.currentUser) return null;
-        try {
-            const snap = await get(this.dataRef());
-            return snap.exists() ? snap.val() : null;
-        } catch (e) {
-            console.error("Firebase okuma hatası:", e);
-            window.setCloudStatus("⚠️ Buluttan okuma hatası", false);
-            return null;
-        }
-    },
-
-    applyRemote(data) {
-        if (!data) return;
-        this.applyingRemote = true;
-        try {
-            if (Array.isArray(data.ex)) {
-                ex = data.ex;
-                window.ex = ex;
-                localStorage.setItem("ex_" + window.currentUser, JSON.stringify(ex));
+        async readRemote() {
+            if (!this.cloudReady || !this.client || !this.syncCode) return null;
+            try {
+                const { data, error } = await this.client.rpc("mtmuhasebe_get", {
+                    p_sync_code: this.syncCode
+                });
+                if (error) throw error;
+                return data || null;
+            } catch (e) {
+                console.error("Bulut okuma hatası:", e);
+                window.setCloudStatus("⚠️ Bulut okuma hatası", false);
+                return null;
             }
-            if (Array.isArray(data.activeBanks)) {
-                activeBanks = data.activeBanks;
-                window.activeBanks = activeBanks;
-                localStorage.setItem("activeBanks_" + window.currentUser, JSON.stringify(activeBanks));
+        },
+
+        applyRemote(data) {
+            if (!data || !window.currentUser) return;
+            this.applyingRemote = true;
+            try {
+                if (Array.isArray(data.ex)) {
+                    ex = data.ex;
+                    window.ex = ex;
+                    localStorage.setItem("ex_" + window.currentUser, JSON.stringify(ex));
+                }
+                if (Array.isArray(data.activeBanks)) {
+                    activeBanks = data.activeBanks;
+                    window.activeBanks = activeBanks;
+                    localStorage.setItem("activeBanks_" + window.currentUser, JSON.stringify(activeBanks));
+                }
+                if (data.bankCutoffDays && typeof data.bankCutoffDays === "object") {
+                    bankCutoffDays = data.bankCutoffDays;
+                    window.bankCutoffDays = bankCutoffDays;
+                    localStorage.setItem("bankCutoffDays_" + window.currentUser, JSON.stringify(bankCutoffDays));
+                }
+                if (data.salary !== undefined && data.salary !== null) {
+                    salary = Number(data.salary) || 0;
+                    window.salary = salary;
+                    localStorage.setItem("salary_" + window.currentUser, String(salary));
+                }
+                if (Array.isArray(data.extraIncomes)) {
+                    extraIncomes = data.extraIncomes;
+                    window.extraIncomes = extraIncomes;
+                    localStorage.setItem("extraIncomes_" + window.currentUser, JSON.stringify(extraIncomes));
+                }
+                if (data.layout) {
+                    localStorage.setItem("layout_" + window.currentUser, JSON.stringify(data.layout));
+                }
+                if (data.theme) {
+                    localStorage.setItem("theme_" + window.currentUser, data.theme);
+                }
+                this.lastRemoteUpdatedAt = Number(data.updatedAt || 0);
+            } finally {
+                this.applyingRemote = false;
             }
-            if (data.bankCutoffDays && typeof data.bankCutoffDays === "object") {
-                bankCutoffDays = data.bankCutoffDays;
-                window.bankCutoffDays = bankCutoffDays;
-                localStorage.setItem("bankCutoffDays_" + window.currentUser, JSON.stringify(bankCutoffDays));
+        },
+
+        async save(payload) {
+            if (!this.cloudReady || !this.client || !this.syncCode || this.applyingRemote) return false;
+            try {
+                const { data, error } = await this.client.rpc("mtmuhasebe_save", {
+                    p_sync_code: this.syncCode,
+                    p_payload: payload
+                });
+                if (error) throw error;
+                if (data && data.updatedAt) this.lastRemoteUpdatedAt = Number(data.updatedAt);
+                window.setCloudStatus("☁️ Buluta kaydedildi", true);
+                return true;
+            } catch (e) {
+                console.error("Bulut yazma hatası:", e);
+                window.setCloudStatus("⚠️ Buluta kayıt hatası", false);
+                return false;
             }
-            if (typeof data.salary === "number") {
-                salary = data.salary;
-                window.salary = salary;
-                localStorage.setItem("salary_" + window.currentUser, String(salary));
-            }
-            if (Array.isArray(data.extraIncomes)) {
-                extraIncomes = data.extraIncomes;
-                window.extraIncomes = extraIncomes;
-                localStorage.setItem("extraIncomes_" + window.currentUser, JSON.stringify(extraIncomes));
-            }
-            if (data.layout) {
-                localStorage.setItem("layout_" + window.currentUser, JSON.stringify(data.layout));
-            }
-            if (data.theme) {
-                localStorage.setItem("theme_" + window.currentUser, data.theme);
-            }
-        } finally {
-            this.applyingRemote = false;
-        }
-    },
+        },
 
-    async save(payload) {
-        if (!this.firebaseReady || !this.db || !window.currentUser || this.applyingRemote) return false;
-        try {
-            await set(this.dataRef(), payload);
-            window.setCloudStatus("☁️ Buluta kaydedildi", true);
-            return true;
-        } catch (e) {
-            console.error("Firebase yazma hatası:", e);
-            window.setCloudStatus("⚠️ Buluta kayıt hatası", false);
-            return false;
-        }
-    },
+        async pushAll() {
+            if (!this.cloudReady || !window.currentUser || this.applyingRemote) return;
+            if (typeof window.loadUserData === "function") window.loadUserData();
+            const layout = typeof window.getLayout === "function" ? window.getLayout() : null;
+            const theme = localStorage.getItem("theme_" + window.currentUser) || "light";
+            await this.save({
+                ex: window.ex || [],
+                activeBanks: window.activeBanks || [],
+                bankCutoffDays: window.bankCutoffDays || {},
+                salary: Number(window.salary || 0),
+                extraIncomes: Array.isArray(window.extraIncomes) ? window.extraIncomes : [],
+                layout,
+                theme
+            });
+        },
 
-    async pushAll() {
-        if (!this.firebaseReady || !window.currentUser || this.applyingRemote) return;
-        const layout = typeof window.getLayout === "function" ? window.getLayout() : null;
-        const theme = localStorage.getItem("theme_" + window.currentUser) || "light";
-        await this.save({
-            ex: window.ex || [],
-            activeBanks: window.activeBanks || [],
-            bankCutoffDays: window.bankCutoffDays || {},
-            salary: Number(window.salary || 0),
-            extraIncomes: Array.isArray(window.extraIncomes) ? window.extraIncomes : [],
-            layout,
-            theme,
-            updatedAt: Date.now()
-        });
-    },
-
-    async syncCurrentUser() {
-        if (!this.firebaseReady || !this.db || !window.currentUser || this.syncing) return;
-        this.syncing = true;
-        try {
-            window.setCloudStatus("🔄 Bulut verisi kontrol ediliyor...", true);
-
-            // ÖNEMLİ: Telefon/PC açılırken önce bulutu oku.
-            // Böylece boş cihaz mevcut verilerin üzerine yazamaz.
-            const remote = await this.readRemote();
-
-            if (remote) {
-                this.applyRemote(remote);
-                if (typeof window.loadUserData === "function") window.loadUserData();
-                if (typeof window.renderLayout === "function") window.renderLayout();
-                if (typeof window.loadTheme === "function") window.loadTheme();
-                if (typeof window.rd === "function") window.rd();
-                window.setCloudStatus("🔄 Veriler buluttan alındı", true);
-            } else {
-                await this.pushAll();
-            }
-
-            this.listen();
-        } finally {
-            this.syncing = false;
-        }
-    },
-
-    listen() {
-        if (!this.firebaseReady || !this.db || !window.currentUser) return;
-        if (this.unsubscribe) this.unsubscribe();
-
-        this.unsubscribe = onValue(this.dataRef(), snap => {
-            const data = snap.val();
-            if (!data || this.syncing) return;
-
-            this.applyRemote(data);
-
+        refreshUI() {
             if (typeof window.loadUserData === "function") window.loadUserData();
             if (typeof window.renderLayout === "function") window.renderLayout();
             if (typeof window.loadTheme === "function") window.loadTheme();
             if (typeof window.rd === "function") window.rd();
+        },
 
-            window.setCloudStatus("🔄 Veriler senkronize", true);
-        }, err => {
-            console.error("Firebase dinleme hatası:", err);
-            window.setCloudStatus("⚠️ Senkronizasyon hatası", false);
-        });
+        async syncCurrentUser() {
+            if (!this.cloudReady || !this.client || !window.currentUser || this.syncing) return;
+            this.syncing = true;
+            try {
+                window.setCloudStatus("🔄 Bulut verisi kontrol ediliyor...", true);
+                const remote = await this.readRemote();
+                if (remote) {
+                    this.applyRemote(remote);
+                    this.refreshUI();
+                    window.setCloudStatus("🔄 Veriler buluttan alındı", true);
+                } else {
+                    await this.pushAll();
+                }
+            } finally {
+                this.syncing = false;
+            }
+        },
+
+        async poll() {
+            if (!this.cloudReady || !this.client || !window.currentUser || this.syncing || this.applyingRemote) return;
+            const remote = await this.readRemote();
+            if (!remote) return;
+            const remoteTime = Number(remote.updatedAt || 0);
+            if (remoteTime > this.lastRemoteUpdatedAt) {
+                this.applyRemote(remote);
+                this.refreshUI();
+                window.setCloudStatus("🔄 PC + Telefon senkronize", true);
+            }
+        },
+
+        startPolling() {
+            if (this.pollTimer) clearInterval(this.pollTimer);
+            this.pollTimer = setInterval(() => this.poll(), POLL_MS);
+        }
+    };
+
+    const FIXED_SUPABASE_URL = "https://psmfwetypeeetrjzdxzb.supabase.co";
+    const FIXED_SUPABASE_KEY = "sb_publishable_PAAJCMDbrxhl9WXlAUp4qA_ikad_Oi5";
+
+    function normalizeRoomCode(code) {
+        return String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     }
-};
 
-window.setCloudStatus = function(text, ok) {
-    const el = document.getElementById("cloudStatus");
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = ok ? "#16803c" : "#b42318";
-};
+    function formatRoomCode(code) {
+        const c = normalizeRoomCode(code);
+        return c.match(/.{1,4}/g)?.join("-") || c;
+    }
 
-window.loadFirebaseConfig = async function() {
-    const raw = localStorage.getItem("firebaseConfig");
-    if (!raw) return false;
+    window.loadCloudConfig = async function() {
+        const raw = localStorage.getItem("supabaseConfig");
+        if (!raw) {
+            window.setCloudStatus("🏠 Oda bağlantısı kurulmadı", false);
+            return false;
+        }
+        try {
+            const config = JSON.parse(raw);
+            const ok = await window.cloudSync.init({
+                url: FIXED_SUPABASE_URL,
+                key: FIXED_SUPABASE_KEY,
+                syncCode: normalizeRoomCode(config.syncCode)
+            });
+            if (ok && window.currentUser) await window.cloudSync.syncCurrentUser();
+            return ok;
+        } catch (e) {
+            console.error("Oda ayarı okunamadı:", e);
+            return false;
+        }
+    };
 
-    try {
-        const config = JSON.parse(raw);
-        const ok = await window.cloudSync.init(config);
+    window.openCloudModal = function() {
+        const createBox = document.getElementById("roomCreateBox");
+        const joinBox = document.getElementById("roomJoinBox");
+        if (createBox) createBox.style.display = "none";
+        if (joinBox) joinBox.style.display = "none";
 
-        if (ok && window.currentUser) {
-            await window.cloudSync.syncCurrentUser();
+        const raw = localStorage.getItem("supabaseConfig");
+        if (raw) {
+            try {
+                const c = JSON.parse(raw);
+                const code = normalizeRoomCode(c.syncCode);
+                if (code) {
+                    if (createBox) createBox.style.display = "block";
+                    const out = document.getElementById("createdRoomCode");
+                    if (out) out.textContent = formatRoomCode(code);
+                }
+            } catch(e) {}
+        }
+        document.getElementById("cloudModal").style.display = "flex";
+    };
+
+    window.closeCloudModal = function() {
+        document.getElementById("cloudModal").style.display = "none";
+    };
+
+    window.createRoom = async function() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        const bytes = new Uint8Array(12);
+        crypto.getRandomValues(bytes);
+        let code = "";
+        for (let i = 0; i < bytes.length; i++) code += chars[bytes[i] % chars.length];
+
+        const ok = await window.cloudSync.init({
+            url: FIXED_SUPABASE_URL,
+            key: FIXED_SUPABASE_KEY,
+            syncCode: code
+        });
+        if (!ok) {
+            alert("Oda kurulamadı. İnternet bağlantısını kontrol et.");
+            return;
         }
 
-        return ok;
-    } catch(e) {
-        console.error("Firebase ayarı okunamadı:", e);
-        return false;
-    }
-};
+        await window.cloudSync.pushAll();
 
-window.saveFirebaseConfig = async function() {
-    const apiKey = document.getElementById("fbApiKey").value.trim();
-    const authDomain = document.getElementById("fbAuthDomain").value.trim();
-    const databaseURL = document.getElementById("fbDatabaseURL").value.trim();
-    const projectId = document.getElementById("fbProjectId").value.trim();
-    const appId = document.getElementById("fbAppId").value.trim();
+        document.getElementById("roomJoinBox").style.display = "none";
+        document.getElementById("roomCreateBox").style.display = "block";
+        document.getElementById("createdRoomCode").textContent = formatRoomCode(code);
+        window.setCloudStatus("🏠 Oda aktif: " + formatRoomCode(code), true);
+    };
 
-    if (!apiKey || !authDomain || !databaseURL || !projectId || !appId) {
-        alert("Firebase bilgilerinin tamamını doldurun.");
-        return;
-    }
+    window.showJoinRoom = function() {
+        document.getElementById("roomCreateBox").style.display = "none";
+        document.getElementById("roomJoinBox").style.display = "block";
+        const input = document.getElementById("roomCodeInput");
+        if (input) {
+            input.value = "";
+            input.focus();
+        }
+    };
 
-    const ok = await window.cloudSync.init({
-        apiKey,
-        authDomain,
-        databaseURL,
-        projectId,
-        appId
+    window.joinRoom = async function() {
+        const input = document.getElementById("roomCodeInput");
+        const code = normalizeRoomCode(input ? input.value : "");
+        if (code.length < 8) {
+            alert("Geçerli oda kodunu gir.");
+            return;
+        }
+
+        const ok = await window.cloudSync.init({
+            url: FIXED_SUPABASE_URL,
+            key: FIXED_SUPABASE_KEY,
+            syncCode: code
+        });
+        if (!ok) {
+            alert("Odaya bağlanılamadı.");
+            return;
+        }
+
+        const remote = await window.cloudSync.readRemote();
+        if (!remote) {
+            alert("Bu oda bulunamadı. Kodu kontrol et.");
+            return;
+        }
+
+        window.cloudSync.applyRemote(remote);
+        window.cloudSync.refreshUI();
+        document.getElementById("cloudModal").style.display = "none";
+        window.setCloudStatus("🔗 Odaya bağlı: " + formatRoomCode(code), true);
+        alert("Odaya bağlanıldı. Veriler senkronize edildi.");
+    };
+
+    window.copyRoomCode = async function() {
+        const code = document.getElementById("createdRoomCode")?.textContent || "";
+        try {
+            await navigator.clipboard.writeText(code);
+            alert("Oda kodu kopyalandı: " + code);
+        } catch(e) {
+            alert("Oda kodun: " + code);
+        }
+    };
+
+    window.addEventListener("online", async () => {
+        if (window.cloudSync && window.cloudSync.cloudReady && window.currentUser) {
+            await window.cloudSync.syncCurrentUser();
+        }
     });
 
-    if (!ok) {
-        alert("Firebase bağlantısı kurulamadı. Bilgileri kontrol edin.");
-        return;
-    }
-
-    // İlk bağlantıda daima önce buluttaki kayıt okunur.
-    // Bulutta kayıt yoksa mevcut cihazdaki veriler oluşturulur.
-    await window.cloudSync.syncCurrentUser();
-
-    document.getElementById("firebaseModal").style.display = "none";
-    alert("Bulut senkronizasyonu aktif. PC ve telefon aynı veriyi kullanabilir.");
-};
-
-window.openFirebaseModal = function() {
-    const raw = localStorage.getItem("firebaseConfig");
-
-    if (raw) {
-        try {
-            const c = JSON.parse(raw);
-            document.getElementById("fbApiKey").value = c.apiKey || "";
-            document.getElementById("fbAuthDomain").value = c.authDomain || "";
-            document.getElementById("fbDatabaseURL").value = c.databaseURL || "";
-            document.getElementById("fbProjectId").value = c.projectId || "";
-            document.getElementById("fbAppId").value = c.appId || "";
-        } catch(e) {}
-    }
-
-    document.getElementById("firebaseModal").style.display = "flex";
-};
-
-window.closeFirebaseModal = function() {
-    document.getElementById("firebaseModal").style.display = "none";
-};
-
-window.addEventListener("online", async () => {
-    try {
-        if (window.cloudSync && window.cloudSync.firebaseReady && window.currentUser) {
+    document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" &&
+            window.cloudSync && window.cloudSync.cloudReady && window.currentUser) {
             await window.cloudSync.syncCurrentUser();
         }
-    } catch(e) {
-        console.warn("Online senkron hatası:", e);
-    }
-});
+    });
 
-document.addEventListener("visibilitychange", async () => {
-    if (document.visibilityState !== "visible") return;
-
-    try {
-        if (window.cloudSync && window.cloudSync.firebaseReady && window.currentUser) {
-            await window.cloudSync.syncCurrentUser();
-        }
-    } catch(e) {
-        console.warn("Görünürlük senkron hatası:", e);
-    }
-});
-
-window.addEventListener("DOMContentLoaded", async () => {
-    await window.loadFirebaseConfig();
-});
+    window.addEventListener("DOMContentLoaded", async () => {
+        await window.loadCloudConfig();
+    });
+})();
 </script>
 
 </body>

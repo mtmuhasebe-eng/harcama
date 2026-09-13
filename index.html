@@ -215,7 +215,130 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 @media(max-width:1000px){#appScreen{padding-left:88px!important}.pro-sidebar{width:74px;padding:18px 9px}.pro-mark{width:44px;height:44px}.pro-sidebar button,.pro-side-bottom button{justify-content:center;padding:11px 8px!important}.pro-sidebar button span,.pro-side-bottom button span{display:none}.pro-side-bottom{left:8px;right:8px}.pro-banner{margin-top:2px}.dashboard-grid{grid-template-columns:1fr!important}}
 @media(max-width:600px){body{padding:0!important}.box{border-radius:0!important}.pro-sidebar{display:none}#appScreen{padding-left:12px!important;padding-right:12px!important}.pro-banner{min-height:84px;padding:14px}.banner-date{display:none}.pro-banner strong{font-size:16px}.dashboard-grid{display:block!important}.draggable-module{margin-bottom:12px!important}}
 
-    </style>
+    
+/* ===== MOBİL UYUMLULUK v2 ===== */
+.mobile-bottom-nav{display:none}
+.recurring-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr .8fr;gap:7px;align-items:end}
+.recurring-list{display:grid;gap:7px;margin-top:10px}
+.recurring-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--border-color);border-radius:9px;background:var(--card-bg);font-size:12px}
+.recurring-row small{display:block;color:var(--muted);margin-top:3px}
+@media(max-width:600px){
+  body{padding:0 0 76px!important;overflow-x:hidden}
+  #appScreen{padding:10px 10px 18px!important;max-width:100%!important}
+  .pro-banner{min-height:68px!important;padding:10px 12px!important;margin-bottom:10px!important}
+  .banner-icon{width:38px!important;height:38px!important;font-size:18px!important}
+  .pro-banner strong{font-size:14px!important}
+  .pro-banner small{font-size:10px!important}
+  #appScreen>div[style*="justify-content:space-between"]{gap:8px!important;align-items:flex-start!important}
+  #appScreen h1{font-size:17px!important;text-align:left!important}
+  .user-badge{padding:7px 9px!important;font-size:11px!important}
+  .dropdown-content{position:fixed!important;right:10px!important;top:92px!important;min-width:210px!important;z-index:999!important}
+  .dashboard-grid,.drop-column{display:block!important;width:100%!important}
+  .draggable-module{padding:11px!important;margin-bottom:10px!important;border-radius:12px!important;cursor:default!important}
+  .draggable-module::before{display:none!important}
+  .cards,.income-cards{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
+  .card,.income-card{padding:9px!important}
+  .card p,.income-card b{font-size:13px!important}
+  input,select,button{min-height:42px;font-size:16px!important}
+  .btn-container{display:grid!important;grid-template-columns:1fr 1fr!important}
+  .excel-btns{display:grid!important;grid-template-columns:1fr 1fr!important}
+  .excel-btns>*{min-width:0!important}
+  .income-form-grid,.recurring-grid{grid-template-columns:1fr 1fr!important}
+  .recurring-grid .recurring-wide{grid-column:1/-1}
+  .recurring-row{grid-template-columns:1fr auto}
+  .summary-grid{grid-template-columns:1fr 1fr!important}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:720px}
+  .mobile-bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;height:64px;background:rgba(5,17,31,.97);border-top:1px solid #1d3b5a;z-index:1000;padding:5px 4px max(5px,env(safe-area-inset-bottom));backdrop-filter:blur(14px)}
+  .mobile-bottom-nav button{background:transparent!important;border:0!important;box-shadow:none!important;padding:4px 2px!important;min-height:50px!important;font-size:10px!important;color:#a9c1d8!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .mobile-bottom-nav button b{font-size:20px;line-height:20px;color:#62b5ff}
+}
+
+
+/* ===== FİNAL: SABİT MENÜ + TEK İÇERİK SAYFASI ===== */
+:root{--fixed-sidebar:220px}
+#appScreen{
+  max-width:1450px!important;
+  min-height:calc(100vh - 24px);
+  padding-left:calc(var(--fixed-sidebar) + 30px)!important;
+}
+.pro-sidebar{
+  position:absolute!important;
+  left:0!important;top:0!important;bottom:0!important;
+  width:var(--fixed-sidebar)!important;
+  display:flex!important;
+}
+.pro-sidebar button.active-menu{
+  background:linear-gradient(90deg,#087cff,#0b5fe8)!important;
+  color:#fff!important;
+  box-shadow:0 8px 24px rgba(12,113,240,.25)!important;
+}
+.pro-sidebar button:first-child:not(.active-menu){background:transparent!important;box-shadow:none!important;color:#a9c1d8!important}
+.dashboard-grid{display:block!important;width:100%!important}
+.drop-column{display:contents!important}
+.draggable-module{
+  display:none!important;width:100%!important;max-width:none!important;
+  margin-bottom:14px!important;cursor:default!important;
+}
+.draggable-module.app-page-visible{display:block!important}
+.draggable-module::before{display:none!important}
+.app-page-title{display:flex;justify-content:space-between;align-items:center;margin:0 0 12px;padding:0 2px}
+.app-page-title h2{margin:0!important;border:0!important;font-size:20px!important}
+.app-page-title small{color:var(--muted);font-size:11px}
+.mobile-more-panel{display:none}
+.mobile-bottom-nav{display:none!important}
+
+@media(max-width:1000px) and (min-width:601px){
+  :root{--fixed-sidebar:76px}
+  #appScreen{padding-left:96px!important}
+  .pro-sidebar{width:76px!important}
+}
+@media(max-width:600px){
+  body{padding:0 0 72px!important}
+  #appScreen{min-height:100vh!important;padding:10px 10px 82px!important}
+  .pro-sidebar{display:none!important}
+  .pro-banner{display:none!important}
+  #appScreen>div[style*="justify-content:space-between"]{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg,rgba(5,18,32,.98),rgba(5,18,32,.92));
+    margin:-10px -10px 10px!important;padding:12px 10px 10px!important;
+    border-bottom:1px solid #173b5b;backdrop-filter:blur(10px);
+  }
+  #appScreen h1{font-size:18px!important}
+  .dashboard-grid{display:block!important}
+  .draggable-module{margin-bottom:10px!important;padding:11px!important}
+  .cards,.income-cards{grid-template-columns:1fr!important}
+  .income-form-grid,.recurring-grid{grid-template-columns:1fr!important}
+  .recurring-grid .recurring-wide{grid-column:auto!important}
+  .mobile-bottom-nav{
+    display:grid!important;grid-template-columns:repeat(5,1fr)!important;
+    position:fixed!important;left:0!important;right:0!important;bottom:0!important;
+    height:66px!important;padding:5px 4px max(5px,env(safe-area-inset-bottom))!important;
+    z-index:1400!important;background:rgba(4,18,33,.98)!important;
+    border-top:1px solid #1b456d!important;backdrop-filter:blur(15px)!important;
+  }
+  .mobile-bottom-nav button{
+    display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+    gap:2px!important;background:transparent!important;border:0!important;box-shadow:none!important;
+    min-height:52px!important;padding:3px 1px!important;font-size:9px!important;color:#a9c1d8!important;
+  }
+  .mobile-bottom-nav button b{font-size:19px!important;color:#62b5ff!important}
+  .mobile-bottom-nav button.mobile-active{background:#0d3b67!important;color:#fff!important;border-radius:10px!important}
+  .mobile-more-panel{
+    display:none;position:fixed;left:8px;right:8px;bottom:72px;z-index:1390;
+    background:rgba(5,22,39,.99);border:1px solid #1d4d76;border-radius:16px;
+    box-shadow:0 -12px 35px rgba(0,0,0,.4);padding:10px;
+    grid-template-columns:1fr 1fr;gap:7px;
+  }
+  .mobile-more-panel.open{display:grid}
+  .mobile-more-panel button{
+    min-height:44px!important;background:#0b2945!important;text-align:left!important;
+    padding:10px!important;font-size:12px!important;border:1px solid #17466f!important;
+  }
+  table{min-width:720px}
+}
+
+</style>
 </head>
 <body id="mainBody" data-theme="light">
 
@@ -236,14 +359,15 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         <aside class="pro-sidebar" aria-label="Ana menü">
             <div class="pro-mark">▥</div>
             <nav>
-                <button type="button" onclick="proGo('mod_summary')">⌂ <span>Ana Sayfa</span></button>
-                <button type="button" onclick="proGo('mod_addexpense')">＋ <span>Harcama Ekle</span></button>
-                <button type="button" onclick="proGo('mod_income')">₺ <span>Gelir Ekle</span></button>
-                <button type="button" onclick="proGo('mod_history')">☷ <span>Tüm Harcamalar</span></button>
-                <button type="button" onclick="proGo('mod_excel')">▣ <span>Raporlar</span></button>
-                <button type="button" onclick="proGo('mod_banks')">▤ <span>Banka Hesapları</span></button>
-                <button type="button" onclick="proGo('mod_cutoffs')">◫ <span>Kesim Günleri</span></button>
-                <button type="button" onclick="proGo('mod_addinstallment')">◈ <span>Borç & Taksitler</span></button>
+                <button type="button" onclick="appNavigate('home',this)" data-page="home">⌂ <span>Ana Sayfa</span></button>
+                <button type="button" onclick="appNavigate('expense',this)" data-page="expense">＋ <span>Harcama Ekle</span></button>
+                <button type="button" onclick="appNavigate('income',this)" data-page="income">₺ <span>Gelir Ekle</span></button>
+                <button type="button" onclick="appNavigate('history',this)" data-page="history">☷ <span>Tüm Harcamalar</span></button>
+                <button type="button" onclick="appNavigate('reports',this)" data-page="reports">▣ <span>Raporlar</span></button>
+                <button type="button" onclick="appNavigate('banks',this)" data-page="banks">▤ <span>Banka Hesapları</span></button>
+                <button type="button" onclick="appNavigate('cutoffs',this)" data-page="cutoffs">◫ <span>Kesim Günleri</span></button>
+                <button type="button" onclick="appNavigate('installments',this)" data-page="installments">◈ <span>Borç & Taksitler</span></button>
+                            <button type="button" onclick="appNavigate('recurring',this)" data-page="recurring">↻ <span>Aylık Standart Harcamalar</span></button>
             </nav>
             <div class="pro-side-bottom">
                 <button type="button" onclick="openThemeModal()">◉ <span>Tema Değiştir</span></button>
@@ -270,10 +394,30 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             </div>
         </div>
         
+        <div class="app-page-title"><div><h2 id="appPageTitle">Ana Sayfa</h2><small id="appPageHint">Finansal özetin</small></div></div>
         <div class="dashboard-grid">
             <div id="colLeft" class="drop-column" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
             <div id="colRight" class="drop-column" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
         </div>
+    </div>
+
+
+    <nav class="mobile-bottom-nav" aria-label="Mobil menü">
+        <button type="button" class="mobile-active" data-mobile-page="home" onclick="appNavigate('home');setMobileActive(this)"><b>⌂</b><span>Ana Sayfa</span></button>
+        <button type="button" data-mobile-page="expense" onclick="appNavigate('expense');setMobileActive(this)"><b>＋</b><span>Harcama</span></button>
+        <button type="button" data-mobile-page="income" onclick="appNavigate('income');setMobileActive(this)"><b>₺</b><span>Gelir</span></button>
+        <button type="button" data-mobile-page="reports" onclick="appNavigate('reports');setMobileActive(this)"><b>▣</b><span>Raporlar</span></button>
+        <button type="button" onclick="toggleMobileMore(this)"><b>☰</b><span>Diğer</span></button>
+    </nav>
+    <div class="mobile-more-panel" id="mobileMorePanel">
+        <button type="button" onclick="appNavigate('history');closeMobileMore()">☷ Tüm Harcamalar</button>
+        <button type="button" onclick="appNavigate('banks');closeMobileMore()">▤ Banka Hesapları</button>
+        <button type="button" onclick="appNavigate('cutoffs');closeMobileMore()">◫ Kesim Günleri</button>
+        <button type="button" onclick="appNavigate('installments');closeMobileMore()">◈ Borç & Taksitler</button>
+        <button type="button" onclick="appNavigate('recurring');closeMobileMore()">↻ Aylık Standartlar</button>
+        <button type="button" onclick="openThemeModal();closeMobileMore()">◉ Tema</button>
+        <button type="button" onclick="openProfileModal();closeMobileMore()">● Profil</button>
+        <button type="button" onclick="logout()" style="color:#ff7373!important">↪ Çıkış Yap</button>
     </div>
 
     <!-- GİZLİ ŞABLON BLOKLARI -->
@@ -337,6 +481,25 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     <button type="button" id="cancelEdit" onclick="resetForm()">İptal</button>
                 </div>
             </form>
+        </div>
+
+
+        <div id="mod_recurring" class="draggable-module" draggable="true" ondragstart="drag(event)">
+            <h2>🔁 Aylık Standart Harcamalar</h2>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">Telefon, spor, internet, aidat gibi her ay tekrarlanan giderleri bir kez tanımla.</div>
+            <form id="recurringForm">
+                <div class="recurring-grid">
+                    <input class="recurring-wide" type="text" id="recName" placeholder="Harcama adı (Telefon faturası)" required>
+                    <select id="recCategory">
+                        <option>Fatura</option><option>Spor</option><option>Market</option><option>Ulaşım</option><option>Alışveriş</option><option>Diğer</option>
+                    </select>
+                    <select id="recBank"></select>
+                    <input type="text" inputmode="decimal" id="recAmount" placeholder="Tutar (TL)" onkeypress="return isNumberKey(event)" required>
+                    <input type="number" id="recDay" min="1" max="31" value="1" placeholder="Gün" required>
+                </div>
+                <button type="submit" style="margin-top:2px;">Aylık Harcama Ekle</button>
+            </form>
+            <div id="recurringList" class="recurring-list"></div>
         </div>
 
         <div id="mod_addinstallment" class="draggable-module" draggable="true" ondragstart="drag(event)">
@@ -450,12 +613,73 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 
+
+    const APP_PAGES = {
+        home: {title:'Ana Sayfa', hint:'Finansal durumunu kolayca takip et.', modules:['mod_income','mod_summary']},
+        expense: {title:'Harcama Ekle', hint:'Yeni harcamanı kaydet.', modules:['mod_addexpense']},
+        income: {title:'Gelir Ekle', hint:'Maaş ve ek gelirlerini yönet.', modules:['mod_income']},
+        history: {title:'Tüm Harcamalar', hint:'Harcama geçmişini görüntüle ve düzenle.', modules:['mod_history']},
+        reports: {title:'Raporlar', hint:'Verilerini Excel veya PDF olarak al.', modules:['mod_excel']},
+        banks: {title:'Banka Hesapları', hint:'Kullandığın banka ve kartları yönet.', modules:['mod_banks','mod_bankstats']},
+        cutoffs: {title:'Kesim Günleri', hint:'Kart kesim günlerini düzenle.', modules:['mod_cutoffs']},
+        installments: {title:'Borç & Taksitler', hint:'Taksitli harcamalarını oluştur ve takip et.', modules:['mod_addinstallment']},
+        recurring: {title:'Aylık Standart Harcamalar', hint:'Telefon, spor, internet gibi tekrarlanan giderler.', modules:['mod_recurring']}
+    };
+    let currentAppPage = 'home';
+
+    function applyPageVisibility(){
+        const page = APP_PAGES[currentAppPage] || APP_PAGES.home;
+        document.querySelectorAll('.draggable-module').forEach(el=>{
+            el.classList.toggle('app-page-visible', page.modules.includes(el.id));
+            el.setAttribute('draggable','false');
+        });
+        const t=document.getElementById('appPageTitle');
+        const h=document.getElementById('appPageHint');
+        if(t) t.textContent=page.title;
+        if(h) h.textContent=page.hint;
+        document.querySelectorAll('.pro-sidebar [data-page]').forEach(btn=>{
+            btn.classList.toggle('active-menu', btn.dataset.page===currentAppPage);
+        });
+    }
+
+    function appNavigate(page, sourceBtn){
+        if(!APP_PAGES[page]) page='home';
+        currentAppPage=page;
+        applyPageVisibility();
+        closeMobileMore();
+        if(window.innerWidth<=600){
+            const direct=document.querySelector(`.mobile-bottom-nav [data-mobile-page="${page}"]`);
+            document.querySelectorAll('.mobile-bottom-nav button').forEach(b=>b.classList.remove('mobile-active'));
+            if(direct) direct.classList.add('mobile-active');
+        }
+        window.scrollTo({top:0,behavior:'smooth'});
+        if(typeof rd==='function') setTimeout(rd,0);
+    }
+
+    function setMobileActive(btn){
+        document.querySelectorAll('.mobile-bottom-nav button').forEach(b=>b.classList.remove('mobile-active'));
+        if(btn) btn.classList.add('mobile-active');
+        closeMobileMore();
+    }
+    function toggleMobileMore(btn){
+        const p=document.getElementById('mobileMorePanel');
+        if(!p) return;
+        p.classList.toggle('open');
+        document.querySelectorAll('.mobile-bottom-nav button').forEach(b=>b.classList.remove('mobile-active'));
+        if(p.classList.contains('open') && btn) btn.classList.add('mobile-active');
+    }
+    function closeMobileMore(){
+        const p=document.getElementById('mobileMorePanel');
+        if(p) p.classList.remove('open');
+    }
+
     function proGo(id){
-        const el=document.getElementById(id);
-        if(!el) return;
-        el.scrollIntoView({behavior:'smooth',block:'start'});
-        el.classList.add('pro-highlight');
-        setTimeout(()=>el.classList.remove('pro-highlight'),900);
+        const map={
+          mod_summary:'home',mod_addexpense:'expense',mod_income:'income',mod_history:'history',
+          mod_excel:'reports',mod_banks:'banks',mod_cutoffs:'cutoffs',
+          mod_addinstallment:'installments',mod_recurring:'recurring',mod_bankstats:'banks'
+        };
+        appNavigate(map[id]||'home');
     }
     function proSetDate(){
         const d=document.getElementById('proToday');
@@ -650,10 +874,19 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
         if (!initFirebase()) {
             setSignedOutUI();
             return;
+        }
+
+        // Güvenlik: oturumu tarayıcıda kalıcı tutma.
+        // Sayfa her açıldığında / yenilendiğinde kullanıcı adı ve şifre yeniden istenir.
+        try {
+            await window.fbAuth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+            await window.fbAuth.signOut();
+        } catch (e) {
+            console.error("Oturum sıfırlama hatası:", e);
         }
 
         window.fbAuth.onAuthStateChanged(async user => {
@@ -675,7 +908,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     });
 
     const defaultLayout = {
-        left: ['mod_income', 'mod_summary', 'mod_history', 'mod_excel', 'mod_addexpense'],
+        left: ['mod_income', 'mod_summary', 'mod_history', 'mod_excel', 'mod_addexpense', 'mod_recurring'],
         right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment']
     };
 
@@ -756,6 +989,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             'mod_history',
             'mod_excel',
             'mod_addexpense',
+            'mod_recurring',
             'mod_banks',
             'mod_cutoffs',
             'mod_bankstats',
@@ -810,11 +1044,14 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if (currentUser) {
             localStorage.setItem(currentStorageKey('layout'), JSON.stringify(layout));
         }
+        applyPageVisibility();
     }
 
     function resetLayoutDefault() {
         localStorage.removeItem(currentStorageKey('layout'));
+        currentAppPage = 'home';
         renderLayout();
+        applyPageVisibility();
         rd();
     }
 
@@ -887,7 +1124,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     };
 
     let activeBanks = [], bankCutoffDays = {}, ex = [];
-    let salary = 0, extraIncomes = [];
+    let salary = 0, extraIncomes = [], recurringExpenses = [];
 
     function loadUserData() {
         if(!currentUser) return;
@@ -896,12 +1133,14 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         ex = JSON.parse(localStorage.getItem(currentStorageKey('ex')) || '[]');
         salary = Number(String(localStorage.getItem(currentStorageKey('salary')) || '0').replace(',', '.')) || 0;
         extraIncomes = JSON.parse(localStorage.getItem(currentStorageKey('extraIncomes')) || '[]');
+        recurringExpenses = JSON.parse(localStorage.getItem(currentStorageKey('recurringExpenses')) || '[]');
         window.currentUser = currentUser;
         window.activeBanks = activeBanks;
         window.bankCutoffDays = bankCutoffDays;
         window.ex = ex;
         window.salary = salary;
         window.extraIncomes = extraIncomes;
+        window.recurringExpenses = recurringExpenses;
     }
 
     function renderBankSelections() {
@@ -1079,11 +1318,107 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             </div>`).join('');
     }
 
+
+    function fillRecurringBankSelect() {
+        const sel = document.getElementById('recBank');
+        if(!sel) return;
+        const old = sel.value;
+        sel.innerHTML = activeBanks.map(b => `<option value="${b}">${b}</option>`).join('');
+        if(activeBanks.includes(old)) sel.value = old;
+    }
+
+    function saveRecurringExpenses(pushCloud = true) {
+        localStorage.setItem(currentStorageKey('recurringExpenses'), JSON.stringify(recurringExpenses));
+        window.recurringExpenses = recurringExpenses;
+        if(pushCloud && window.cloudSync) window.cloudSync.pushAll();
+    }
+
+    function ensureRecurringForCurrentMonth() {
+        if(!currentUser || !recurringExpenses.length) return false;
+        const now = new Date();
+        const y = now.getFullYear(), m = now.getMonth();
+        const ym = `${y}-${String(m+1).padStart(2,'0')}`;
+        const lastDay = new Date(y, m+1, 0).getDate();
+        let changed = false;
+        recurringExpenses.forEach(r => {
+            const key = `rec:${r.id}:${ym}`;
+            if(ex.some(e => e.recurringKey === key)) return;
+            const day = Math.min(Math.max(parseInt(r.day)||1,1), lastDay);
+            ex.push({
+                d: `${ym}-${String(day).padStart(2,'0')}`,
+                c: r.category || 'Diğer',
+                b: r.bank || 'Nakit / Diğer',
+                a: String(Number(r.amount)||0),
+                inst: '-',
+                x: r.name || 'Aylık standart harcama',
+                recurringKey: key,
+                recurringId: r.id
+            });
+            changed = true;
+        });
+        if(changed) {
+            localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
+            window.ex = ex;
+        }
+        return changed;
+    }
+
+    function renderRecurringList() {
+        const box = document.getElementById('recurringList');
+        if(!box) return;
+        if(!recurringExpenses.length) {
+            box.innerHTML = '<div style="font-size:11px;opacity:.7;">Henüz aylık standart harcama yok.</div>';
+            return;
+        }
+        box.innerHTML = recurringExpenses.map(r => `
+          <div class="recurring-row">
+            <div><b>${r.name}</b><small>${money(r.amount)} • Her ayın ${r.day}. günü • ${r.category} • ${r.bank}</small></div>
+            <button type="button" onclick="deleteRecurring('${r.id}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
+          </div>`).join('');
+    }
+
+    window.deleteRecurring = function(id) {
+        if(!confirm('Bu aylık standart harcama silinsin mi? Daha önce oluşmuş harcamalar silinmez.')) return;
+        recurringExpenses = recurringExpenses.filter(r => String(r.id) !== String(id));
+        saveRecurringExpenses(true);
+        renderRecurringList();
+    };
+
+    document.addEventListener('submit', e => {
+        if(e.target && e.target.id === 'recurringForm') {
+            e.preventDefault();
+            loadUserData();
+            const amount = parseFloat(String(document.getElementById('recAmount').value).replace(',','.')) || 0;
+            if(amount <= 0) { alert('Geçerli bir tutar girin.'); return; }
+            recurringExpenses.push({
+                id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
+                name: document.getElementById('recName').value.trim(),
+                category: document.getElementById('recCategory').value,
+                bank: document.getElementById('recBank').value,
+                amount,
+                day: Math.min(31, Math.max(1, parseInt(document.getElementById('recDay').value)||1))
+            });
+            saveRecurringExpenses(false);
+            const created = ensureRecurringForCurrentMonth();
+            e.target.reset();
+            document.getElementById('recDay').value = '1';
+            renderRecurringList();
+            rd();
+            if(window.cloudSync) window.cloudSync.pushAll();
+        }
+    });
+
     function rd() {
         if(!currentUser) return;
         loadUserData();
         renderBankSelections();
         renderCutoffTableAndDropdown();
+        fillRecurringBankSelect();
+        const recurringCreated = ensureRecurringForCurrentMonth();
+        renderRecurringList();
+        if(recurringCreated && window.cloudSync && window.cloudSync.cloudReady && !window.cloudSync.applyingRemote) {
+            setTimeout(() => window.cloudSync.pushAll(), 0);
+        }
 
         let ts = 0, ms = 0, futureTotal = 0, filteredTotal = 0;
         let ds = new Date().toISOString().split('T')[0];
@@ -1498,6 +1833,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     window.extraIncomes = data.extraIncomes;
                     localStorage.setItem(currentStorageKey("extraIncomes"), JSON.stringify(data.extraIncomes));
                 }
+                if (Array.isArray(data.recurringExpenses)) {
+                    recurringExpenses = data.recurringExpenses;
+                    window.recurringExpenses = recurringExpenses;
+                    localStorage.setItem(currentStorageKey("recurringExpenses"), JSON.stringify(recurringExpenses));
+                }
                 if (data.layout) localStorage.setItem(currentStorageKey("layout"), JSON.stringify(data.layout));
                 if (data.theme) localStorage.setItem(currentStorageKey("theme"), data.theme);
 
@@ -1541,6 +1881,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 bankCutoffDays: window.bankCutoffDays || {},
                 salary: Number(window.salary || 0),
                 extraIncomes: Array.isArray(window.extraIncomes) ? window.extraIncomes : [],
+                recurringExpenses: Array.isArray(window.recurringExpenses) ? window.recurringExpenses : [],
                 layout,
                 theme
             });
@@ -1628,6 +1969,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
     });
 })();
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            setSignedOutUI();
+        }
+    });
+
 </script>
 
 </body>

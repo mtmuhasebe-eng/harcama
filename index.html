@@ -6,7 +6,7 @@
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
     <title>Harcama ve Borç Takibi</title>
-    <!-- MTmuhasebe build: firebase-auth-firestore-sync-20260913 -->
+    <!-- MTmuhasebe build: SECURITY-HARDENED-20260913-v3 -->
     <style>
         :root {
             --bg-color: #f8f9fa;
@@ -486,8 +486,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     <div id="loginScreen" class="auth-box">
         <h2 id="authTitle" style="color:var(--primary-color); margin-top:0;">🔐 Giriş Yap</h2>
         <form id="authForm">
-            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" required>
-            <input type="password" id="authPassword" placeholder="Şifre" required>
+            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" required maxlength="80">
+            <input type="password" id="authPassword" placeholder="Şifre" required maxlength="128">
             <button type="submit" id="authBtn">Giriş Yap</button>
         </form>
         <span class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">Hesabın yok mu? Yeni kullanıcı ekle</span>
@@ -615,7 +615,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 </select>
                 <select id="b"></select>
                 <input type="text" inputmode="decimal" id="a" placeholder="Tutar (TL)" onkeypress="return isNumberKey(event)" required>
-                <input type="text" id="x" placeholder="Açıklama (İsteğe bağlı)">
+                <input type="text" id="x" placeholder="Açıklama (İsteğe bağlı)" maxlength="250">
                 <div class="btn-container">
                     <button type="submit" id="saveBtn">Kaydet</button>
                     <button type="button" id="cancelEdit" onclick="resetForm()">İptal</button>
@@ -629,7 +629,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">Telefon, spor, internet, aidat gibi her ay tekrarlanan giderleri bir kez tanımla.</div>
             <form id="recurringForm">
                 <div class="recurring-grid">
-                    <input class="recurring-wide" type="text" id="recName" placeholder="Harcama adı (Telefon faturası)" required>
+                    <input class="recurring-wide" type="text" id="recName" placeholder="Harcama adı (Telefon faturası)" required maxlength="120">
                     <select id="recCategory">
                         <option>Fatura</option><option>Spor</option><option>Market</option><option>Ulaşım</option><option>Alışveriş</option><option>Diğer</option>
                     </select>
@@ -657,7 +657,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <select id="idB"></select>
                 <input type="text" inputmode="decimal" id="idTotalA" placeholder="Toplam Tutar (TL)" onkeypress="return isNumberKey(event)" required>
                 <input type="number" id="idCount" min="2" max="36" placeholder="Taksit Sayısı" required>
-                <input type="text" id="idX" placeholder="Açıklama">
+                <input type="text" id="idX" placeholder="Açıklama" maxlength="250">
                 <button type="submit" style="background:#8e44ad;">Taksitleri Oluştur</button>
             </form>
         </div>
@@ -682,7 +682,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div class="income-form-grid">
                 <input type="date" id="extraIncomeDate">
                 <input type="text" id="extraIncomeAmount" inputmode="decimal" placeholder="Tutar (TL)">
-                <input type="text" id="extraIncomeDesc" placeholder="Açıklama">
+                <input type="text" id="extraIncomeDesc" placeholder="Açıklama" maxlength="250">
                 <button type="button" onclick="addExtraIncome()" style="background:#27ae60;">Ekle</button>
             </div>
             <div id="extraIncomeList" class="income-list"></div>
@@ -729,7 +729,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         <div class="modal-content">
             <h3>Bilgileri Güncelle</h3>
             <input type="text" id="newUsernameInput" placeholder="Kullanıcı Adı" readonly title="Giriş kullanıcı adı güvenlik nedeniyle değiştirilemez.">
-            <input type="password" id="newPasswordInput" placeholder="Yeni Şifre">
+            <input type="password" id="newPasswordInput" placeholder="Yeni Şifre" maxlength="128">
             <div style="display:flex; gap:5px; margin-top:10px;">
                 <button onclick="updateProfile()" style="background:#27ae60;">Kaydet</button>
                 <button onclick="closeProfileModal()" style="background:#e74c3c;">İptal</button>
@@ -757,28 +757,6 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 
-
-    // ===== MTmuhasebe SECURITY HARDENING =====
-    function escapeHTML(value) {
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function safeText(value, maxLength = 250) {
-        return String(value ?? '')
-            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
-            .slice(0, maxLength);
-    }
-
-    function safeCSVCell(value) {
-        let s = String(value ?? '');
-        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-        return '"' + s.replace(/"/g, '""') + '"';
-    }
 
     const APP_PAGES = {
         home: {title:'Ana Sayfa', hint:'Finansal durumunu kolayca takip et.', modules:['mod_income_summary','mod_summary']},
@@ -860,6 +838,84 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
         return false;
     }
+
+
+    // ===== MTmuhasebe SECURITY HARDENING =====
+    const NEW_PASSWORD_MIN_LENGTH = 10;
+    const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
+    const MAX_IMPORT_ROWS = 10000;
+
+    function safeText(value, maxLength = 250) {
+        return String(value ?? '')
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+            .slice(0, maxLength);
+    }
+
+    function escapeHTML(value) {
+        return safeText(value, 2000)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function safeDate(value) {
+        const s = safeText(value, 10);
+        return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+    }
+
+    function safeAmount(value) {
+        const n = Number(String(value ?? '').replace(',', '.'));
+        return Number.isFinite(n) && n >= 0 && n <= 1000000000 ? n : 0;
+    }
+
+    function safeCSVCell(value) {
+        let s = safeText(value, 1000);
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+
+    function safeId(value) {
+        return safeText(value, 128).replace(/[^a-zA-Z0-9._:-]/g, '');
+    }
+
+    function normalizeExpense(raw) {
+        raw = raw && typeof raw === 'object' ? raw : {};
+        return {
+            d: safeDate(raw.d),
+            c: safeText(raw.c, 80),
+            b: safeText(raw.b, 120),
+            a: String(safeAmount(raw.a)),
+            inst: safeText(raw.inst || '-', 80),
+            x: safeText(raw.x || '', 250),
+            ...(raw.recurringKey ? { recurringKey: safeText(raw.recurringKey, 180) } : {}),
+            ...(raw.recurringId ? { recurringId: safeId(raw.recurringId) } : {})
+        };
+    }
+
+    function normalizeExtraIncome(raw) {
+        raw = raw && typeof raw === 'object' ? raw : {};
+        return {
+            id: safeId(raw.id || Date.now()),
+            date: safeDate(raw.date),
+            amount: safeAmount(raw.amount),
+            desc: safeText(raw.desc || '', 250)
+        };
+    }
+
+    function normalizeRecurring(raw) {
+        raw = raw && typeof raw === 'object' ? raw : {};
+        return {
+            id: safeId(raw.id || Date.now()),
+            name: safeText(raw.name || '', 120),
+            category: safeText(raw.category || 'Diğer', 80),
+            bank: safeText(raw.bank || 'Nakit / Diğer', 120),
+            amount: safeAmount(raw.amount),
+            day: Math.min(31, Math.max(1, parseInt(raw.day) || 1))
+        };
+    }
+
 
     // ===== FIREBASE AUTH + FIRESTORE SENKRON =====
     // Firebase Console > Project settings > Your apps > Web app içindeki config değerlerini
@@ -943,7 +999,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     async function migrateLegacyLocalData(username, uid) {
         if (!username || !uid) return;
 
-        const suffixes = ["ex", "activeBanks", "bankCutoffDays", "layout", "salary", "extraIncomes", "theme"];
+        const suffixes = ["ex", "activeBanks", "bankCutoffDays", "layout", "salary", "extraIncomes", "recurringExpenses", "theme"];
         let legacyUsers = [];
         try {
             legacyUsers = JSON.parse(localStorage.getItem("appUsers") || "[]");
@@ -978,19 +1034,23 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             return;
         }
 
-        const uInput = document.getElementById('authUsername').value.trim();
+        const uInput = safeText(document.getElementById('authUsername').value.trim(), 80);
         const password = document.getElementById('authPassword').value;
 
         if (!uInput) {
             alert("Kullanıcı adı boş olamaz.");
             return;
         }
+        if(!/^[A-Za-z0-9._-]{3,80}$/.test(uInput)) {
+            alert("Kullanıcı adı 3-80 karakter olmalı ve yalnızca harf, rakam, nokta, alt çizgi veya tire içermeli.");
+            return;
+        }
         if (!password || password.length < MIN_PASSWORD_LENGTH) {
             alert("Şifre en az 6 karakter olmalı.");
             return;
         }
-        if (isRegisterMode && password.length < 10) {
-            alert("Yeni hesaplarda şifre en az 10 karakter olmalı.");
+        if (isRegisterMode && password.length < NEW_PASSWORD_MIN_LENGTH) {
+            alert("Yeni hesaplarda şifre en az " + NEW_PASSWORD_MIN_LENGTH + " karakter olmalı.");
             return;
         }
 
@@ -1150,8 +1210,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             layout = JSON.parse(JSON.stringify(defaultLayout));
         }
 
-        layout.left = Array.isArray(layout.left) ? layout.left.filter(Boolean) : [];
-        layout.right = Array.isArray(layout.right) ? layout.right.filter(Boolean) : [];
+        layout.left = Array.isArray(layout.left) ? layout.left.filter(x => typeof x === 'string' && x.length < 80) : [];
+        layout.right = Array.isArray(layout.right) ? layout.right.filter(x => typeof x === 'string' && x.length < 80) : [];
 
         const allModules = [
             'mod_income_summary',
@@ -1247,8 +1307,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             return;
         }
 
-        if (newP.length < 10) {
-            alert("Yeni şifre en az 10 karakter olmalı.");
+        if (newP.length < NEW_PASSWORD_MIN_LENGTH) {
+            alert("Yeni şifre en az " + NEW_PASSWORD_MIN_LENGTH + " karakter olmalı.");
             return;
         }
 
@@ -1286,6 +1346,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     }
     function loadTheme() {
         let savedTheme = localStorage.getItem(currentStorageKey('theme')) || 'light';
+        if(!['light','dark','colorful'].includes(savedTheme)) savedTheme = 'light';
         document.getElementById('mainBody').setAttribute('data-theme', savedTheme);
     }
 
@@ -1301,10 +1362,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(!currentUser) return;
         activeBanks = JSON.parse(localStorage.getItem(currentStorageKey('activeBanks')) || JSON.stringify(Object.keys(allBanks)));
         bankCutoffDays = JSON.parse(localStorage.getItem(currentStorageKey('bankCutoffDays')) || JSON.stringify(allBanks));
-        ex = JSON.parse(localStorage.getItem(currentStorageKey('ex')) || '[]');
+        ex = JSON.parse(localStorage.getItem(currentStorageKey('ex')) || '[]').map(normalizeExpense).filter(x => x.d);
         salary = Number(String(localStorage.getItem(currentStorageKey('salary')) || '0').replace(',', '.')) || 0;
-        extraIncomes = JSON.parse(localStorage.getItem(currentStorageKey('extraIncomes')) || '[]');
-        recurringExpenses = JSON.parse(localStorage.getItem(currentStorageKey('recurringExpenses')) || '[]');
+        extraIncomes = JSON.parse(localStorage.getItem(currentStorageKey('extraIncomes')) || '[]').map(normalizeExtraIncome).filter(x => x.date);
+        recurringExpenses = JSON.parse(localStorage.getItem(currentStorageKey('recurringExpenses')) || '[]').map(normalizeRecurring);
         window.currentUser = currentUser;
         window.activeBanks = activeBanks;
         window.bankCutoffDays = bankCutoffDays;
@@ -1320,7 +1381,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         div.innerHTML = '';
         Object.keys(allBanks).forEach(bank => {
             let isChecked = activeBanks.includes(bank) ? 'checked' : '';
-            div.innerHTML += `<label><input type="checkbox" value="${bank}" ${isChecked} onchange="toggleBank('${bank}', this.checked)"> ${bank}</label>`;
+            div.innerHTML += `<label><input type="checkbox" value="${escapeHTML(bank)}" ${isChecked} onchange="toggleBank('${bank}', this.checked)"> ${escapeHTML(bank)}</label>`;
         });
     }
 
@@ -1347,8 +1408,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         activeBanks.forEach(bank => {
             let cutoff = bankCutoffDays[bank] !== undefined ? bankCutoffDays[bank] : 0;
             cutoffTableBody.innerHTML += `<tr><td><b>${escapeHTML(bank)}</b></td><td><input type="number" min="0" max="31" value="${cutoff}" onchange="updateCutoff('${bank}', this.value)"></td></tr>`;
-            if(bankSelect) bankSelect.innerHTML += `<option value="${bank}">${escapeHTML(bank)}</option>`;
-            if(idBankSelect) idBankSelect.innerHTML += `<option value="${bank}">${escapeHTML(bank)}</option>`;
+            if(bankSelect) bankSelect.innerHTML += `<option value="${escapeHTML(bank)}">${escapeHTML(bank)}</option>`;
+            if(idBankSelect) idBankSelect.innerHTML += `<option value="${escapeHTML(bank)}">${escapeHTML(bank)}</option>`;
         });
     }
 
@@ -1485,7 +1546,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div class="income-row">
                 <span><b>${escapeHTML(x.date)}</b> — ${escapeHTML(x.desc || 'Ek Gelir')}</span>
                 <span><b>${money(x.amount)}</b>
-                <button type="button" onclick="deleteExtraIncome('${x.id}')" style="flex:0 0 auto;background:#e74c3c;padding:4px 7px;font-size:10px;">Sil</button></span>
+                <button type="button" onclick="deleteExtraIncome('${safeId(x.id)}')" style="flex:0 0 auto;background:#e74c3c;padding:4px 7px;font-size:10px;">Sil</button></span>
             </div>`).join('');
     }
 
@@ -1494,7 +1555,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         const sel = document.getElementById('recBank');
         if(!sel) return;
         const old = sel.value;
-        sel.innerHTML = activeBanks.map(b => `<option value="${b}">${b}</option>`).join('');
+        sel.innerHTML = activeBanks.map(b => `<option value="${escapeHTML(b)}">${escapeHTML(b)}</option>`).join('');
         if(activeBanks.includes(old)) sel.value = old;
     }
 
@@ -1543,8 +1604,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
         box.innerHTML = recurringExpenses.map(r => `
           <div class="recurring-row">
-            <div><b>${escapeHTML(r.name)}</b><small>${money(r.amount)} • Her ayın ${r.day}. günü • ${escapeHTML(r.category)} • ${escapeHTML(r.bank)}</small></div>
-            <button type="button" onclick="deleteRecurring('${r.id}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
+            <div><b>${escapeHTML(r.name)}</b><small>${money(r.amount)} • Her ayın ${escapeHTML(r.day)}. günü • ${escapeHTML(r.category)} • ${escapeHTML(r.bank)}</small></div>
+            <button type="button" onclick="deleteRecurring('${safeId(r.id)}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
           </div>`).join('');
     }
 
@@ -1563,7 +1624,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             if(amount <= 0) { alert('Geçerli bir tutar girin.'); return; }
             recurringExpenses.push({
                 id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
-                name: document.getElementById('recName').value.trim(),
+                name: safeText(document.getElementById('recName').value.trim(), 120),
                 category: document.getElementById('recCategory').value,
                 bank: document.getElementById('recBank').value,
                 amount,
@@ -1756,24 +1817,41 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     function importFromExcel(event) {
         let file = event.target.files[0];
         if(!file) return;
-        if(file.size > 5 * 1024 * 1024) { alert('Dosya çok büyük. En fazla 5 MB CSV yükleyin.'); event.target.value=''; return; }
+        if(file.size > MAX_IMPORT_FILE_BYTES) {
+            alert("CSV dosyası çok büyük. En fazla 5 MB yükleyebilirsiniz.");
+            event.target.value = "";
+            return;
+        }
+        if(!/\.csv$/i.test(file.name || "")) {
+            alert("Yalnızca CSV dosyası yükleyebilirsiniz.");
+            event.target.value = "";
+            return;
+        }
         let reader = new FileReader();
         reader.onload = function(e) {
-            let lines = e.target.result.split('\n');
+            let lines = String(e.target.result || '').split(/\r?\n/);
+            if(lines.length > MAX_IMPORT_ROWS + 1) {
+                alert("CSV en fazla " + MAX_IMPORT_ROWS + " kayıt içerebilir.");
+                event.target.value = "";
+                return;
+            }
             let newEx = [];
             for(let i = 1; i < lines.length; i++) {
                 let line = lines[i].trim();
                 if(!line) continue;
                 let cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 if(cols.length >= 4) {
-                    newEx.push({
-                        d: safeText(cols[0].replace(/"/g, ''), 10),
-                        c: safeText(cols[1].replace(/"/g, ''), 80),
-                        b: safeText(cols[2].replace(/"/g, ''), 120),
-                        a: safeText(cols[3].replace(/"/g, ''), 40),
-                        inst: cols[4] ? safeText(cols[4].replace(/"/g, ''), 80) : '-',
-                        x: cols[5] ? safeText(cols[5].replace(/"/g, ''), 250) : ''
+                    const imported = normalizeExpense({
+                        d: cols[0].replace(/"/g, ''),
+                        c: cols[1].replace(/"/g, ''),
+                        b: cols[2].replace(/"/g, ''),
+                        a: cols[3].replace(/"/g, ''),
+                        inst: cols[4] ? cols[4].replace(/"/g, '') : '-',
+                        x: cols[5] ? cols[5].replace(/"/g, '') : ''
                     });
+                    if(imported.d && imported.c && imported.b && safeAmount(imported.a) > 0) {
+                        newEx.push(imported);
+                    }
                 }
             }
             if(newEx.length > 0) {
@@ -1781,6 +1859,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     loadUserData();
                     ex = ex.concat(newEx);
                     localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
+                    window.ex = ex;
+                    if (window.cloudSync) window.cloudSync.pushAll();
                     rd();
                     alert("Yüklendi!");
                 }
@@ -1981,7 +2061,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
             try {
                 if (Array.isArray(data.ex)) {
-                    ex = data.ex;
+                    ex = data.ex.map(normalizeExpense).filter(x => x.d);
                     window.ex = ex;
                     localStorage.setItem(currentStorageKey("ex"), JSON.stringify(ex));
                 }
@@ -2001,17 +2081,17 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     localStorage.setItem(currentStorageKey("salary"), String(salary));
                 }
                 if (Array.isArray(data.extraIncomes)) {
-                    extraIncomes = data.extraIncomes;
-                    window.extraIncomes = data.extraIncomes;
-                    localStorage.setItem(currentStorageKey("extraIncomes"), JSON.stringify(data.extraIncomes));
+                    extraIncomes = data.extraIncomes.map(normalizeExtraIncome).filter(x => x.date);
+                    window.extraIncomes = extraIncomes;
+                    localStorage.setItem(currentStorageKey("extraIncomes"), JSON.stringify(extraIncomes));
                 }
                 if (Array.isArray(data.recurringExpenses)) {
-                    recurringExpenses = data.recurringExpenses;
+                    recurringExpenses = data.recurringExpenses.map(normalizeRecurring);
                     window.recurringExpenses = recurringExpenses;
                     localStorage.setItem(currentStorageKey("recurringExpenses"), JSON.stringify(recurringExpenses));
                 }
                 if (data.layout) localStorage.setItem(currentStorageKey("layout"), JSON.stringify(data.layout));
-                if (data.theme) localStorage.setItem(currentStorageKey("theme"), data.theme);
+                if (["light","dark","colorful"].includes(data.theme)) localStorage.setItem(currentStorageKey("theme"), data.theme);
 
                 this.lastRemoteUpdatedAt = Number(data.updatedAt || 0);
             } finally {

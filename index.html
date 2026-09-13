@@ -377,6 +377,107 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     flex:0 0 auto!important;
 }
 
+
+/* ===== MOBİL KRİTİK DÜZELTME ===== */
+@media (max-width:600px){
+  html,body{
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:hidden!important;
+  }
+
+  /* Masaüstü sol menü mobilde tamamen kapanır */
+  .pro-sidebar{
+    display:none!important;
+    visibility:hidden!important;
+    width:0!important;
+    min-width:0!important;
+    max-width:0!important;
+    position:fixed!important;
+    left:-9999px!important;
+  }
+
+  /* İçerik tüm ekranı kullanır */
+  #appScreen{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:10px 10px 82px!important;
+    box-sizing:border-box!important;
+  }
+
+  #appScreen,
+  #appScreen *{
+    box-sizing:border-box!important;
+  }
+
+  .dashboard-grid,
+  .drop-column,
+  .draggable-module,
+  .app-page-visible{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+
+  .draggable-module{
+    margin-left:0!important;
+    margin-right:0!important;
+  }
+
+  /* Ana sayfa kartları mobilde düzgün dizilir */
+  #mod_income_summary .income-cards{
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+
+  #mod_summary .cards{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+
+  #mod_summary .card{
+    min-width:0!important;
+    padding:10px 6px!important;
+  }
+
+  #mod_summary .card h3{
+    font-size:9px!important;
+    line-height:1.1!important;
+  }
+
+  #mod_summary .card p{
+    font-size:14px!important;
+    white-space:nowrap!important;
+  }
+
+  /* Üst kullanıcı alanı taşmasın */
+  #appScreen > div[style*="justify-content:space-between"]{
+    width:auto!important;
+    max-width:none!important;
+    margin:-10px -10px 10px!important;
+    padding:12px 10px 10px!important;
+  }
+
+  /* Alt menü tek mobil navigasyon olarak kalır */
+  .mobile-bottom-nav{
+    display:grid!important;
+    grid-template-columns:repeat(5,1fr)!important;
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    bottom:0!important;
+    z-index:99999!important;
+  }
+
+  .mobile-more-panel{
+    left:8px!important;
+    right:8px!important;
+    width:auto!important;
+  }
+}
+
 </style>
 </head>
 <body id="mainBody" data-theme="light">

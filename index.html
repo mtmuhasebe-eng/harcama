@@ -758,6 +758,28 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 <script>
 
 
+    // ===== MTmuhasebe SECURITY HARDENING =====
+    function escapeHTML(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function safeText(value, maxLength = 250) {
+        return String(value ?? '')
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+            .slice(0, maxLength);
+    }
+
+    function safeCSVCell(value) {
+        let s = String(value ?? '');
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+
     const APP_PAGES = {
         home: {title:'Ana Sayfa', hint:'Finansal durumunu kolayca takip et.', modules:['mod_income_summary','mod_summary']},
         expense: {title:'Harcama Ekle', hint:'Yeni harcamanı kaydet.', modules:['mod_addexpense']},
@@ -965,6 +987,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
         if (!password || password.length < MIN_PASSWORD_LENGTH) {
             alert("Şifre en az 6 karakter olmalı.");
+            return;
+        }
+        if (isRegisterMode && password.length < 10) {
+            alert("Yeni hesaplarda şifre en az 10 karakter olmalı.");
             return;
         }
 
@@ -1221,8 +1247,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             return;
         }
 
-        if (newP.length < 6) {
-            alert("Yeni şifre en az 6 karakter olmalı.");
+        if (newP.length < 10) {
+            alert("Yeni şifre en az 10 karakter olmalı.");
             return;
         }
 
@@ -1320,9 +1346,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         activeBanks.forEach(bank => {
             let cutoff = bankCutoffDays[bank] !== undefined ? bankCutoffDays[bank] : 0;
-            cutoffTableBody.innerHTML += `<tr><td><b>${bank}</b></td><td><input type="number" min="0" max="31" value="${cutoff}" onchange="updateCutoff('${bank}', this.value)"></td></tr>`;
-            if(bankSelect) bankSelect.innerHTML += `<option value="${bank}">${bank}</option>`;
-            if(idBankSelect) idBankSelect.innerHTML += `<option value="${bank}">${bank}</option>`;
+            cutoffTableBody.innerHTML += `<tr><td><b>${escapeHTML(bank)}</b></td><td><input type="number" min="0" max="31" value="${cutoff}" onchange="updateCutoff('${bank}', this.value)"></td></tr>`;
+            if(bankSelect) bankSelect.innerHTML += `<option value="${bank}">${escapeHTML(bank)}</option>`;
+            if(idBankSelect) idBankSelect.innerHTML += `<option value="${bank}">${escapeHTML(bank)}</option>`;
         });
     }
 
@@ -1427,7 +1453,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(!currentUser) return;
         const date = document.getElementById('extraIncomeDate').value || new Date().toISOString().split('T')[0];
         const amount = Number(String(document.getElementById('extraIncomeAmount').value || '').replace(',', '.')) || 0;
-        const desc = document.getElementById('extraIncomeDesc').value.trim();
+        const desc = safeText(document.getElementById('extraIncomeDesc').value.trim(), 250);
         if(amount <= 0) { alert('Lütfen geçerli bir ek gelir tutarı girin.'); return; }
 
         extraIncomes.push({id: Date.now(), date, amount, desc});
@@ -1457,7 +1483,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         const sorted = [...extraIncomes].sort((a,b) => String(b.date).localeCompare(String(a.date)));
         box.innerHTML = sorted.map(x => `
             <div class="income-row">
-                <span><b>${x.date}</b> — ${x.desc || 'Ek Gelir'}</span>
+                <span><b>${escapeHTML(x.date)}</b> — ${escapeHTML(x.desc || 'Ek Gelir')}</span>
                 <span><b>${money(x.amount)}</b>
                 <button type="button" onclick="deleteExtraIncome('${x.id}')" style="flex:0 0 auto;background:#e74c3c;padding:4px 7px;font-size:10px;">Sil</button></span>
             </div>`).join('');
@@ -1517,7 +1543,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
         box.innerHTML = recurringExpenses.map(r => `
           <div class="recurring-row">
-            <div><b>${r.name}</b><small>${money(r.amount)} • Her ayın ${r.day}. günü • ${r.category} • ${r.bank}</small></div>
+            <div><b>${escapeHTML(r.name)}</b><small>${money(r.amount)} • Her ayın ${r.day}. günü • ${escapeHTML(r.category)} • ${escapeHTML(r.bank)}</small></div>
             <button type="button" onclick="deleteRecurring('${r.id}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
           </div>`).join('');
     }
@@ -1660,14 +1686,14 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
             if(tb) {
                 tb.innerHTML += `<tr>
-                    <td><b>${item.dueDate}</b><br><span style="font-size:9px;color:#7f8c8d;">İşlem: ${item.d}</span></td>
-                    <td>${item.c}</td>
-                    <td><b>${item.b}</b></td>
+                    <td><b>${escapeHTML(item.dueDate)}</b><br><span style="font-size:9px;color:#7f8c8d;">İşlem: ${escapeHTML(item.d)}</span></td>
+                    <td>${escapeHTML(item.c)}</td>
+                    <td><b>${escapeHTML(item.b)}</b></td>
                     <td>${amtNum.toFixed(2)} TL</td>
-                    <td>${installmentText}</td>
+                    <td>${escapeHTML(installmentText)}</td>
                     <td>${currentCell}</td>
                     <td>${nextCell}</td>
-                    <td>${item.x || ''}</td>
+                    <td>${escapeHTML(item.x || '')}</td>
                     <td><div class="action-btns">
                         <button style="background:#2980b9;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="editExpense(${k})">Düzenle</button>
                         <button style="background:#e74c3c;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="dl(${k})">Sil</button>
@@ -1697,7 +1723,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 if (data && data.total > 0) {
                     bankSummaryGrid.innerHTML += `
                         <div class="bank-summary-card">
-                            <b>${bank}</b>
+                            <b>${escapeHTML(bank)}</b>
                             <div>Toplam: ${data.total.toFixed(2)} TL</div>
                             <div style="color:#d35400;">Bu Ekstre: ${data.thisMonthBill.toFixed(2)} TL</div>
                             <div style="color:#27ae60;">Gelecek Ekstre: ${data.nextMonthBill.toFixed(2)} TL</div>
@@ -1711,7 +1737,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(ex.length === 0) { alert("Veri yok!"); return; }
         let csvContent = "\uFEFFTarih,Kategori,Banka,Tutar,Taksit,Aciklama\n";
         ex.forEach(item => {
-            csvContent += `"${item.d}","${item.c}","${item.b}","${item.a}","${item.inst || ''}","${item.x || ''}"\n`;
+            csvContent += [item.d, item.c, item.b, item.a, item.inst || '', item.x || ''].map(safeCSVCell).join(',') + "\n";
         });
         let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         let url = URL.createObjectURL(blob);
@@ -1730,6 +1756,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     function importFromExcel(event) {
         let file = event.target.files[0];
         if(!file) return;
+        if(file.size > 5 * 1024 * 1024) { alert('Dosya çok büyük. En fazla 5 MB CSV yükleyin.'); event.target.value=''; return; }
         let reader = new FileReader();
         reader.onload = function(e) {
             let lines = e.target.result.split('\n');
@@ -1740,12 +1767,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 let cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 if(cols.length >= 4) {
                     newEx.push({
-                        d: cols[0].replace(/"/g, ''),
-                        c: cols[1].replace(/"/g, ''),
-                        b: cols[2].replace(/"/g, ''),
-                        a: cols[3].replace(/"/g, ''),
-                        inst: cols[4] ? cols[4].replace(/"/g, '') : '-',
-                        x: cols[5] ? cols[5].replace(/"/g, '') : ''
+                        d: safeText(cols[0].replace(/"/g, ''), 10),
+                        c: safeText(cols[1].replace(/"/g, ''), 80),
+                        b: safeText(cols[2].replace(/"/g, ''), 120),
+                        a: safeText(cols[3].replace(/"/g, ''), 40),
+                        inst: cols[4] ? safeText(cols[4].replace(/"/g, ''), 80) : '-',
+                        x: cols[5] ? safeText(cols[5].replace(/"/g, ''), 250) : ''
                     });
                 }
             }
@@ -1806,7 +1833,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 b: document.getElementById('b').value, 
                 a: document.getElementById('a').value.replace(',', '.'), 
                 inst: "-",
-                x: document.getElementById('x').value
+                x: safeText(document.getElementById('x').value, 250)
             };
             
             const idx = parseInt(document.getElementById('editIndex').value);
@@ -1832,7 +1859,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             let b = document.getElementById('idB').value;
             let totalA = parseFloat(document.getElementById('idTotalA').value.replace(',', '.')) || 0;
             let count = parseInt(document.getElementById('idCount').value);
-            let x = document.getElementById('idX').value;
+            let x = safeText(document.getElementById('idX').value, 250);
 
             if(!startD || !totalA || !count || count < 2) {
                 alert("Lütfen alanları doğru doldurun.");

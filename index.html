@@ -338,6 +338,45 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   table{min-width:720px}
 }
 
+
+/* ===== ONAYLI ANA SAYFA / GELİR DÜZENİ ===== */
+#mod_income_summary{order:-20!important}
+#mod_summary{order:-19!important}
+#mod_income .salary-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+#mod_income .salary-row button{white-space:nowrap}
+#mod_income .income-form-grid{grid-template-columns:1fr 1fr 1.2fr auto}
+#mod_income_summary .income-cards{margin-top:4px}
+#mod_summary .cards{margin-top:0}
+#mod_income_summary h2{margin-bottom:12px}
+
+@media(max-width:600px){
+  #mod_income_summary .income-cards{grid-template-columns:1fr!important}
+  #mod_income .salary-row{grid-template-columns:1fr auto!important}
+  #mod_income .income-form-grid{grid-template-columns:1fr 1fr!important}
+  #mod_income .income-form-grid #extraIncomeDesc{grid-column:1 / -1}
+  #mod_income .income-form-grid button{grid-column:1 / -1}
+  #mod_summary .cards{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
+  #mod_summary .card{padding:10px 7px!important;min-width:0!important}
+  #mod_summary .card h3{font-size:9px!important;line-height:1.15!important}
+  #mod_summary .card p{font-size:14px!important;white-space:nowrap!important}
+}
+
+
+/* ===== DÜZELTME: SOL MENÜ İKONU GERÇEKTEN ÜSTTE ===== */
+.pro-sidebar{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+}
+.pro-mark{
+    flex:0 0 auto!important;
+    margin:0 auto 18px!important;
+}
+.pro-sidebar nav{
+    width:100%!important;
+    flex:0 0 auto!important;
+}
+
 </style>
 </head>
 <body id="mainBody" data-theme="light">
@@ -522,19 +561,23 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             </form>
         </div>
 
-        <div id="mod_income" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_income_summary" class="draggable-module" draggable="false">
             <h2>💰 Gelir ve Kalan Param</h2>
             <div class="income-cards">
                 <div class="income-card"><small>Bu Ay Gelir</small><b id="incomeTotalCard">0.00 TL</b></div>
                 <div class="income-card"><small>Bu Ay Harcama</small><b id="incomeExpenseCard">0.00 TL</b></div>
                 <div class="income-card"><small>Kalan Param</small><b id="incomeRemainingCard">0.00 TL</b></div>
-                            </div>
+            </div>
+        </div>
+
+        <div id="mod_income" class="draggable-module" draggable="false">
+            <h2>💰 Maaş ve Ek Gelir</h2>
             <h3 style="font-size:13px;margin:8px 0 5px;">Maaş</h3>
-            <div style="display:flex;gap:6px;">
+            <div class="salary-row">
                 <input type="text" id="salaryAmount" inputmode="decimal" placeholder="Aylık maaş (TL)" style="margin:0;">
                 <button type="button" onclick="saveSalary()" style="background:#2980b9;">Maaşı Kaydet</button>
             </div>
-            <h3 style="font-size:13px;margin:10px 0 5px;">Ek Gelir Ekle</h3>
+            <h3 style="font-size:13px;margin:14px 0 5px;">Ek Gelir Ekle</h3>
             <div class="income-form-grid">
                 <input type="date" id="extraIncomeDate">
                 <input type="text" id="extraIncomeAmount" inputmode="decimal" placeholder="Tutar (TL)">
@@ -615,9 +658,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
 
     const APP_PAGES = {
-        home: {title:'Ana Sayfa', hint:'Finansal durumunu kolayca takip et.', modules:['mod_income','mod_summary']},
+        home: {title:'Ana Sayfa', hint:'Finansal durumunu kolayca takip et.', modules:['mod_income_summary','mod_summary']},
         expense: {title:'Harcama Ekle', hint:'Yeni harcamanı kaydet.', modules:['mod_addexpense']},
-        income: {title:'Gelir Ekle', hint:'Maaş ve ek gelirlerini yönet.', modules:['mod_income']},
+        income: {title:'Gelir Ekle', hint:'Maaş ve ek gelirlerini buradan yönet.', modules:['mod_income']},
         history: {title:'Tüm Harcamalar', hint:'Harcama geçmişini görüntüle ve düzenle.', modules:['mod_history']},
         reports: {title:'Raporlar', hint:'Verilerini Excel veya PDF olarak al.', modules:['mod_excel']},
         banks: {title:'Banka Hesapları', hint:'Kullandığın banka ve kartları yönet.', modules:['mod_banks','mod_bankstats']},
@@ -675,7 +718,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     function proGo(id){
         const map={
-          mod_summary:'home',mod_addexpense:'expense',mod_income:'income',mod_history:'history',
+          mod_summary:'home',mod_income_summary:'home',mod_addexpense:'expense',mod_income:'income',mod_history:'history',
           mod_excel:'reports',mod_banks:'banks',mod_cutoffs:'cutoffs',
           mod_addinstallment:'installments',mod_recurring:'recurring',mod_bankstats:'banks'
         };
@@ -908,7 +951,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     });
 
     const defaultLayout = {
-        left: ['mod_income', 'mod_summary', 'mod_history', 'mod_excel', 'mod_addexpense', 'mod_recurring'],
+        left: ['mod_income_summary', 'mod_summary', 'mod_income', 'mod_history', 'mod_excel', 'mod_addexpense', 'mod_recurring'],
         right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment']
     };
 
@@ -984,6 +1027,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         layout.right = Array.isArray(layout.right) ? layout.right.filter(Boolean) : [];
 
         const allModules = [
+            'mod_income_summary',
             'mod_income',
             'mod_summary',
             'mod_history',

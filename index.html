@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
     <title>Harcama ve Borç Takibi</title>
-    <!-- MTmuhasebe build: room-sync-layout-fix-20260912 -->
+    <!-- MTmuhasebe build: firebase-auth-firestore-sync-20260913 -->
     <style>
         :root {
             --bg-color: #f8f9fa;
@@ -261,7 +263,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <div class="dropdown-content">
                     <div class="dropdown-item" onclick="openProfileModal()">⚙️ Bilgileri Güncelle</div>
                     <div class="dropdown-item" onclick="openThemeModal()">🎨 Renk / Tema Değiştir</div>
-                    <div class="dropdown-item" onclick="openCloudModal()">🏠 Oda Senkronizasyonu</div>
+                    <div class="dropdown-item" onclick="openCloudModal()">☁️ Senkron Durumu</div>
                     <div class="dropdown-item" onclick="resetLayoutDefault()" style="color:#2980b9;">🔄 Düzeni Sıfırla</div>
                     <div class="dropdown-item" onclick="logout()" style="color:#e74c3c;">🚪 Çıkış Yap</div>
                 </div>
@@ -419,7 +421,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     <div id="profileModal" class="modal">
         <div class="modal-content">
             <h3>Bilgileri Güncelle</h3>
-            <input type="text" id="newUsernameInput" placeholder="Yeni Kullanıcı Adı">
+            <input type="text" id="newUsernameInput" placeholder="Kullanıcı Adı" readonly title="Giriş kullanıcı adı güvenlik nedeniyle değiştirilemez.">
             <input type="password" id="newPasswordInput" placeholder="Yeni Şifre">
             <div style="display:flex; gap:5px; margin-top:10px;">
                 <button onclick="updateProfile()" style="background:#27ae60;">Kaydet</button>
@@ -443,6 +445,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         </div>
     </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 
     function proGo(id){
@@ -466,29 +471,56 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return false;
     }
 
-    let users = JSON.parse(localStorage.getItem('appUsers') || '[]');
-    if (!users.some(x => x.u && x.u.toLowerCase() === "mete")) {
-        users.push({u: "Mete", p: "admin"});
-        localStorage.setItem('appUsers', JSON.stringify(users));
-    }
+    // ===== FIREBASE AUTH + FIRESTORE SENKRON =====
+    // Firebase Console > Project settings > Your apps > Web app içindeki config değerlerini
+    // aşağıdaki alana bir kez girin. Bu değerler gizli parola değildir.
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyC1v3JF7hb8cD0rPD7XKFwaQZsEYHUduac",
+        authDomain: "mtproje.firebaseapp.com",
+        projectId: "mtproje",
+        storageBucket: "mtproje.firebasestorage.app",
+        messagingSenderId: "366547695016",
+        appId: "1:366547695016:web:15c7950edbf7a0d048d99d"
+    };
 
+    const MIN_PASSWORD_LENGTH = 6;
     let currentUser = null;
     let isRegisterMode = false;
+    let firebaseReady = false;
+    window.currentAuthUser = null;
 
-    window.addEventListener('DOMContentLoaded', () => {
-        let activeUserSession = sessionStorage.getItem('activeUserSession');
-        if (activeUserSession && users.some(x => x.u === activeUserSession)) {
-            currentUser = activeUserSession;
-            showApp();
-        } else {
-            logout();
+    function firebaseConfigFilled() {
+        return Object.values(FIREBASE_CONFIG).every(v =>
+            v && !String(v).startsWith("BURAYA_")
+        );
+    }
+
+    function initFirebase() {
+        if (firebaseReady) return true;
+        if (!firebaseConfigFilled()) return false;
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(FIREBASE_CONFIG);
         }
-    });
 
-    const defaultLayout = {
-        left: ['mod_income', 'mod_summary', 'mod_history', 'mod_excel', 'mod_addexpense'],
-        right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment']
-    };
+        window.fbAuth = firebase.auth();
+        window.fbDb = firebase.firestore();
+        firebaseReady = true;
+        return true;
+    }
+
+    function usernameToInternalEmail(username) {
+        const normalized = String(username || "")
+            .trim()
+            .toLocaleLowerCase("tr-TR")
+            .replace(/[^a-z0-9._-]/g, "_");
+        return normalized + "@mtmuhasebe.local";
+    }
+
+    function currentStorageKey(suffix) {
+        const uid = window.currentAuthUser?.uid;
+        return suffix + "_" + (uid || "signedout");
+    }
 
     function toggleAuthMode() {
         isRegisterMode = !isRegisterMode;
@@ -497,41 +529,155 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('authToggleText').textContent = isRegisterMode ? "Zaten hesabın var mı? Giriş yap" : "Hesabın yok mu? Yeni kullanıcı ekle";
     }
 
-    document.getElementById('authForm').addEventListener('submit', e => {
+    function setSignedOutUI() {
+        currentUser = null;
+        window.currentUser = null;
+        window.currentAuthUser = null;
+        document.getElementById('appScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'block';
+        const form = document.getElementById('authForm');
+        if (form) form.reset();
+    }
+
+    async function logout() {
+        try {
+            if (initFirebase()) {
+                await window.fbAuth.signOut();
+            }
+        } catch (e) {
+            console.warn("Çıkış hatası:", e);
+        }
+        setSignedOutUI();
+    }
+
+    async function migrateLegacyLocalData(username, uid) {
+        if (!username || !uid) return;
+
+        const suffixes = ["ex", "activeBanks", "bankCutoffDays", "layout", "salary", "extraIncomes", "theme"];
+        let legacyUsers = [];
+        try {
+            legacyUsers = JSON.parse(localStorage.getItem("appUsers") || "[]");
+        } catch (_) {}
+
+        const legacyUser = legacyUsers.find(x =>
+            String(x?.u || "").toLocaleLowerCase("tr-TR") === String(username).toLocaleLowerCase("tr-TR")
+        );
+
+        const candidates = [username];
+        if (legacyUser?.id) candidates.push(legacyUser.id);
+
+        for (const suffix of suffixes) {
+            const target = suffix + "_" + uid;
+            if (localStorage.getItem(target) !== null) continue;
+
+            for (const oldId of candidates) {
+                const oldValue = localStorage.getItem(suffix + "_" + oldId);
+                if (oldValue !== null) {
+                    localStorage.setItem(target, oldValue);
+                    break;
+                }
+            }
+        }
+    }
+
+    document.getElementById('authForm').addEventListener('submit', async e => {
         e.preventDefault();
-        let uInput = document.getElementById('authUsername').value.trim();
-        let p = document.getElementById('authPassword').value.trim();
 
-        users = JSON.parse(localStorage.getItem('appUsers') || '[]');
-
-        if (isRegisterMode) {
-            if(users.some(x => x.u.toLowerCase() === uInput.toLowerCase())) { alert("Bu kullanıcı adı alınmış!"); return; }
-            users.push({u: uInput, p: p});
-            localStorage.setItem('appUsers', JSON.stringify(users));
-            alert("Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
-            toggleAuthMode();
-            document.getElementById('authForm').reset();
+        if (!initFirebase()) {
+            alert("Firebase ayarları henüz girilmedi. Önce Firebase config bilgilerini index.html içindeki FIREBASE_CONFIG alanına ekleyin.");
             return;
         }
-        
-        let found = users.find(x => x.u.toLowerCase() === uInput.toLowerCase() && x.p === p);
-        if (found) {
-            currentUser = found.u;
-            window.currentUser = currentUser;
-            sessionStorage.setItem('activeUserSession', currentUser);
-            showApp();
-        } else {
-            alert("Hatalı kullanıcı adı veya şifre! (Varsayılan kullanıcı: Mete / Şifre: admin)");
+
+        const uInput = document.getElementById('authUsername').value.trim();
+        const password = document.getElementById('authPassword').value;
+
+        if (!uInput) {
+            alert("Kullanıcı adı boş olamaz.");
+            return;
+        }
+        if (!password || password.length < MIN_PASSWORD_LENGTH) {
+            alert("Şifre en az 6 karakter olmalı.");
+            return;
+        }
+
+        const email = usernameToInternalEmail(uInput);
+        const btn = document.getElementById('authBtn');
+        const oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "İşleniyor...";
+
+        try {
+            if (isRegisterMode) {
+                const cred = await window.fbAuth.createUserWithEmailAndPassword(email, password);
+                await cred.user.updateProfile({ displayName: uInput });
+
+                currentUser = uInput;
+                window.currentUser = currentUser;
+                window.currentAuthUser = cred.user;
+                await migrateLegacyLocalData(currentUser, cred.user.uid);
+                showApp();
+
+                if (window.cloudSync) {
+                    await window.cloudSync.init();
+                    await window.cloudSync.syncCurrentUser();
+                }
+
+                alert("Hesap oluşturuldu. Aynı kullanıcı adı ve şifreyle PC ve telefonda giriş yapabilirsiniz.");
+            } else {
+                const cred = await window.fbAuth.signInWithEmailAndPassword(email, password);
+                currentUser = cred.user.displayName || uInput;
+                window.currentUser = currentUser;
+                window.currentAuthUser = cred.user;
+                await migrateLegacyLocalData(currentUser, cred.user.uid);
+                showApp();
+
+                if (window.cloudSync) {
+                    await window.cloudSync.init();
+                    await window.cloudSync.syncCurrentUser();
+                }
+            }
+        } catch (err) {
+            console.error("Firebase giriş/kayıt hatası:", err);
+            const msg = err?.code === "auth/email-already-in-use"
+                ? "Bu kullanıcı adı zaten kullanımda."
+                : err?.code === "auth/invalid-credential"
+                ? "Hatalı kullanıcı adı veya şifre!"
+                : err?.message || "İşlem başarısız.";
+            alert(msg);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = oldText;
         }
     });
 
-    function logout() {
-        sessionStorage.removeItem('activeUserSession');
-        currentUser = null;
-        document.getElementById('appScreen').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'block';
-        document.getElementById('authForm').reset();
-    }
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!initFirebase()) {
+            setSignedOutUI();
+            return;
+        }
+
+        window.fbAuth.onAuthStateChanged(async user => {
+            if (user) {
+                window.currentAuthUser = user;
+                currentUser = user.displayName || "Kullanıcı";
+                window.currentUser = currentUser;
+                await migrateLegacyLocalData(currentUser, user.uid);
+                showApp();
+
+                if (window.cloudSync) {
+                    await window.cloudSync.init();
+                    await window.cloudSync.syncCurrentUser();
+                }
+            } else {
+                setSignedOutUI();
+            }
+        });
+    });
+
+    const defaultLayout = {
+        left: ['mod_income', 'mod_summary', 'mod_history', 'mod_excel', 'mod_addexpense'],
+        right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment']
+    };
 
     function showApp() {
         window.currentUser = currentUser;
@@ -577,7 +723,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     }
 
     function getLayout() {
-        let saved = localStorage.getItem('layout_' + currentUser);
+        let saved = localStorage.getItem(currentStorageKey('layout'));
         if (saved) {
             try { return JSON.parse(saved); } catch(e) {}
         }
@@ -590,7 +736,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         let leftIds = Array.from(leftCol.children).map(el => el.id);
         let rightIds = Array.from(rightCol.children).map(el => el.id);
         let layout = { left: leftIds, right: rightIds };
-        localStorage.setItem('layout_' + currentUser, JSON.stringify(layout));
+        localStorage.setItem(currentStorageKey('layout'), JSON.stringify(layout));
         if (window.cloudSync) window.cloudSync.pushAll();
         rd();
     }
@@ -662,12 +808,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         // Düzeltilmiş yerleşimi yerelde sakla.
         if (currentUser) {
-            localStorage.setItem('layout_' + currentUser, JSON.stringify(layout));
+            localStorage.setItem(currentStorageKey('layout'), JSON.stringify(layout));
         }
     }
 
     function resetLayoutDefault() {
-        localStorage.removeItem('layout_' + currentUser);
+        localStorage.removeItem(currentStorageKey('layout'));
         renderLayout();
         rd();
     }
@@ -678,60 +824,60 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('profileModal').style.display = 'flex';
     }
     function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
-    function updateProfile() {
-        let newU = document.getElementById('newUsernameInput').value.trim();
-        let newP = document.getElementById('newPasswordInput').value.trim();
-        if(!newU) { alert("Boş olamaz!"); return; }
+    async function updateProfile() {
+        const newU = document.getElementById('newUsernameInput').value.trim();
+        const newP = document.getElementById('newPasswordInput').value;
 
-        users = JSON.parse(localStorage.getItem('appUsers') || '[]');
-        let userObj = users.find(x => x.u === currentUser);
-        if (userObj) {
-            if (newU !== currentUser && users.some(x => x.u.toLowerCase() === newU.toLowerCase())) {
-                alert("Bu isim kullanımda!"); return;
-            }
-            userObj.u = newU;
-            if(newP) userObj.p = newP;
-            localStorage.setItem('appUsers', JSON.stringify(users));
-            
-            let oldEx = localStorage.getItem('ex_' + currentUser);
-            let oldBanks = localStorage.getItem('activeBanks_' + currentUser);
-            let oldCutoffs = localStorage.getItem('bankCutoffDays_' + currentUser);
-            let oldLayout = localStorage.getItem('layout_' + currentUser);
-            let oldSalary = localStorage.getItem('salary_' + currentUser);
-            let oldExtraIncomes = localStorage.getItem('extraIncomes_' + currentUser);
+        if (newU && newU !== currentUser) {
+            alert("Giriş kullanıcı adı güvenlik nedeniyle değiştirilemez. Şifrenizi değiştirebilirsiniz.");
+            document.getElementById('newUsernameInput').value = currentUser;
+            return;
+        }
 
-            currentUser = newU;
-            window.currentUser = currentUser;
-            sessionStorage.setItem('activeUserSession', currentUser);
-
-            if(oldEx) localStorage.setItem('ex_' + currentUser, oldEx);
-            if(oldBanks) localStorage.setItem('activeBanks_' + currentUser, oldBanks);
-            if(oldCutoffs) localStorage.setItem('bankCutoffDays_' + currentUser, oldCutoffs);
-            if(oldLayout) localStorage.setItem('layout_' + currentUser, oldLayout);
-            if(oldSalary !== null) localStorage.setItem('salary_' + currentUser, oldSalary);
-            if(oldExtraIncomes !== null) localStorage.setItem('extraIncomes_' + currentUser, oldExtraIncomes);
-
-            document.getElementById('currentUsernameDisplay').textContent = currentUser;
+        if (!newP) {
             closeProfileModal();
-            alert("Güncellendi!");
-            rd();
+            return;
+        }
+
+        if (newP.length < 6) {
+            alert("Yeni şifre en az 6 karakter olmalı.");
+            return;
+        }
+
+        try {
+            if (!initFirebase() || !window.currentAuthUser) {
+                alert("Oturum bulunamadı.");
+                return;
+            }
+
+            await window.currentAuthUser.updatePassword(newP);
+            document.getElementById('newPasswordInput').value = '';
+            closeProfileModal();
+            alert("Şifreniz güncellendi.");
+        } catch (e) {
+            console.error("Şifre güncelleme hatası:", e);
+            if (e?.code === "auth/requires-recent-login") {
+                alert("Güvenlik nedeniyle önce çıkış yapıp tekrar giriş yaptıktan sonra şifreyi değiştirin.");
+            } else {
+                alert("Şifre güncellenemedi.");
+            }
         }
     }
 
     function openThemeModal() {
-        document.getElementById('themeSelector').value = localStorage.getItem('theme_' + currentUser) || 'light';
+        document.getElementById('themeSelector').value = localStorage.getItem(currentStorageKey('theme')) || 'light';
         document.getElementById('themeModal').style.display = 'flex';
     }
     function closeThemeModal() { document.getElementById('themeModal').style.display = 'none'; }
     function saveTheme() {
         let selectedTheme = document.getElementById('themeSelector').value;
-        localStorage.setItem('theme_' + currentUser, selectedTheme);
+        localStorage.setItem(currentStorageKey('theme'), selectedTheme);
         if (window.cloudSync) window.cloudSync.pushAll();
         loadTheme();
         closeThemeModal();
     }
     function loadTheme() {
-        let savedTheme = localStorage.getItem('theme_' + currentUser) || 'light';
+        let savedTheme = localStorage.getItem(currentStorageKey('theme')) || 'light';
         document.getElementById('mainBody').setAttribute('data-theme', savedTheme);
     }
 
@@ -745,11 +891,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     function loadUserData() {
         if(!currentUser) return;
-        activeBanks = JSON.parse(localStorage.getItem('activeBanks_' + currentUser) || JSON.stringify(Object.keys(allBanks)));
-        bankCutoffDays = JSON.parse(localStorage.getItem('bankCutoffDays_' + currentUser) || JSON.stringify(allBanks));
-        ex = JSON.parse(localStorage.getItem('ex_' + currentUser) || '[]');
-        salary = Number(String(localStorage.getItem('salary_' + currentUser) || '0').replace(',', '.')) || 0;
-        extraIncomes = JSON.parse(localStorage.getItem('extraIncomes_' + currentUser) || '[]');
+        activeBanks = JSON.parse(localStorage.getItem(currentStorageKey('activeBanks')) || JSON.stringify(Object.keys(allBanks)));
+        bankCutoffDays = JSON.parse(localStorage.getItem(currentStorageKey('bankCutoffDays')) || JSON.stringify(allBanks));
+        ex = JSON.parse(localStorage.getItem(currentStorageKey('ex')) || '[]');
+        salary = Number(String(localStorage.getItem(currentStorageKey('salary')) || '0').replace(',', '.')) || 0;
+        extraIncomes = JSON.parse(localStorage.getItem(currentStorageKey('extraIncomes')) || '[]');
         window.currentUser = currentUser;
         window.activeBanks = activeBanks;
         window.bankCutoffDays = bankCutoffDays;
@@ -771,7 +917,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     window.toggleBank = function(bank, isChecked) {
         if (isChecked) { if (!activeBanks.includes(bank)) activeBanks.push(bank); }
         else { activeBanks = activeBanks.filter(b => b !== bank); }
-        localStorage.setItem('activeBanks_' + currentUser, JSON.stringify(activeBanks));
+        localStorage.setItem(currentStorageKey('activeBanks'), JSON.stringify(activeBanks));
         window.activeBanks = activeBanks;
         if (window.cloudSync) window.cloudSync.pushAll();
         rd();
@@ -798,7 +944,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     window.updateCutoff = function(bank, val) {
         bankCutoffDays[bank] = parseInt(val) || 0;
-        localStorage.setItem('bankCutoffDays_' + currentUser, JSON.stringify(bankCutoffDays));
+        localStorage.setItem(currentStorageKey('bankCutoffDays'), JSON.stringify(bankCutoffDays));
         window.bankCutoffDays = bankCutoffDays;
         if (window.cloudSync) window.cloudSync.pushAll();
         rd();
@@ -886,7 +1032,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(!currentUser) return;
         const value = Number(String(document.getElementById('salaryAmount').value || '').replace(',', '.')) || 0;
         salary = value;
-        localStorage.setItem('salary_' + currentUser, String(salary));
+        localStorage.setItem(currentStorageKey('salary'), String(salary));
         window.salary = salary;
         if(window.cloudSync) window.cloudSync.pushAll();
         updateIncomeCards();
@@ -901,7 +1047,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(amount <= 0) { alert('Lütfen geçerli bir ek gelir tutarı girin.'); return; }
 
         extraIncomes.push({id: Date.now(), date, amount, desc});
-        localStorage.setItem('extraIncomes_' + currentUser, JSON.stringify(extraIncomes));
+        localStorage.setItem(currentStorageKey('extraIncomes'), JSON.stringify(extraIncomes));
         window.extraIncomes = extraIncomes;
         document.getElementById('extraIncomeAmount').value = '';
         document.getElementById('extraIncomeDesc').value = '';
@@ -911,7 +1057,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     function deleteExtraIncome(id) {
         extraIncomes = extraIncomes.filter(x => String(x.id) !== String(id));
-        localStorage.setItem('extraIncomes_' + currentUser, JSON.stringify(extraIncomes));
+        localStorage.setItem(currentStorageKey('extraIncomes'), JSON.stringify(extraIncomes));
         window.extraIncomes = extraIncomes;
         if(window.cloudSync) window.cloudSync.pushAll();
         updateIncomeCards();
@@ -1061,7 +1207,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(filteredBox) filteredBox.textContent = '📊 Seçilen dönemin toplam harcaması: ' + money(filteredTotal);
         updateIncomeCards();
 
-        localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+        localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
 
         let bankSummaryGrid = document.getElementById('bankSummaryGrid');
         if(bankSummaryGrid) {
@@ -1127,7 +1273,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 if(confirm(`${newEx.length} kayıt eklensin mi?`)) {
                     loadUserData();
                     ex = ex.concat(newEx);
-                    localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+                    localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
                     rd();
                     alert("Yüklendi!");
                 }
@@ -1163,7 +1309,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
             loadUserData();
             ex.splice(index, 1);
-            localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+            localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
             window.ex = ex;
             if (window.cloudSync) window.cloudSync.pushAll();
             rd();
@@ -1189,7 +1335,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             } else { 
                 ex[idx] = itemData; 
             }
-            localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+            localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
             window.ex = ex;
             if (window.cloudSync) window.cloudSync.pushAll();
             resetForm();
@@ -1231,7 +1377,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 });
             }
 
-            localStorage.setItem('ex_' + currentUser, JSON.stringify(ex));
+            localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
             window.ex = ex;
             if (window.cloudSync) window.cloudSync.pushAll();
             document.getElementById('installmentForm').reset();
@@ -1245,128 +1391,116 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     <div id="cloudModal" class="modal">
         <div class="modal-content" style="width:min(430px,92vw);">
-            <h3>🏠 Oda Senkronizasyonu</h3>
-            <p style="font-size:12px;line-height:1.5;">
-                PC ve telefonu eşleştirmek için bir oda kur veya mevcut odaya bağlan.
+            <h3>☁️ Firebase Otomatik Senkronizasyon</h3>
+            <p style="font-size:12px;line-height:1.6;">
+                Aynı kullanıcı adı ve şifreyle PC ve telefonda giriş yaptığınızda veriler Firestore üzerinden otomatik senkronize edilir.
+                Oda kodu veya dosya indirme gerekmez.
             </p>
-
-            <div style="display:flex;gap:8px;margin:10px 0 14px;">
-                <button type="button" onclick="createRoom()" style="background:#27ae60;">🏠 Oda Kur</button>
-                <button type="button" onclick="showJoinRoom()" style="background:#2980b9;">🔗 Odaya Bağlan</button>
+            <div id="syncModalStatus" style="padding:10px;border:1px solid #244867;border-radius:10px;background:#091d31;font-size:12px;margin:10px 0;">
+                Senkron durumu kontrol ediliyor...
             </div>
-
-            <div id="roomCreateBox" style="display:none;padding:12px;border:1px solid #244867;border-radius:10px;background:#091d31;">
-                <div style="font-size:11px;color:#8fa7bf;margin-bottom:6px;">Oda Kodun</div>
-                <div id="createdRoomCode" style="font-size:24px;font-weight:800;letter-spacing:2px;text-align:center;padding:10px;color:#fff;"></div>
-                <button type="button" onclick="copyRoomCode()">📋 Kodu Kopyala</button>
-                <div style="font-size:10px;color:#8fa7bf;margin-top:8px;">
-                    Telefonda “Odaya Bağlan” seçip bu kodu gir.
-                </div>
-            </div>
-
-            <div id="roomJoinBox" style="display:none;">
-                <input id="roomCodeInput" placeholder="Oda Kodunu Gir" style="text-transform:uppercase;">
-                <button type="button" onclick="joinRoom()">🔗 Odaya Bağlan</button>
-            </div>
-
-            <div style="display:flex;gap:5px;margin-top:12px;">
-                <button onclick="closeCloudModal()" style="background:#e74c3c;">Kapat</button>
+            <div style="display:flex;gap:8px;">
+                <button type="button" onclick="manualSyncNow()">🔄 Şimdi Senkronize Et</button>
+                <button type="button" onclick="closeCloudModal()" style="background:#e74c3c;">Kapat</button>
             </div>
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
     const POLL_MS = 5000;
 
     window.setCloudStatus = function(text, ok) {
         const el = document.getElementById("cloudStatus");
-        if (!el) return;
-        el.textContent = text;
-        el.style.color = ok ? "#79d7a5" : "#ff8d8d";
+        if (el) {
+            el.textContent = text;
+            el.style.color = ok ? "#79d7a5" : "#ff8d8d";
+        }
+
+        const modal = document.getElementById("syncModalStatus");
+        if (modal) {
+            modal.textContent = text;
+            modal.style.color = ok ? "#79d7a5" : "#ff8d8d";
+        }
     };
 
     window.cloudSync = {
         cloudReady: false,
-        client: null,
-        syncCode: "",
         applyingRemote: false,
         syncing: false,
         lastRemoteUpdatedAt: 0,
         pollTimer: null,
 
-        async init(config) {
-            try {
-                if (!window.supabase || !window.supabase.createClient) {
-                    throw new Error("Supabase kütüphanesi yüklenemedi.");
-                }
-                this.client = window.supabase.createClient("https://psmfwetypeeetrjzdxzb.supabase.co", "sb_publishable_PAAJCMDbrxhl9WXlAUp4qA_ikad_Oi5");
-                this.syncCode = String(config.syncCode || "").trim().toUpperCase();
-                if (this.syncCode.length < 8) throw new Error("Senkron kodu en az 8 karakter olmalı.");
-                this.cloudReady = true;
-                localStorage.setItem("supabaseConfig", JSON.stringify({ syncCode: this.syncCode }));
-                window.setCloudStatus("☁️ Bulut bağlantısı hazır", true);
-                this.startPolling();
-                return true;
-            } catch (e) {
-                console.error("Bulut başlatılamadı:", e);
+        async init() {
+            if (!initFirebase() || !window.currentAuthUser) {
                 this.cloudReady = false;
-                window.setCloudStatus("⚠️ Bulut bağlantısı kurulamadı", false);
+                window.setCloudStatus("🔒 Firebase girişi yapılmadı", false);
                 return false;
             }
+
+            this.cloudReady = true;
+            window.setCloudStatus("☁️ Firebase bağlantısı hazır", true);
+            this.startPolling();
+            return true;
+        },
+
+        docRef() {
+            if (!window.currentAuthUser?.uid) return null;
+            return window.fbDb.collection("user_data").doc(window.currentAuthUser.uid);
         },
 
         async readRemote() {
-            if (!this.cloudReady || !this.client || !this.syncCode) return null;
+            const ref = this.docRef();
+            if (!ref) return null;
+
             try {
-                const { data, error } = await this.client.rpc("mtmuhasebe_get", {
-                    p_sync_code: this.syncCode
-                });
-                if (error) throw error;
-                return data || null;
+                const snap = await ref.get();
+                if (!snap.exists) return null;
+                const data = snap.data() || {};
+                return {
+                    ...(data.payload || {}),
+                    updatedAt: data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0
+                };
             } catch (e) {
-                console.error("Bulut okuma hatası:", e);
+                console.error("Firestore okuma hatası:", e);
                 window.setCloudStatus("⚠️ Bulut okuma hatası", false);
                 return null;
             }
         },
 
         applyRemote(data) {
-            if (!data || !window.currentUser) return;
+            if (!data || !window.currentAuthUser?.uid) return;
             this.applyingRemote = true;
+
             try {
                 if (Array.isArray(data.ex)) {
                     ex = data.ex;
                     window.ex = ex;
-                    localStorage.setItem("ex_" + window.currentUser, JSON.stringify(ex));
+                    localStorage.setItem(currentStorageKey("ex"), JSON.stringify(ex));
                 }
                 if (Array.isArray(data.activeBanks)) {
                     activeBanks = data.activeBanks;
                     window.activeBanks = activeBanks;
-                    localStorage.setItem("activeBanks_" + window.currentUser, JSON.stringify(activeBanks));
+                    localStorage.setItem(currentStorageKey("activeBanks"), JSON.stringify(activeBanks));
                 }
                 if (data.bankCutoffDays && typeof data.bankCutoffDays === "object") {
                     bankCutoffDays = data.bankCutoffDays;
                     window.bankCutoffDays = bankCutoffDays;
-                    localStorage.setItem("bankCutoffDays_" + window.currentUser, JSON.stringify(bankCutoffDays));
+                    localStorage.setItem(currentStorageKey("bankCutoffDays"), JSON.stringify(bankCutoffDays));
                 }
                 if (data.salary !== undefined && data.salary !== null) {
                     salary = Number(data.salary) || 0;
                     window.salary = salary;
-                    localStorage.setItem("salary_" + window.currentUser, String(salary));
+                    localStorage.setItem(currentStorageKey("salary"), String(salary));
                 }
                 if (Array.isArray(data.extraIncomes)) {
                     extraIncomes = data.extraIncomes;
-                    window.extraIncomes = extraIncomes;
-                    localStorage.setItem("extraIncomes_" + window.currentUser, JSON.stringify(extraIncomes));
+                    window.extraIncomes = data.extraIncomes;
+                    localStorage.setItem(currentStorageKey("extraIncomes"), JSON.stringify(data.extraIncomes));
                 }
-                if (data.layout) {
-                    localStorage.setItem("layout_" + window.currentUser, JSON.stringify(data.layout));
-                }
-                if (data.theme) {
-                    localStorage.setItem("theme_" + window.currentUser, data.theme);
-                }
+                if (data.layout) localStorage.setItem(currentStorageKey("layout"), JSON.stringify(data.layout));
+                if (data.theme) localStorage.setItem(currentStorageKey("theme"), data.theme);
+
                 this.lastRemoteUpdatedAt = Number(data.updatedAt || 0);
             } finally {
                 this.applyingRemote = false;
@@ -1374,18 +1508,21 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         },
 
         async save(payload) {
-            if (!this.cloudReady || !this.client || !this.syncCode || this.applyingRemote) return false;
+            if (!this.cloudReady || !window.currentAuthUser?.uid || this.applyingRemote) return false;
+
             try {
-                const { data, error } = await this.client.rpc("mtmuhasebe_save", {
-                    p_sync_code: this.syncCode,
-                    p_payload: payload
-                });
-                if (error) throw error;
-                if (data && data.updatedAt) this.lastRemoteUpdatedAt = Number(data.updatedAt);
-                window.setCloudStatus("☁️ Buluta kaydedildi", true);
+                const ref = this.docRef();
+                await ref.set({
+                    username: window.currentUser || "Kullanıcı",
+                    payload,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                this.lastRemoteUpdatedAt = Date.now();
+                window.setCloudStatus("☁️ Firestore'a kaydedildi", true);
                 return true;
             } catch (e) {
-                console.error("Bulut yazma hatası:", e);
+                console.error("Firestore yazma hatası:", e);
                 window.setCloudStatus("⚠️ Buluta kayıt hatası", false);
                 return false;
             }
@@ -1393,9 +1530,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         async pushAll() {
             if (!this.cloudReady || !window.currentUser || this.applyingRemote) return;
+
             if (typeof window.loadUserData === "function") window.loadUserData();
             const layout = typeof window.getLayout === "function" ? window.getLayout() : null;
-            const theme = localStorage.getItem("theme_" + window.currentUser) || "light";
+            const theme = localStorage.getItem(currentStorageKey("theme")) || "light";
+
             await this.save({
                 ex: window.ex || [],
                 activeBanks: window.activeBanks || [],
@@ -1415,17 +1554,20 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         },
 
         async syncCurrentUser() {
-            if (!this.cloudReady || !this.client || !window.currentUser || this.syncing) return;
+            if (!this.cloudReady || !window.currentAuthUser?.uid || this.syncing) return;
+
             this.syncing = true;
             try {
-                window.setCloudStatus("🔄 Bulut verisi kontrol ediliyor...", true);
+                window.setCloudStatus("🔄 Firestore kontrol ediliyor...", true);
                 const remote = await this.readRemote();
+
                 if (remote) {
                     this.applyRemote(remote);
                     this.refreshUI();
-                    window.setCloudStatus("🔄 Veriler buluttan alındı", true);
+                    window.setCloudStatus("✅ PC + Telefon senkronize", true);
                 } else {
                     await this.pushAll();
+                    window.setCloudStatus("✅ İlk senkron tamamlandı", true);
                 }
             } finally {
                 this.syncing = false;
@@ -1433,14 +1575,15 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         },
 
         async poll() {
-            if (!this.cloudReady || !this.client || !window.currentUser || this.syncing || this.applyingRemote) return;
+            if (!this.cloudReady || !window.currentAuthUser?.uid || this.syncing || this.applyingRemote) return;
             const remote = await this.readRemote();
             if (!remote) return;
+
             const remoteTime = Number(remote.updatedAt || 0);
             if (remoteTime > this.lastRemoteUpdatedAt) {
                 this.applyRemote(remote);
                 this.refreshUI();
-                window.setCloudStatus("🔄 PC + Telefon senkronize", true);
+                window.setCloudStatus("✅ PC + Telefon senkronize", true);
             }
         },
 
@@ -1450,155 +1593,39 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
     };
 
-    const FIXED_SUPABASE_URL = "https://psmfwetypeeetrjzdxzb.supabase.co";
-    const FIXED_SUPABASE_KEY = "sb_publishable_PAAJCMDbrxhl9WXlAUp4qA_ikad_Oi5";
-
-    function normalizeRoomCode(code) {
-        return String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    }
-
-    function formatRoomCode(code) {
-        const c = normalizeRoomCode(code);
-        return c.match(/.{1,4}/g)?.join("-") || c;
-    }
-
-    window.loadCloudConfig = async function() {
-        const raw = localStorage.getItem("supabaseConfig");
-        if (!raw) {
-            window.setCloudStatus("🏠 Oda bağlantısı kurulmadı", false);
-            return false;
-        }
-        try {
-            const config = JSON.parse(raw);
-            const ok = await window.cloudSync.init({
-                url: FIXED_SUPABASE_URL,
-                key: FIXED_SUPABASE_KEY,
-                syncCode: normalizeRoomCode(config.syncCode)
-            });
-            if (ok && window.currentUser) await window.cloudSync.syncCurrentUser();
-            return ok;
-        } catch (e) {
-            console.error("Oda ayarı okunamadı:", e);
-            return false;
-        }
-    };
-
     window.openCloudModal = function() {
-        const createBox = document.getElementById("roomCreateBox");
-        const joinBox = document.getElementById("roomJoinBox");
-        if (createBox) createBox.style.display = "none";
-        if (joinBox) joinBox.style.display = "none";
-
-        const raw = localStorage.getItem("supabaseConfig");
-        if (raw) {
-            try {
-                const c = JSON.parse(raw);
-                const code = normalizeRoomCode(c.syncCode);
-                if (code) {
-                    if (createBox) createBox.style.display = "block";
-                    const out = document.getElementById("createdRoomCode");
-                    if (out) out.textContent = formatRoomCode(code);
-                }
-            } catch(e) {}
-        }
         document.getElementById("cloudModal").style.display = "flex";
+        window.setCloudStatus(
+            window.cloudSync?.cloudReady ? "✅ Firebase senkron aktif" : "⚠️ Senkron aktif değil",
+            !!window.cloudSync?.cloudReady
+        );
     };
 
     window.closeCloudModal = function() {
         document.getElementById("cloudModal").style.display = "none";
     };
 
-    window.createRoom = async function() {
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        const bytes = new Uint8Array(12);
-        crypto.getRandomValues(bytes);
-        let code = "";
-        for (let i = 0; i < bytes.length; i++) code += chars[bytes[i] % chars.length];
-
-        const ok = await window.cloudSync.init({
-            url: FIXED_SUPABASE_URL,
-            key: FIXED_SUPABASE_KEY,
-            syncCode: code
-        });
-        if (!ok) {
-            alert("Oda kurulamadı. İnternet bağlantısını kontrol et.");
+    window.manualSyncNow = async function() {
+        if (!window.currentAuthUser) {
+            alert("Önce giriş yapın.");
             return;
         }
-
-        await window.cloudSync.pushAll();
-
-        document.getElementById("roomJoinBox").style.display = "none";
-        document.getElementById("roomCreateBox").style.display = "block";
-        document.getElementById("createdRoomCode").textContent = formatRoomCode(code);
-        window.setCloudStatus("🏠 Oda aktif: " + formatRoomCode(code), true);
-    };
-
-    window.showJoinRoom = function() {
-        document.getElementById("roomCreateBox").style.display = "none";
-        document.getElementById("roomJoinBox").style.display = "block";
-        const input = document.getElementById("roomCodeInput");
-        if (input) {
-            input.value = "";
-            input.focus();
-        }
-    };
-
-    window.joinRoom = async function() {
-        const input = document.getElementById("roomCodeInput");
-        const code = normalizeRoomCode(input ? input.value : "");
-        if (code.length < 8) {
-            alert("Geçerli oda kodunu gir.");
-            return;
-        }
-
-        const ok = await window.cloudSync.init({
-            url: FIXED_SUPABASE_URL,
-            key: FIXED_SUPABASE_KEY,
-            syncCode: code
-        });
-        if (!ok) {
-            alert("Odaya bağlanılamadı.");
-            return;
-        }
-
-        const remote = await window.cloudSync.readRemote();
-        if (!remote) {
-            alert("Bu oda bulunamadı. Kodu kontrol et.");
-            return;
-        }
-
-        window.cloudSync.applyRemote(remote);
-        window.cloudSync.refreshUI();
-        document.getElementById("cloudModal").style.display = "none";
-        window.setCloudStatus("🔗 Odaya bağlı: " + formatRoomCode(code), true);
-        alert("Odaya bağlanıldı. Veriler senkronize edildi.");
-    };
-
-    window.copyRoomCode = async function() {
-        const code = document.getElementById("createdRoomCode")?.textContent || "";
-        try {
-            await navigator.clipboard.writeText(code);
-            alert("Oda kodu kopyalandı: " + code);
-        } catch(e) {
-            alert("Oda kodun: " + code);
-        }
+        if (!window.cloudSync.cloudReady) await window.cloudSync.init();
+        await window.cloudSync.syncCurrentUser();
     };
 
     window.addEventListener("online", async () => {
-        if (window.cloudSync && window.cloudSync.cloudReady && window.currentUser) {
+        if (window.currentAuthUser) {
+            await window.cloudSync.init();
             await window.cloudSync.syncCurrentUser();
         }
     });
 
     document.addEventListener("visibilitychange", async () => {
-        if (document.visibilityState === "visible" &&
-            window.cloudSync && window.cloudSync.cloudReady && window.currentUser) {
+        if (document.visibilityState === "visible" && window.currentAuthUser) {
+            if (!window.cloudSync.cloudReady) await window.cloudSync.init();
             await window.cloudSync.syncCurrentUser();
         }
-    });
-
-    window.addEventListener("DOMContentLoaded", async () => {
-        await window.loadCloudConfig();
     });
 })();
 </script>

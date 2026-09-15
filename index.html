@@ -1739,12 +1739,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
 
         indexedEx.sort((i, j) => {
-            // Gerçek işlem tarihi: en yeni harcama en üstte.
-            const aTime = new Date(i.d + 'T00:00:00').getTime();
-            const bTime = new Date(j.d + 'T00:00:00').getTime();
-            if (aTime !== bTime) return bTime - aTime;
-            // Aynı gün içindeki son eklenen kayıt üstte.
-            return j.originalIndex - i.originalIndex;
+            if (i.sortPriority !== j.sortPriority) {
+                return i.sortPriority - j.sortPriority;
+            }
+            return new Date(j.dueDate) - new Date(i.dueDate);
         });
 
         // Her banka/kart için en yakın ödenmemiş dönem "Güncel Borç"tur.
@@ -1760,6 +1758,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         let bankStats = {};
         activeBanks.forEach(b => { bankStats[b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 }; });
         let statementGroups = {};
+        let displayRows = [];
 
         indexedEx.forEach((item) => {
             let amtNum = Number(String(item.a).replace(',', '.')) || 0;
@@ -1823,8 +1822,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 currentCell = `${amtNum.toFixed(2)} TL`;
             }
 
-            if(tb) {
-                tb.innerHTML += `<tr>
+            displayRows.push({
+                transactionDate: item.d,
+                originalIndex: item.originalIndex,
+                html: `<tr>
                     <td><b>${item.dueDate}</b><br><span style="font-size:9px;color:#7f8c8d;">İşlem: ${item.d}</span></td>
                     <td>${item.c}</td>
                     <td><b>${item.b}</b></td>
@@ -1837,9 +1838,19 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                         <button style="background:#2980b9;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="editExpense(${k})">Düzenle</button>
                         <button style="background:#e74c3c;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="dl(${k})">Sil</button>
                     </div></td>
-                </tr>`;
-            }
+                </tr>`
+            });
         });
+
+        // KESİN GÖRÜNTÜLEME SIRASI:
+        // Filtrelerden geçen kayıtlar, tabloya yazılmadan SON aşamada
+        // gerçek "İşlem" tarihine göre yeniden -> eskiye sıralanır.
+        displayRows.sort((a, b) => {
+            const byDate = String(b.transactionDate).localeCompare(String(a.transactionDate));
+            if (byDate !== 0) return byDate;
+            return b.originalIndex - a.originalIndex;
+        });
+        if (tb) tb.innerHTML = displayRows.map(row => row.html).join('');
 
         let tt = document.getElementById('t');
         let mt = document.getElementById('m');

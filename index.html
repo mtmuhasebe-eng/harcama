@@ -697,6 +697,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                         <option value="all">Tüm Durumlar</option>
                         <option value="current">Güncel Ekstre</option>
                         <option value="next">Gelecek Dönem</option>
+                        <option value="paid">Geçmiş Ekstre</option>
                     </select>
                     <select id="monthFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="rd()">
                         <option value="all">Tüm Aylar</option>
@@ -1492,7 +1493,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             .reduce((sum, x) => sum + (Number(x.amount) || 0), 0);
         const monthlyIncome = salary + monthlyExtra;
         const monthlyExpense = ex
-            .filter(x => monthKey(x.d) === cm)
+            .filter(x => {
+                if (monthKey(x.d) !== cm) return false;
+                const cutoff = bankCutoffDays[x.b] !== undefined ? bankCutoffDays[x.b] : 0;
+                const details = getDueDateDetails(x.d, cutoff);
+                return !isStatementPaid(x.b, details.dueDateStr);
+            })
             .reduce((sum, x) => sum + (Number(String(x.a).replace(',', '.')) || 0), 0);
         const remaining = monthlyIncome - monthlyExpense;
 
@@ -1716,8 +1722,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         indexedEx.forEach((item) => {
             let amtNum = Number(String(item.a).replace(',', '.')) || 0;
 
-            if (item.d === ds) ts += amtNum;
-            if (item.d.startsWith(cm)) ms += amtNum;
+            // Ana sayfa özetlerinde yalnızca güncel (ödenmemiş) veriler gösterilir.
+            if (!item.statementPaid) {
+                if (item.d === ds) ts += amtNum;
+                if (item.d.startsWith(cm)) ms += amtNum;
+            }
 
             if (!bankStats[item.b]) bankStats[item.b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 };
 
@@ -1743,6 +1752,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
             if (selectedStatus === 'current' && !isCurrentStatus) return;
             if (selectedStatus === 'next' && !isNextStatus) return;
+            if (selectedStatus === 'paid' && !item.statementPaid) return;
 
             // Ay Filtresi Kontrolü
             if (selectedMonth !== 'all' && item.itemMonth !== selectedMonth) {
@@ -1760,7 +1770,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             } else if (isNextStatus) {
                 nextCell = `${amtNum.toFixed(2)} TL <span class="badge-next">Gelecek</span>`;
             } else if (item.statementPaid) {
-                currentCell = `${amtNum.toFixed(2)} TL <span style="color:#27ae60;font-weight:700;">Ödendi</span>`;
+                currentCell = `${amtNum.toFixed(2)} TL <span style="color:#27ae60;font-weight:700;">Geçmiş Ekstre • Ödendi</span>`;
             } else {
                 currentCell = `${amtNum.toFixed(2)} TL`;
             }

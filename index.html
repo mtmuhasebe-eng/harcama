@@ -1439,8 +1439,17 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         box.innerHTML = `
             <h3 style="font-size:13px;margin:10px 0 6px;">✓ Ödenen Ekstre Geçmişi</h3>
             <div style="overflow-x:auto;">
-                <table class="cutoff-table">
-                    <thead><tr><th>Banka / Kart</th><th>Son Ödeme</th><th>Tutar</th><th>Ödendiği Tarih</th><th>Durum</th><th>İşlem</th></tr></thead>
+                <table class="cutoff-table" style="min-width:760px;">
+                    <thead>
+                        <tr>
+                            <th>Banka / Kart</th>
+                            <th>Son Ödeme</th>
+                            <th>Tutar</th>
+                            <th>Ödendiği Tarih</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         ${rows.map(p => {
                             const paidDate = new Date(p.paidAt);
@@ -1451,8 +1460,13 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                                 <td>${money(p.amount)}</td>
                                 <td>${paidText}</td>
                                 <td><span style="color:#27ae60;font-weight:700;">Ödendi</span></td>
-                                <td><button type="button" onclick="undoStatementPaid('${encodeURIComponent(p.key)}')"
-                                    style="padding:5px 8px;background:#c0392b;color:#fff;border:0;border-radius:6px;font-size:10px;">↶ Geri Al</button></td>
+                                <td>
+                                    <button type="button"
+                                        onclick="undoStatementPaid('${encodeURIComponent(p.key)}')"
+                                        style="padding:6px 10px;background:#c0392b;color:#fff;border:0;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;">
+                                        ↶ Geri Al
+                                    </button>
+                                </td>
                             </tr>`;
                         }).join('')}
                     </tbody>

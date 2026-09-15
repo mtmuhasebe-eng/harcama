@@ -693,8 +693,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 5px; flex-wrap: wrap;">
                 <h2 style="margin: 0; border: none;">📜 Harcama Geçmişi</h2>
                 <div style="display: flex; gap: 5px;">
-                    <select id="statusFilter" style="width: 170px; margin: 0; padding: 3px;" onchange="rd()">
+                    <select id="statusFilter" style="width: 175px; margin: 0; padding: 3px;" onchange="rd()">
                         <option value="current" selected>Güncel Borç</option>
+                        <option value="statement">Kesilmiş Ekstre</option>
                         <option value="all">Tüm Borçlar</option>
                         <option value="next">Gelecek Borçlar</option>
                         <option value="paid">Geçmiş / Ödenen</option>
@@ -1345,7 +1346,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         const year = expDate.getFullYear();
 
         if (!cutoffDay || cutoffDay === 0) {
-            return { dueDateStr: expenseDateStr, cycle: 'current' };
+            return { dueDateStr: expenseDateStr, cycle: 'current', cutoffDateStr: expenseDateStr };
         }
 
         let cycleMonth = month;
@@ -1379,7 +1380,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             cycle = 'nextMonth';
         }
 
-        return { dueDateStr, cycle };
+        let cutoffLastDay = new Date(cycleYear, cycleMonth + 1, 0).getDate();
+        let cutoffDateNum = Math.min(cutoffDay, cutoffLastDay);
+        let cutoffDateStr = `${cycleYear}-${String(cycleMonth + 1).padStart(2,'0')}-${String(cutoffDateNum).padStart(2,'0')}`;
+
+        return { dueDateStr, cycle, cutoffDateStr };
     }
 
 
@@ -1715,7 +1720,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             let itemMonth = details.dueDateStr.substring(0, 7);
             availableMonths.add(itemMonth);
 
-            return { ...item, originalIndex: index, sortPriority: sortPriority, dueDate: details.dueDateStr, cycle: details.cycle, itemMonth: itemMonth, statementPaid: isStatementPaid(item.b, details.dueDateStr) };
+            return { ...item, originalIndex: index, sortPriority: sortPriority, dueDate: details.dueDateStr, cutoffDate: details.cutoffDateStr, cycle: details.cycle, itemMonth: itemMonth, statementPaid: isStatementPaid(item.b, details.dueDateStr) };
         });
 
         if(monthFilterSelect) {
@@ -1738,6 +1743,16 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 return i.sortPriority - j.sortPriority;
             }
             return new Date(j.dueDate) - new Date(i.dueDate);
+        });
+
+        // Her banka/kart için en yakın ödenmemiş dönem "Güncel Borç"tur.
+        // Bir ekstre Ödendi olduğunda sıradaki dönem otomatik Güncel Borç olur.
+        const currentDueByBank = {};
+        indexedEx.forEach(item => {
+            if (item.statementPaid) return;
+            if (!currentDueByBank[item.b] || item.dueDate < currentDueByBank[item.b]) {
+                currentDueByBank[item.b] = item.dueDate;
+            }
         });
 
         let bankStats = {};
@@ -1772,11 +1787,15 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 statementGroups[gKey].amount += amtNum;
             }
 
-            // Durum Filtresi Kontrolü
-            let isCurrentStatus = !item.statementPaid && (item.cycle === 'thisMonth' || item.cycle === 'past');
-            let isNextStatus = !item.statementPaid && (item.cycle === 'nextMonth');
+            // Durum Filtresi:
+            // Güncel Borç = her kartın en yakın ödenmemiş dönemi.
+            // Ödendi denince sıradaki dönem otomatik olarak güncele geçer.
+            const isCurrentStatus = !item.statementPaid && currentDueByBank[item.b] === item.dueDate;
+            const isNextStatus = !item.statementPaid && !isCurrentStatus;
+            const isCutStatement = isCurrentStatus && item.cutoffDate <= ds;
 
             if (selectedStatus === 'current' && !isCurrentStatus) return;
+            if (selectedStatus === 'statement' && !isCutStatement) return;
             if (selectedStatus === 'next' && !isNextStatus) return;
             if (selectedStatus === 'paid' && !item.statementPaid) return;
             if (selectedStatus === 'all' && item.statementPaid) return;
@@ -1793,7 +1812,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             let nextCell = "-";
 
             if (isCurrentStatus) {
-                currentCell = `${amtNum.toFixed(2)} TL <span class="badge-current">Güncel</span>`;
+                currentCell = `${amtNum.toFixed(2)} TL <span class="badge-current">Güncel Borç</span>`;
             } else if (isNextStatus) {
                 nextCell = `${amtNum.toFixed(2)} TL <span class="badge-next">Gelecek</span>`;
             } else if (item.statementPaid) {

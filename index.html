@@ -697,7 +697,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                         <option value="all">Tüm Durumlar</option>
                         <option value="current">Güncel Ekstre</option>
                         <option value="next">Gelecek Dönem</option>
-                        <option value="paid">Geçmiş Ekstre</option>
+                        <option value="paid">Geçmiş / Ödenen Ekstreler</option>
                     </select>
                     <select id="monthFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="rd()">
                         <option value="all">Tüm Aylar</option>
@@ -1486,30 +1486,44 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     function updateIncomeCards() {
         if(!currentUser) return;
         loadUserData();
+
         const now = new Date();
         const cm = now.toISOString().split('T')[0].substring(0,7);
+
         const monthlyExtra = extraIncomes
             .filter(x => monthKey(x.date) === cm)
             .reduce((sum, x) => sum + (Number(x.amount) || 0), 0);
+
         const monthlyIncome = salary + monthlyExtra;
-        const monthlyExpense = ex
-            .filter(x => {
-                if (monthKey(x.d) !== cm) return false;
-                const cutoff = bankCutoffDays[x.b] !== undefined ? bankCutoffDays[x.b] : 0;
-                const details = getDueDateDetails(x.d, cutoff);
-                return !isStatementPaid(x.b, details.dueDateStr);
-            })
-            .reduce((sum, x) => sum + (Number(String(x.a).replace(',', '.')) || 0), 0);
+
+        // Bu Ay Harcama = bu ay yapılan ve ait olduğu ekstre henüz ÖDENMEMİŞ harcamalar.
+        // Ödendi denilen ekstre silinmez; yalnızca güncel finansal toplamdan çıkar.
+        const monthlyExpense = ex.reduce((sum, x) => {
+            if (monthKey(x.d) !== cm) return sum;
+
+            const cutoff = bankCutoffDays[x.b] !== undefined ? bankCutoffDays[x.b] : 0;
+            const details = getDueDateDetails(x.d, cutoff);
+
+            if (isStatementPaid(x.b, details.dueDateStr)) return sum;
+
+            return sum + (Number(String(x.a).replace(',', '.')) || 0);
+        }, 0);
+
         const remaining = monthlyIncome - monthlyExpense;
 
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if(el) el.textContent = money(value);
+        };
 
-        const setText = (id, value) => { const el=document.getElementById(id); if(el) el.textContent=money(value); };
         setText('incomeTotalCard', monthlyIncome);
         setText('incomeExpenseCard', monthlyExpense);
         setText('incomeRemainingCard', remaining);
 
         const salaryInput = document.getElementById('salaryAmount');
-        if(salaryInput && document.activeElement !== salaryInput) salaryInput.value = salary ? salary.toFixed(2) : '';
+        if(salaryInput && document.activeElement !== salaryInput) {
+            salaryInput.value = salary ? salary.toFixed(2) : '';
+        }
 
         renderExtraIncomeList();
     }
@@ -1722,7 +1736,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         indexedEx.forEach((item) => {
             let amtNum = Number(String(item.a).replace(',', '.')) || 0;
 
-            // Ana sayfa özetlerinde yalnızca güncel (ödenmemiş) veriler gösterilir.
+            // Ana sayfada yalnızca güncel, henüz ödenmemiş harcamalar gösterilir.
             if (!item.statementPaid) {
                 if (item.d === ds) ts += amtNum;
                 if (item.d.startsWith(cm)) ms += amtNum;
@@ -1770,7 +1784,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             } else if (isNextStatus) {
                 nextCell = `${amtNum.toFixed(2)} TL <span class="badge-next">Gelecek</span>`;
             } else if (item.statementPaid) {
-                currentCell = `${amtNum.toFixed(2)} TL <span style="color:#27ae60;font-weight:700;">Geçmiş Ekstre • Ödendi</span>`;
+                currentCell = `- <span style="color:#27ae60;font-weight:700;">Geçmiş Ekstre • Ödendi</span>`;
             } else {
                 currentCell = `${amtNum.toFixed(2)} TL`;
             }

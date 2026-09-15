@@ -1860,7 +1860,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(mt) mt.textContent = currentMonthExpenseAfterPayments().toFixed(2) + ' TL';
         if(futureCard) futureCard.textContent = futureTotal.toFixed(2) + ' TL';
         let filteredBox = document.getElementById('filteredTotalBox');
-        if(filteredBox) filteredBox.textContent = '📊 Seçilen dönemin toplam harcaması: ' + money(filteredTotal);
+        if(filteredBox) filteredBox.textContent = ((document.getElementById('statusFilter') && document.getElementById('statusFilter').value === 'current') ? currentMonthExpenseAfterPayments() : filteredTotal).toFixed(2) + ' TL';
         updateIncomeCards();
 
         localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));

@@ -6,7 +6,7 @@
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
     <title>Harcama ve Borç Takibi</title>
-    <!-- MTmuhasebe build: SECURITY-HARDENED-20260913-v3 -->
+    <!-- MTmuhasebe build: firebase-auth-firestore-sync-20260913 -->
     <style>
         :root {
             --bg-color: #f8f9fa;
@@ -486,8 +486,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     <div id="loginScreen" class="auth-box">
         <h2 id="authTitle" style="color:var(--primary-color); margin-top:0;">🔐 Giriş Yap</h2>
         <form id="authForm">
-            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" required maxlength="80">
-            <input type="password" id="authPassword" placeholder="Şifre" required maxlength="128">
+            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" required>
+            <input type="password" id="authPassword" placeholder="Şifre" required>
             <button type="submit" id="authBtn">Giriş Yap</button>
         </form>
         <span class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">Hesabın yok mu? Yeni kullanıcı ekle</span>
@@ -598,6 +598,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         <div id="mod_bankstats" class="draggable-module" draggable="true" ondragstart="drag(event)">
             <h2>💳 Banka Ekstre Durumu</h2>
             <div class="summary-grid" id="bankSummaryGrid"></div>
+            <div id="paidStatementHistory" style="margin-top:12px;"></div>
         </div>
 
         <div id="mod_addexpense" class="draggable-module" draggable="true" ondragstart="drag(event)">
@@ -615,7 +616,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 </select>
                 <select id="b"></select>
                 <input type="text" inputmode="decimal" id="a" placeholder="Tutar (TL)" onkeypress="return isNumberKey(event)" required>
-                <input type="text" id="x" placeholder="Açıklama (İsteğe bağlı)" maxlength="250">
+                <input type="text" id="x" placeholder="Açıklama (İsteğe bağlı)">
                 <div class="btn-container">
                     <button type="submit" id="saveBtn">Kaydet</button>
                     <button type="button" id="cancelEdit" onclick="resetForm()">İptal</button>
@@ -629,7 +630,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">Telefon, spor, internet, aidat gibi her ay tekrarlanan giderleri bir kez tanımla.</div>
             <form id="recurringForm">
                 <div class="recurring-grid">
-                    <input class="recurring-wide" type="text" id="recName" placeholder="Harcama adı (Telefon faturası)" required maxlength="120">
+                    <input class="recurring-wide" type="text" id="recName" placeholder="Harcama adı (Telefon faturası)" required>
                     <select id="recCategory">
                         <option>Fatura</option><option>Spor</option><option>Market</option><option>Ulaşım</option><option>Alışveriş</option><option>Diğer</option>
                     </select>
@@ -657,7 +658,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <select id="idB"></select>
                 <input type="text" inputmode="decimal" id="idTotalA" placeholder="Toplam Tutar (TL)" onkeypress="return isNumberKey(event)" required>
                 <input type="number" id="idCount" min="2" max="36" placeholder="Taksit Sayısı" required>
-                <input type="text" id="idX" placeholder="Açıklama" maxlength="250">
+                <input type="text" id="idX" placeholder="Açıklama">
                 <button type="submit" style="background:#8e44ad;">Taksitleri Oluştur</button>
             </form>
         </div>
@@ -682,7 +683,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div class="income-form-grid">
                 <input type="date" id="extraIncomeDate">
                 <input type="text" id="extraIncomeAmount" inputmode="decimal" placeholder="Tutar (TL)">
-                <input type="text" id="extraIncomeDesc" placeholder="Açıklama" maxlength="250">
+                <input type="text" id="extraIncomeDesc" placeholder="Açıklama">
                 <button type="button" onclick="addExtraIncome()" style="background:#27ae60;">Ekle</button>
             </div>
             <div id="extraIncomeList" class="income-list"></div>
@@ -729,7 +730,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         <div class="modal-content">
             <h3>Bilgileri Güncelle</h3>
             <input type="text" id="newUsernameInput" placeholder="Kullanıcı Adı" readonly title="Giriş kullanıcı adı güvenlik nedeniyle değiştirilemez.">
-            <input type="password" id="newPasswordInput" placeholder="Yeni Şifre" maxlength="128">
+            <input type="password" id="newPasswordInput" placeholder="Yeni Şifre">
             <div style="display:flex; gap:5px; margin-top:10px;">
                 <button onclick="updateProfile()" style="background:#27ae60;">Kaydet</button>
                 <button onclick="closeProfileModal()" style="background:#e74c3c;">İptal</button>
@@ -839,84 +840,6 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return false;
     }
 
-
-    // ===== MTmuhasebe SECURITY HARDENING =====
-    const NEW_PASSWORD_MIN_LENGTH = 10;
-    const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
-    const MAX_IMPORT_ROWS = 10000;
-
-    function safeText(value, maxLength = 250) {
-        return String(value ?? '')
-            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
-            .slice(0, maxLength);
-    }
-
-    function escapeHTML(value) {
-        return safeText(value, 2000)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function safeDate(value) {
-        const s = safeText(value, 10);
-        return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
-    }
-
-    function safeAmount(value) {
-        const n = Number(String(value ?? '').replace(',', '.'));
-        return Number.isFinite(n) && n >= 0 && n <= 1000000000 ? n : 0;
-    }
-
-    function safeCSVCell(value) {
-        let s = safeText(value, 1000);
-        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-        return '"' + s.replace(/"/g, '""') + '"';
-    }
-
-    function safeId(value) {
-        return safeText(value, 128).replace(/[^a-zA-Z0-9._:-]/g, '');
-    }
-
-    function normalizeExpense(raw) {
-        raw = raw && typeof raw === 'object' ? raw : {};
-        return {
-            d: safeDate(raw.d),
-            c: safeText(raw.c, 80),
-            b: safeText(raw.b, 120),
-            a: String(safeAmount(raw.a)),
-            inst: safeText(raw.inst || '-', 80),
-            x: safeText(raw.x || '', 250),
-            ...(raw.recurringKey ? { recurringKey: safeText(raw.recurringKey, 180) } : {}),
-            ...(raw.recurringId ? { recurringId: safeId(raw.recurringId) } : {})
-        };
-    }
-
-    function normalizeExtraIncome(raw) {
-        raw = raw && typeof raw === 'object' ? raw : {};
-        return {
-            id: safeId(raw.id || Date.now()),
-            date: safeDate(raw.date),
-            amount: safeAmount(raw.amount),
-            desc: safeText(raw.desc || '', 250)
-        };
-    }
-
-    function normalizeRecurring(raw) {
-        raw = raw && typeof raw === 'object' ? raw : {};
-        return {
-            id: safeId(raw.id || Date.now()),
-            name: safeText(raw.name || '', 120),
-            category: safeText(raw.category || 'Diğer', 80),
-            bank: safeText(raw.bank || 'Nakit / Diğer', 120),
-            amount: safeAmount(raw.amount),
-            day: Math.min(31, Math.max(1, parseInt(raw.day) || 1))
-        };
-    }
-
-
     // ===== FIREBASE AUTH + FIRESTORE SENKRON =====
     // Firebase Console > Project settings > Your apps > Web app içindeki config değerlerini
     // aşağıdaki alana bir kez girin. Bu değerler gizli parola değildir.
@@ -999,7 +922,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     async function migrateLegacyLocalData(username, uid) {
         if (!username || !uid) return;
 
-        const suffixes = ["ex", "activeBanks", "bankCutoffDays", "layout", "salary", "extraIncomes", "recurringExpenses", "theme"];
+        const suffixes = ["ex", "activeBanks", "bankCutoffDays", "layout", "salary", "extraIncomes", "theme", "paidStatements"];
         let legacyUsers = [];
         try {
             legacyUsers = JSON.parse(localStorage.getItem("appUsers") || "[]");
@@ -1034,23 +957,15 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             return;
         }
 
-        const uInput = safeText(document.getElementById('authUsername').value.trim(), 80);
+        const uInput = document.getElementById('authUsername').value.trim();
         const password = document.getElementById('authPassword').value;
 
         if (!uInput) {
             alert("Kullanıcı adı boş olamaz.");
             return;
         }
-        if(!/^[A-Za-z0-9._-]{3,80}$/.test(uInput)) {
-            alert("Kullanıcı adı 3-80 karakter olmalı ve yalnızca harf, rakam, nokta, alt çizgi veya tire içermeli.");
-            return;
-        }
         if (!password || password.length < MIN_PASSWORD_LENGTH) {
             alert("Şifre en az 6 karakter olmalı.");
-            return;
-        }
-        if (isRegisterMode && password.length < NEW_PASSWORD_MIN_LENGTH) {
-            alert("Yeni hesaplarda şifre en az " + NEW_PASSWORD_MIN_LENGTH + " karakter olmalı.");
             return;
         }
 
@@ -1210,8 +1125,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             layout = JSON.parse(JSON.stringify(defaultLayout));
         }
 
-        layout.left = Array.isArray(layout.left) ? layout.left.filter(x => typeof x === 'string' && x.length < 80) : [];
-        layout.right = Array.isArray(layout.right) ? layout.right.filter(x => typeof x === 'string' && x.length < 80) : [];
+        layout.left = Array.isArray(layout.left) ? layout.left.filter(Boolean) : [];
+        layout.right = Array.isArray(layout.right) ? layout.right.filter(Boolean) : [];
 
         const allModules = [
             'mod_income_summary',
@@ -1307,8 +1222,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             return;
         }
 
-        if (newP.length < NEW_PASSWORD_MIN_LENGTH) {
-            alert("Yeni şifre en az " + NEW_PASSWORD_MIN_LENGTH + " karakter olmalı.");
+        if (newP.length < 6) {
+            alert("Yeni şifre en az 6 karakter olmalı.");
             return;
         }
 
@@ -1346,7 +1261,6 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     }
     function loadTheme() {
         let savedTheme = localStorage.getItem(currentStorageKey('theme')) || 'light';
-        if(!['light','dark','colorful'].includes(savedTheme)) savedTheme = 'light';
         document.getElementById('mainBody').setAttribute('data-theme', savedTheme);
     }
 
@@ -1356,16 +1270,17 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     };
 
     let activeBanks = [], bankCutoffDays = {}, ex = [];
-    let salary = 0, extraIncomes = [], recurringExpenses = [];
+    let salary = 0, extraIncomes = [], recurringExpenses = [], paidStatements = [];
 
     function loadUserData() {
         if(!currentUser) return;
         activeBanks = JSON.parse(localStorage.getItem(currentStorageKey('activeBanks')) || JSON.stringify(Object.keys(allBanks)));
         bankCutoffDays = JSON.parse(localStorage.getItem(currentStorageKey('bankCutoffDays')) || JSON.stringify(allBanks));
-        ex = JSON.parse(localStorage.getItem(currentStorageKey('ex')) || '[]').map(normalizeExpense).filter(x => x.d);
+        ex = JSON.parse(localStorage.getItem(currentStorageKey('ex')) || '[]');
         salary = Number(String(localStorage.getItem(currentStorageKey('salary')) || '0').replace(',', '.')) || 0;
-        extraIncomes = JSON.parse(localStorage.getItem(currentStorageKey('extraIncomes')) || '[]').map(normalizeExtraIncome).filter(x => x.date);
-        recurringExpenses = JSON.parse(localStorage.getItem(currentStorageKey('recurringExpenses')) || '[]').map(normalizeRecurring);
+        extraIncomes = JSON.parse(localStorage.getItem(currentStorageKey('extraIncomes')) || '[]');
+        recurringExpenses = JSON.parse(localStorage.getItem(currentStorageKey('recurringExpenses')) || '[]');
+        paidStatements = JSON.parse(localStorage.getItem(currentStorageKey('paidStatements')) || '[]');
         window.currentUser = currentUser;
         window.activeBanks = activeBanks;
         window.bankCutoffDays = bankCutoffDays;
@@ -1373,6 +1288,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         window.salary = salary;
         window.extraIncomes = extraIncomes;
         window.recurringExpenses = recurringExpenses;
+        window.paidStatements = paidStatements;
     }
 
     function renderBankSelections() {
@@ -1381,7 +1297,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         div.innerHTML = '';
         Object.keys(allBanks).forEach(bank => {
             let isChecked = activeBanks.includes(bank) ? 'checked' : '';
-            div.innerHTML += `<label><input type="checkbox" value="${escapeHTML(bank)}" ${isChecked} onchange="toggleBank('${bank}', this.checked)"> ${escapeHTML(bank)}</label>`;
+            div.innerHTML += `<label><input type="checkbox" value="${bank}" ${isChecked} onchange="toggleBank('${bank}', this.checked)"> ${bank}</label>`;
         });
     }
 
@@ -1407,9 +1323,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         activeBanks.forEach(bank => {
             let cutoff = bankCutoffDays[bank] !== undefined ? bankCutoffDays[bank] : 0;
-            cutoffTableBody.innerHTML += `<tr><td><b>${escapeHTML(bank)}</b></td><td><input type="number" min="0" max="31" value="${cutoff}" onchange="updateCutoff('${bank}', this.value)"></td></tr>`;
-            if(bankSelect) bankSelect.innerHTML += `<option value="${escapeHTML(bank)}">${escapeHTML(bank)}</option>`;
-            if(idBankSelect) idBankSelect.innerHTML += `<option value="${escapeHTML(bank)}">${escapeHTML(bank)}</option>`;
+            cutoffTableBody.innerHTML += `<tr><td><b>${bank}</b></td><td><input type="number" min="0" max="31" value="${cutoff}" onchange="updateCutoff('${bank}', this.value)"></td></tr>`;
+            if(bankSelect) bankSelect.innerHTML += `<option value="${bank}">${bank}</option>`;
+            if(idBankSelect) idBankSelect.innerHTML += `<option value="${bank}">${bank}</option>`;
         });
     }
 
@@ -1465,6 +1381,69 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return { dueDateStr, cycle };
     }
 
+
+    function statementKey(bank, dueDate) {
+        return String(bank) + '|' + String(dueDate);
+    }
+
+    function isStatementPaid(bank, dueDate) {
+        const key = statementKey(bank, dueDate);
+        return paidStatements.some(p => p.key === key);
+    }
+
+    window.markStatementPaid = function(bankEncoded, dueDate, amount) {
+        const bank = decodeURIComponent(bankEncoded);
+        const key = statementKey(bank, dueDate);
+        if (isStatementPaid(bank, dueDate)) return;
+
+        if (!confirm(`${bank} için ${dueDate} son ödeme tarihli ${money(amount)} ekstre ödendi olarak geçmişe alınsın mı?`)) return;
+
+        paidStatements.push({
+            key,
+            bank,
+            dueDate,
+            amount: Number(amount) || 0,
+            paidAt: new Date().toISOString(),
+            status: 'paid'
+        });
+        localStorage.setItem(currentStorageKey('paidStatements'), JSON.stringify(paidStatements));
+        window.paidStatements = paidStatements;
+        if (window.cloudSync) window.cloudSync.pushAll();
+        rd();
+    };
+
+    function renderPaidStatementHistory() {
+        const box = document.getElementById('paidStatementHistory');
+        if (!box) return;
+
+        if (!paidStatements.length) {
+            box.innerHTML = '';
+            return;
+        }
+
+        const rows = [...paidStatements].sort((a,b) => new Date(b.paidAt) - new Date(a.paidAt));
+        box.innerHTML = `
+            <h3 style="font-size:13px;margin:10px 0 6px;">✓ Ödenen Ekstre Geçmişi</h3>
+            <div style="overflow-x:auto;">
+                <table class="cutoff-table">
+                    <thead><tr><th>Banka / Kart</th><th>Son Ödeme</th><th>Tutar</th><th>Ödendiği Tarih</th><th>Durum</th></tr></thead>
+                    <tbody>
+                        ${rows.map(p => {
+                            const paidDate = new Date(p.paidAt);
+                            const paidText = isNaN(paidDate) ? '-' : paidDate.toLocaleDateString('tr-TR');
+                            return `<tr>
+                                <td><b>${p.bank}</b></td>
+                                <td>${p.dueDate}</td>
+                                <td>${money(p.amount)}</td>
+                                <td>${paidText}</td>
+                                <td><span style="color:#27ae60;font-weight:700;">Ödendi</span></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
     function money(v) {
         return (Number(v) || 0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' TL';
     }
@@ -1514,7 +1493,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(!currentUser) return;
         const date = document.getElementById('extraIncomeDate').value || new Date().toISOString().split('T')[0];
         const amount = Number(String(document.getElementById('extraIncomeAmount').value || '').replace(',', '.')) || 0;
-        const desc = safeText(document.getElementById('extraIncomeDesc').value.trim(), 250);
+        const desc = document.getElementById('extraIncomeDesc').value.trim();
         if(amount <= 0) { alert('Lütfen geçerli bir ek gelir tutarı girin.'); return; }
 
         extraIncomes.push({id: Date.now(), date, amount, desc});
@@ -1544,9 +1523,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         const sorted = [...extraIncomes].sort((a,b) => String(b.date).localeCompare(String(a.date)));
         box.innerHTML = sorted.map(x => `
             <div class="income-row">
-                <span><b>${escapeHTML(x.date)}</b> — ${escapeHTML(x.desc || 'Ek Gelir')}</span>
+                <span><b>${x.date}</b> — ${x.desc || 'Ek Gelir'}</span>
                 <span><b>${money(x.amount)}</b>
-                <button type="button" onclick="deleteExtraIncome('${safeId(x.id)}')" style="flex:0 0 auto;background:#e74c3c;padding:4px 7px;font-size:10px;">Sil</button></span>
+                <button type="button" onclick="deleteExtraIncome('${x.id}')" style="flex:0 0 auto;background:#e74c3c;padding:4px 7px;font-size:10px;">Sil</button></span>
             </div>`).join('');
     }
 
@@ -1555,7 +1534,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         const sel = document.getElementById('recBank');
         if(!sel) return;
         const old = sel.value;
-        sel.innerHTML = activeBanks.map(b => `<option value="${escapeHTML(b)}">${escapeHTML(b)}</option>`).join('');
+        sel.innerHTML = activeBanks.map(b => `<option value="${b}">${b}</option>`).join('');
         if(activeBanks.includes(old)) sel.value = old;
     }
 
@@ -1604,8 +1583,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
         box.innerHTML = recurringExpenses.map(r => `
           <div class="recurring-row">
-            <div><b>${escapeHTML(r.name)}</b><small>${money(r.amount)} • Her ayın ${escapeHTML(r.day)}. günü • ${escapeHTML(r.category)} • ${escapeHTML(r.bank)}</small></div>
-            <button type="button" onclick="deleteRecurring('${safeId(r.id)}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
+            <div><b>${r.name}</b><small>${money(r.amount)} • Her ayın ${r.day}. günü • ${r.category} • ${r.bank}</small></div>
+            <button type="button" onclick="deleteRecurring('${r.id}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
           </div>`).join('');
     }
 
@@ -1624,7 +1603,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             if(amount <= 0) { alert('Geçerli bir tutar girin.'); return; }
             recurringExpenses.push({
                 id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
-                name: safeText(document.getElementById('recName').value.trim(), 120),
+                name: document.getElementById('recName').value.trim(),
                 category: document.getElementById('recCategory').value,
                 bank: document.getElementById('recBank').value,
                 amount,
@@ -1675,7 +1654,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             let itemMonth = details.dueDateStr.substring(0, 7);
             availableMonths.add(itemMonth);
 
-            return { ...item, originalIndex: index, sortPriority: sortPriority, dueDate: details.dueDateStr, cycle: details.cycle, itemMonth: itemMonth };
+            return { ...item, originalIndex: index, sortPriority: sortPriority, dueDate: details.dueDateStr, cycle: details.cycle, itemMonth: itemMonth, statementPaid: isStatementPaid(item.b, details.dueDateStr) };
         });
 
         if(monthFilterSelect) {
@@ -1702,6 +1681,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         let bankStats = {};
         activeBanks.forEach(b => { bankStats[b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 }; });
+        let statementGroups = {};
 
         indexedEx.forEach((item) => {
             let amtNum = Number(String(item.a).replace(',', '.')) || 0;
@@ -1710,18 +1690,26 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             if (item.d.startsWith(cm)) ms += amtNum;
 
             if (!bankStats[item.b]) bankStats[item.b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 };
-            bankStats[item.b].total += amtNum;
 
-            if (item.cycle === 'thisMonth' || item.cycle === 'past') {
-                bankStats[item.b].thisMonthBill += amtNum;
-            } else if (item.cycle === 'nextMonth') {
-                bankStats[item.b].nextMonthBill += amtNum;
-                futureTotal += amtNum; 
+            // Ödenmiş ekstre geçmişte tutulur; güncel borca tekrar eklenmez.
+            if (!item.statementPaid) {
+                bankStats[item.b].total += amtNum;
+
+                if (item.cycle === 'thisMonth' || item.cycle === 'past') {
+                    bankStats[item.b].thisMonthBill += amtNum;
+                } else if (item.cycle === 'nextMonth') {
+                    bankStats[item.b].nextMonthBill += amtNum;
+                    futureTotal += amtNum;
+                }
+
+                const gKey = statementKey(item.b, item.dueDate);
+                if (!statementGroups[gKey]) statementGroups[gKey] = {bank:item.b, dueDate:item.dueDate, amount:0};
+                statementGroups[gKey].amount += amtNum;
             }
 
             // Durum Filtresi Kontrolü
-            let isCurrentStatus = (item.cycle === 'thisMonth' || item.cycle === 'past');
-            let isNextStatus = (item.cycle === 'nextMonth');
+            let isCurrentStatus = !item.statementPaid && (item.cycle === 'thisMonth' || item.cycle === 'past');
+            let isNextStatus = !item.statementPaid && (item.cycle === 'nextMonth');
 
             if (selectedStatus === 'current' && !isCurrentStatus) return;
             if (selectedStatus === 'next' && !isNextStatus) return;
@@ -1741,20 +1729,22 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 currentCell = `${amtNum.toFixed(2)} TL <span class="badge-current">Güncel</span>`;
             } else if (isNextStatus) {
                 nextCell = `${amtNum.toFixed(2)} TL <span class="badge-next">Gelecek</span>`;
+            } else if (item.statementPaid) {
+                currentCell = `${amtNum.toFixed(2)} TL <span style="color:#27ae60;font-weight:700;">Ödendi</span>`;
             } else {
                 currentCell = `${amtNum.toFixed(2)} TL`;
             }
 
             if(tb) {
                 tb.innerHTML += `<tr>
-                    <td><b>${escapeHTML(item.dueDate)}</b><br><span style="font-size:9px;color:#7f8c8d;">İşlem: ${escapeHTML(item.d)}</span></td>
-                    <td>${escapeHTML(item.c)}</td>
-                    <td><b>${escapeHTML(item.b)}</b></td>
+                    <td><b>${item.dueDate}</b><br><span style="font-size:9px;color:#7f8c8d;">İşlem: ${item.d}</span></td>
+                    <td>${item.c}</td>
+                    <td><b>${item.b}</b></td>
                     <td>${amtNum.toFixed(2)} TL</td>
-                    <td>${escapeHTML(installmentText)}</td>
+                    <td>${installmentText}</td>
                     <td>${currentCell}</td>
                     <td>${nextCell}</td>
-                    <td>${escapeHTML(item.x || '')}</td>
+                    <td>${item.x || ''}</td>
                     <td><div class="action-btns">
                         <button style="background:#2980b9;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="editExpense(${k})">Düzenle</button>
                         <button style="background:#e74c3c;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="dl(${k})">Sil</button>
@@ -1782,23 +1772,37 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             activeBanks.forEach(bank => {
                 let data = bankStats[bank];
                 if (data && data.total > 0) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const overdue = Object.values(statementGroups)
+                        .filter(g => g.bank === bank && g.dueDate < todayStr && !isStatementPaid(g.bank, g.dueDate))
+                        .sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+                    const overdueHtml = overdue.map(g => `
+                        <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border-color);">
+                            <div style="color:#e67e22;font-weight:700;">Ödeme bekliyor</div>
+                            <div style="font-size:10px;">Son ödeme: ${g.dueDate} • ${money(g.amount)}</div>
+                            <button type="button" onclick="markStatementPaid('${encodeURIComponent(bank)}','${g.dueDate}',${g.amount})"
+                                style="margin-top:5px;padding:5px 8px;background:#27ae60;color:#fff;border:0;border-radius:6px;font-size:10px;">✓ Ödendi</button>
+                        </div>`).join('');
+
                     bankSummaryGrid.innerHTML += `
                         <div class="bank-summary-card">
-                            <b>${escapeHTML(bank)}</b>
+                            <b>${bank}</b>
                             <div>Toplam: ${data.total.toFixed(2)} TL</div>
                             <div style="color:#d35400;">Bu Ekstre: ${data.thisMonthBill.toFixed(2)} TL</div>
                             <div style="color:#27ae60;">Gelecek Ekstre: ${data.nextMonthBill.toFixed(2)} TL</div>
+                            ${overdueHtml}
                         </div>`;
                 }
             });
         }
+        renderPaidStatementHistory();
     }
 
     function exportToExcel() {
         if(ex.length === 0) { alert("Veri yok!"); return; }
         let csvContent = "\uFEFFTarih,Kategori,Banka,Tutar,Taksit,Aciklama\n";
         ex.forEach(item => {
-            csvContent += [item.d, item.c, item.b, item.a, item.inst || '', item.x || ''].map(safeCSVCell).join(',') + "\n";
+            csvContent += `"${item.d}","${item.c}","${item.b}","${item.a}","${item.inst || ''}","${item.x || ''}"\n`;
         });
         let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         let url = URL.createObjectURL(blob);
@@ -1817,31 +1821,16 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     function importFromExcel(event) {
         let file = event.target.files[0];
         if(!file) return;
-        if(file.size > MAX_IMPORT_FILE_BYTES) {
-            alert("CSV dosyası çok büyük. En fazla 5 MB yükleyebilirsiniz.");
-            event.target.value = "";
-            return;
-        }
-        if(!/\.csv$/i.test(file.name || "")) {
-            alert("Yalnızca CSV dosyası yükleyebilirsiniz.");
-            event.target.value = "";
-            return;
-        }
         let reader = new FileReader();
         reader.onload = function(e) {
-            let lines = String(e.target.result || '').split(/\r?\n/);
-            if(lines.length > MAX_IMPORT_ROWS + 1) {
-                alert("CSV en fazla " + MAX_IMPORT_ROWS + " kayıt içerebilir.");
-                event.target.value = "";
-                return;
-            }
+            let lines = e.target.result.split('\n');
             let newEx = [];
             for(let i = 1; i < lines.length; i++) {
                 let line = lines[i].trim();
                 if(!line) continue;
                 let cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                 if(cols.length >= 4) {
-                    const imported = normalizeExpense({
+                    newEx.push({
                         d: cols[0].replace(/"/g, ''),
                         c: cols[1].replace(/"/g, ''),
                         b: cols[2].replace(/"/g, ''),
@@ -1849,9 +1838,6 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                         inst: cols[4] ? cols[4].replace(/"/g, '') : '-',
                         x: cols[5] ? cols[5].replace(/"/g, '') : ''
                     });
-                    if(imported.d && imported.c && imported.b && safeAmount(imported.a) > 0) {
-                        newEx.push(imported);
-                    }
                 }
             }
             if(newEx.length > 0) {
@@ -1859,8 +1845,6 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     loadUserData();
                     ex = ex.concat(newEx);
                     localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
-                    window.ex = ex;
-                    if (window.cloudSync) window.cloudSync.pushAll();
                     rd();
                     alert("Yüklendi!");
                 }
@@ -1913,7 +1897,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 b: document.getElementById('b').value, 
                 a: document.getElementById('a').value.replace(',', '.'), 
                 inst: "-",
-                x: safeText(document.getElementById('x').value, 250)
+                x: document.getElementById('x').value
             };
             
             const idx = parseInt(document.getElementById('editIndex').value);
@@ -1939,7 +1923,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             let b = document.getElementById('idB').value;
             let totalA = parseFloat(document.getElementById('idTotalA').value.replace(',', '.')) || 0;
             let count = parseInt(document.getElementById('idCount').value);
-            let x = safeText(document.getElementById('idX').value, 250);
+            let x = document.getElementById('idX').value;
 
             if(!startD || !totalA || !count || count < 2) {
                 alert("Lütfen alanları doğru doldurun.");
@@ -2061,7 +2045,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
             try {
                 if (Array.isArray(data.ex)) {
-                    ex = data.ex.map(normalizeExpense).filter(x => x.d);
+                    ex = data.ex;
                     window.ex = ex;
                     localStorage.setItem(currentStorageKey("ex"), JSON.stringify(ex));
                 }
@@ -2081,17 +2065,22 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     localStorage.setItem(currentStorageKey("salary"), String(salary));
                 }
                 if (Array.isArray(data.extraIncomes)) {
-                    extraIncomes = data.extraIncomes.map(normalizeExtraIncome).filter(x => x.date);
-                    window.extraIncomes = extraIncomes;
-                    localStorage.setItem(currentStorageKey("extraIncomes"), JSON.stringify(extraIncomes));
+                    extraIncomes = data.extraIncomes;
+                    window.extraIncomes = data.extraIncomes;
+                    localStorage.setItem(currentStorageKey("extraIncomes"), JSON.stringify(data.extraIncomes));
                 }
                 if (Array.isArray(data.recurringExpenses)) {
-                    recurringExpenses = data.recurringExpenses.map(normalizeRecurring);
+                    recurringExpenses = data.recurringExpenses;
                     window.recurringExpenses = recurringExpenses;
                     localStorage.setItem(currentStorageKey("recurringExpenses"), JSON.stringify(recurringExpenses));
                 }
+                if (Array.isArray(data.paidStatements)) {
+                    paidStatements = data.paidStatements;
+                    window.paidStatements = paidStatements;
+                    localStorage.setItem(currentStorageKey("paidStatements"), JSON.stringify(paidStatements));
+                }
                 if (data.layout) localStorage.setItem(currentStorageKey("layout"), JSON.stringify(data.layout));
-                if (["light","dark","colorful"].includes(data.theme)) localStorage.setItem(currentStorageKey("theme"), data.theme);
+                if (data.theme) localStorage.setItem(currentStorageKey("theme"), data.theme);
 
                 this.lastRemoteUpdatedAt = Number(data.updatedAt || 0);
             } finally {
@@ -2134,6 +2123,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 salary: Number(window.salary || 0),
                 extraIncomes: Array.isArray(window.extraIncomes) ? window.extraIncomes : [],
                 recurringExpenses: Array.isArray(window.recurringExpenses) ? window.recurringExpenses : [],
+                paidStatements: Array.isArray(window.paidStatements) ? window.paidStatements : [],
                 layout,
                 theme
             });

@@ -1496,15 +1496,15 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         const monthlyIncome = salary + monthlyExtra;
 
-        // Bu Ay Harcama = bu ay yapılan ve ait olduğu ekstre henüz ÖDENMEMİŞ harcamalar.
-        // Ödendi denilen ekstre silinmez; yalnızca güncel finansal toplamdan çıkar.
+        // Ana sayfadaki "Bu Ay Harcama", satın alma tarihinin ayı değil,
+        // henüz ödenmemiş GÜNCEL / GECİKMİŞ ekstre borcudur.
+        // Böylece "Ödendi" denilen ekstre anında bu toplamdan çıkar.
         const monthlyExpense = ex.reduce((sum, x) => {
-            if (monthKey(x.d) !== cm) return sum;
-
             const cutoff = bankCutoffDays[x.b] !== undefined ? bankCutoffDays[x.b] : 0;
             const details = getDueDateDetails(x.d, cutoff);
 
             if (isStatementPaid(x.b, details.dueDateStr)) return sum;
+            if (details.cycle !== 'thisMonth' && details.cycle !== 'past') return sum;
 
             return sum + (Number(String(x.a).replace(',', '.')) || 0);
         }, 0);
@@ -1739,7 +1739,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             // Ana sayfada yalnızca güncel, henüz ödenmemiş harcamalar gösterilir.
             if (!item.statementPaid) {
                 if (item.d === ds) ts += amtNum;
-                if (item.d.startsWith(cm)) ms += amtNum;
+                // "Bu Ay" = ödenmemiş güncel/gecikmiş ekstre borcu.
+                if (item.cycle === 'thisMonth' || item.cycle === 'past') ms += amtNum;
             }
 
             if (!bankStats[item.b]) bankStats[item.b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 };

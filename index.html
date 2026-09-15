@@ -1739,10 +1739,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
 
         indexedEx.sort((i, j) => {
-            if (i.sortPriority !== j.sortPriority) {
-                return i.sortPriority - j.sortPriority;
-            }
-            return new Date(j.dueDate) - new Date(i.dueDate);
+            // Sadece liste sırası: gerçek işlem tarihi yeniden eskiye.
+            const dateDiff = new Date(j.d) - new Date(i.d);
+            if (dateDiff !== 0) return dateDiff;
+            const dueDiff = new Date(j.dueDate) - new Date(i.dueDate);
+            if (dueDiff !== 0) return dueDiff;
+            return j.originalIndex - i.originalIndex;
         });
 
         // Her banka/kart için en yakın ödenmemiş dönem "Güncel Borç"tur.

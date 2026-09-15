@@ -1739,11 +1739,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
 
         indexedEx.sort((i, j) => {
-            // Sadece liste sırası: gerçek işlem tarihi yeniden eskiye.
-            const dateDiff = new Date(j.d) - new Date(i.d);
-            if (dateDiff !== 0) return dateDiff;
-            const dueDiff = new Date(j.dueDate) - new Date(i.dueDate);
-            if (dueDiff !== 0) return dueDiff;
+            // Gerçek işlem tarihi: en yeni harcama en üstte.
+            const aTime = new Date(i.d + 'T00:00:00').getTime();
+            const bTime = new Date(j.d + 'T00:00:00').getTime();
+            if (aTime !== bTime) return bTime - aTime;
+            // Aynı gün içindeki son eklenen kayıt üstte.
             return j.originalIndex - i.originalIndex;
         });
 

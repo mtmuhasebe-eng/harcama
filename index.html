@@ -478,6 +478,49 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   }
 }
 
+
+/* ===== SADECE İKİ HATA DÜZELTMESİ - MOBİL BANKALAR ===== */
+@media (max-width:600px){
+  #mod_banks{
+    min-width:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+  }
+  #bankCheckboxes{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+  }
+  #bankCheckboxes label{
+    display:flex!important;
+    align-items:center!important;
+    gap:7px!important;
+    min-width:0!important;
+    width:100%!important;
+    margin:0!important;
+    padding:7px 5px!important;
+    line-height:1.2!important;
+    font-size:12px!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    box-sizing:border-box!important;
+  }
+  #bankCheckboxes input[type="checkbox"]{
+    flex:0 0 18px!important;
+    width:18px!important;
+    height:18px!important;
+    min-width:18px!important;
+    min-height:18px!important;
+    max-width:18px!important;
+    margin:0!important;
+    padding:0!important;
+  }
+}
 </style>
 </head>
 <body id="mainBody" data-theme="light">
@@ -1969,6 +2012,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('x').value = item.x || '';
         document.getElementById('saveBtn').textContent = "Güncelle";
         document.getElementById('cancelEdit').style.display = 'block';
+
+        // Düzenleme formunu otomatik aç.
+        appNavigate('expense');
     }
 
     window.resetForm = function() {

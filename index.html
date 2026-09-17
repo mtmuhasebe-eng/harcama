@@ -522,25 +522,13 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   }
 }
 
-/* ===== SADECE MOBİL GİRİŞ EKRANI İZOLASYONU ===== */
+/* ===== MOBİL: GİRİŞ YAPILMADAN ALT MENÜYÜ GİZLE ===== */
 @media (max-width:600px){
-  #loginScreen{
-    position:fixed!important;
-    inset:0!important;
-    width:100vw!important;
-    min-height:100dvh!important;
-    height:100dvh!important;
-    overflow-y:auto!important;
-    z-index:2147483647!important;
-    background:var(--bg)!important;
-    box-sizing:border-box!important;
-  }
-  #loginScreen:not([style*="display: none"]):not([style*="display:none"]) ~ #appScreen{
-    display:none!important;
-  }
-  body:has(#loginScreen:not([style*="display: none"]):not([style*="display:none"])) #appScreen{
+  body:has(#loginScreen:not([style*="display: none"]):not([style*="display:none"])) .mobile-bottom-nav,
+  body:has(#loginScreen:not([style*="display: none"]):not([style*="display:none"])) .mobile-more-panel{
     display:none!important;
     visibility:hidden!important;
+    pointer-events:none!important;
   }
 }
 </style>

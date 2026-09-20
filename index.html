@@ -566,7 +566,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   }
 }
 
-/* Yönetici / kullanıcı seçimi */
+/* Yönetici sistemi - klasik kullanıcı adı girişi */
 #authUsername{width:100%;box-sizing:border-box;padding:12px;margin:7px 0;border-radius:8px;border:1px solid var(--border-color);background:var(--box-bg);color:var(--text-color);font-size:14px}
 #firstPasswordModal .modal-content,#adminUsersModal .modal-content{max-height:90vh;overflow:auto}
 </style>
@@ -579,11 +579,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         <h2 id="authTitle" style="color:var(--primary-color); margin-top:0;">🔐 Giriş Yap</h2>
         <form id="authForm">
-            <select id="authUsername" required><option value="">Kullanıcı seç</option><option value="Yönetici">Yönetici</option></select>
+            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" autocomplete="username" autocapitalize="none" spellcheck="false" required>
             <input type="password" id="authPassword" placeholder="Şifre" required>
             <button type="submit" id="authBtn">Giriş Yap</button>
         </form>
-        <span class="auth-toggle" id="authToggleText" style="cursor:default;opacity:.72">Yeni kullanıcıları yalnızca Yönetici oluşturabilir.</span>
     </div>
 
     <div id="firstPasswordModal" class="modal" style="display:none;z-index:1000000;">

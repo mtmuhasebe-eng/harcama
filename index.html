@@ -565,6 +565,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     height:88px;
   }
 }
+
+/* Yönetici / kullanıcı seçimi */
+#authUsername{width:100%;box-sizing:border-box;padding:12px;margin:7px 0;border-radius:8px;border:1px solid var(--border-color);background:var(--box-bg);color:var(--text-color);font-size:14px}
+#firstPasswordModal .modal-content,#adminUsersModal .modal-content{max-height:90vh;overflow:auto}
 </style>
 </head>
 <body id="mainBody" data-theme="light">
@@ -575,11 +579,33 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         <h2 id="authTitle" style="color:var(--primary-color); margin-top:0;">🔐 Giriş Yap</h2>
         <form id="authForm">
-            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" required>
+            <select id="authUsername" required><option value="">Kullanıcı seç</option><option value="Yönetici">Yönetici</option></select>
             <input type="password" id="authPassword" placeholder="Şifre" required>
             <button type="submit" id="authBtn">Giriş Yap</button>
         </form>
-        <span class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">Hesabın yok mu? Yeni kullanıcı ekle</span>
+        <span class="auth-toggle" id="authToggleText" style="cursor:default;opacity:.72">Yeni kullanıcıları yalnızca Yönetici oluşturabilir.</span>
+    </div>
+
+    <div id="firstPasswordModal" class="modal" style="display:none;z-index:1000000;">
+      <div class="modal-content" style="width:min(430px,92vw);">
+        <h3>🔐 Yeni Şifre Belirle</h3>
+        <p style="font-size:13px;line-height:1.5">Yönetici hesabının geçici şifresi yalnızca ilk giriş içindir. Devam etmek için yeni şifrenizi belirleyin.</p>
+        <input id="adminNewPassword" type="password" placeholder="Yeni şifre (en az 8 karakter)">
+        <input id="adminNewPassword2" type="password" placeholder="Yeni şifre tekrar">
+        <button type="button" onclick="completeAdminFirstPassword()">Şifreyi Kaydet ve Devam Et</button>
+      </div>
+    </div>
+
+    <div id="adminUsersModal" class="modal" style="display:none;z-index:999999;">
+      <div class="modal-content" style="width:min(480px,94vw);">
+        <span class="close" onclick="closeAdminUsersModal()">&times;</span>
+        <h3>♛ Kullanıcı Yönetimi</h3>
+        <p style="font-size:12px;opacity:.8">Yeni kullanıcı hesabını yalnızca Yönetici ekranından oluşturun.</p>
+        <input id="adminCreateUsername" placeholder="Yeni kullanıcı adı">
+        <input id="adminCreatePassword" type="password" placeholder="Geçici şifre (en az 6 karakter)">
+        <button type="button" onclick="adminCreateUser()">Kullanıcı Oluştur</button>
+        <div id="adminCreateStatus" style="font-size:12px;margin-top:10px"></div>
+      </div>
     </div>
 
     <!-- ANA UYGULAMA EKRANI -->
@@ -601,6 +627,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div class="pro-side-bottom">
                 <button type="button" onclick="openThemeModal()">◉ <span>Tema Değiştir</span></button>
                 <button type="button" onclick="openProfileModal()">● <span>Profil</span></button>
+                <button type="button" id="adminUsersBtn" onclick="openAdminUsersModal()" style="display:none">♛ <span>Kullanıcı Yönetimi</span></button>
             </div>
         </aside>
         <div class="pro-banner">
@@ -946,6 +973,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     const MIN_PASSWORD_LENGTH = 6;
     let currentUser = null;
     let isRegisterMode = false;
+    const ADMIN_USERNAME = "Yönetici";
+    const ADMIN_INITIAL_PASSWORD = "admin123";
+    let adminFirstPasswordRequired = false;
     let firebaseReady = false;
     window.currentAuthUser = null;
 
@@ -982,11 +1012,66 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return suffix + "_" + (uid || "signedout");
     }
 
-    function toggleAuthMode() {
-        isRegisterMode = !isRegisterMode;
-        document.getElementById('authTitle').textContent = isRegisterMode ? "➕ Yeni Kullanıcı Ekle" : "🔐 Giriş Yap";
-        document.getElementById('authBtn').textContent = isRegisterMode ? "Kayıt Ol" : "Giriş Yap";
-        document.getElementById('authToggleText').textContent = isRegisterMode ? "Zaten hesabın var mı? Giriş yap" : "Hesabın yok mu? Yeni kullanıcı ekle";
+    function toggleAuthMode() { isRegisterMode = false; }
+
+    function rememberedUsernames() {
+        const set = new Set([ADMIN_USERNAME]);
+        try {
+            (JSON.parse(localStorage.getItem("mtRememberedUsers") || "[]") || []).forEach(x => x && set.add(String(x)));
+            (JSON.parse(localStorage.getItem("appUsers") || "[]") || []).forEach(x => x?.u && set.add(String(x.u)));
+        } catch (_) {}
+        return [...set];
+    }
+    function rememberUsername(name) {
+        if (!name) return;
+        const users = rememberedUsernames();
+        if (!users.some(x => x.toLocaleLowerCase("tr-TR") === String(name).toLocaleLowerCase("tr-TR"))) users.push(name);
+        localStorage.setItem("mtRememberedUsers", JSON.stringify(users));
+        renderRememberedUsers(name);
+    }
+    function renderRememberedUsers(selected) {
+        const el = document.getElementById("authUsername"); if (!el) return;
+        const current = selected || el.value;
+        el.innerHTML = '<option value="">Kullanıcı seç</option>' + rememberedUsernames().map(u => `<option value="${String(u).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">${String(u).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</option>`).join('');
+        if (current && [...el.options].some(o => o.value === current)) el.value = current;
+    }
+    function isAdminUser() { return String(currentUser || '').toLocaleLowerCase('tr-TR') === ADMIN_USERNAME.toLocaleLowerCase('tr-TR'); }
+    function openAdminUsersModal(){ if(!isAdminUser()) return; document.getElementById('adminUsersModal').style.display='flex'; }
+    function closeAdminUsersModal(){ document.getElementById('adminUsersModal').style.display='none'; }
+    async function adminCreateUser(){
+        if(!isAdminUser() || !window.currentAuthUser) return alert('Bu işlem yalnızca Yönetici içindir.');
+        const u=document.getElementById('adminCreateUsername').value.trim();
+        const p=document.getElementById('adminCreatePassword').value;
+        const st=document.getElementById('adminCreateStatus');
+        if(!u || u.toLocaleLowerCase('tr-TR')===ADMIN_USERNAME.toLocaleLowerCase('tr-TR')) return alert('Geçerli bir kullanıcı adı girin.');
+        if(!p || p.length<6) return alert('Geçici şifre en az 6 karakter olmalı.');
+        let secondary;
+        try {
+            const name='adminCreate_'+Date.now();
+            secondary=firebase.initializeApp(FIREBASE_CONFIG,name);
+            const auth2=secondary.auth();
+            const cred=await auth2.createUserWithEmailAndPassword(usernameToInternalEmail(u),p);
+            await cred.user.updateProfile({displayName:u});
+            await auth2.signOut();
+            rememberUsername(u);
+            document.getElementById('adminCreateUsername').value=''; document.getElementById('adminCreatePassword').value='';
+            st.textContent='✅ '+u+' kullanıcısı oluşturuldu.';
+        } catch(err){ console.error(err); st.textContent='❌ '+(err?.code==='auth/email-already-in-use'?'Bu kullanıcı zaten mevcut.':(err?.message||'Kullanıcı oluşturulamadı.')); }
+        finally { if(secondary) try{ await secondary.delete(); }catch(_){} }
+    }
+    async function completeAdminFirstPassword(){
+        const p1=document.getElementById('adminNewPassword').value, p2=document.getElementById('adminNewPassword2').value;
+        if(!p1 || p1.length<8) return alert('Yeni şifre en az 8 karakter olmalı.');
+        if(p1!==p2) return alert('Şifreler aynı değil.');
+        if(p1===ADMIN_INITIAL_PASSWORD) return alert('Geçici şifreyi tekrar kullanamazsınız.');
+        try{
+            await window.currentAuthUser.updatePassword(p1);
+            adminFirstPasswordRequired=false;
+            localStorage.setItem('mtAdminPasswordChanged_'+window.currentAuthUser.uid,'1');
+            document.getElementById('firstPasswordModal').style.display='none';
+            showApp();
+            alert('Yönetici şifresi değiştirildi.');
+        }catch(err){ console.error(err); alert(err?.message||'Şifre değiştirilemedi.'); }
     }
 
     function setSignedOutUI() {
@@ -997,6 +1082,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('loginScreen').style.display = 'block';
         const form = document.getElementById('authForm');
         if (form) form.reset();
+        renderRememberedUsers();
     }
 
     async function logout() {
@@ -1067,37 +1153,40 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         btn.textContent = "İşleniyor...";
 
         try {
-            if (isRegisterMode) {
-                const cred = await window.fbAuth.createUserWithEmailAndPassword(email, password);
-                await cred.user.updateProfile({ displayName: uInput });
-
-                currentUser = uInput;
-                window.currentUser = currentUser;
-                window.currentAuthUser = cred.user;
-                await migrateLegacyLocalData(currentUser, cred.user.uid);
-                showApp();
-
-                if (window.cloudSync) {
-                    await window.cloudSync.init();
-                    await window.cloudSync.syncCurrentUser();
-                }
-
-                alert("Hesap oluşturuldu. Aynı kullanıcı adı ve şifreyle PC ve telefonda giriş yapabilirsiniz.");
-            } else {
-                const cred = await window.fbAuth.signInWithEmailAndPassword(email, password);
-                currentUser = cred.user.displayName || uInput;
-                window.currentUser = currentUser;
-                window.currentAuthUser = cred.user;
-                await migrateLegacyLocalData(currentUser, cred.user.uid);
-                showApp();
-
-                if (window.cloudSync) {
-                    await window.cloudSync.init();
-                    await window.cloudSync.syncCurrentUser();
+            let cred;
+            try {
+                cred = await window.fbAuth.signInWithEmailAndPassword(email, password);
+            } catch (loginErr) {
+                const isAdmin = uInput.toLocaleLowerCase('tr-TR') === ADMIN_USERNAME.toLocaleLowerCase('tr-TR');
+                if (isAdmin && password === ADMIN_INITIAL_PASSWORD) {
+                    try {
+                        cred = await window.fbAuth.createUserWithEmailAndPassword(email, password);
+                        await cred.user.updateProfile({ displayName: ADMIN_USERNAME });
+                        adminFirstPasswordRequired = true;
+                    } catch (createErr) {
+                        if (createErr?.code === 'auth/email-already-in-use') throw loginErr;
+                        throw createErr;
+                    }
+                } else {
+                    throw loginErr;
                 }
             }
+            currentUser = cred.user.displayName || uInput;
+            window.currentUser = currentUser;
+            window.currentAuthUser = cred.user;
+            rememberUsername(currentUser);
+            await migrateLegacyLocalData(currentUser, cred.user.uid);
+            if (isAdminUser() && (adminFirstPasswordRequired || (password === ADMIN_INITIAL_PASSWORD && localStorage.getItem('mtAdminPasswordChanged_'+cred.user.uid)!=='1'))) {
+                adminFirstPasswordRequired = true;
+                document.getElementById('loginScreen').style.display='none';
+                document.getElementById('appScreen').style.display='none';
+                document.getElementById('firstPasswordModal').style.display='flex';
+            } else {
+                showApp();
+            }
+            if (window.cloudSync) { await window.cloudSync.init(); await window.cloudSync.syncCurrentUser(); }
         } catch (err) {
-            console.error("Firebase giriş/kayıt hatası:", err);
+            console.error("Firebase giriş hatası:", err);
             const msg = err?.code === "auth/email-already-in-use"
                 ? "Bu kullanıcı adı zaten kullanımda."
                 : err?.code === "auth/invalid-credential"
@@ -1111,6 +1200,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
+        renderRememberedUsers();
         if (!initFirebase()) {
             setSignedOutUI();
             return;
@@ -1154,6 +1244,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
         document.getElementById('currentUsernameDisplay').textContent = currentUser;
+        const adminBtn=document.getElementById('adminUsersBtn'); if(adminBtn) adminBtn.style.display=isAdminUser()?'flex':'none';
         
         renderLayout();
         

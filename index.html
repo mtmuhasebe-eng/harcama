@@ -569,6 +569,18 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 /* Yönetici sistemi - klasik kullanıcı adı girişi */
 #authUsername{width:100%;box-sizing:border-box;padding:12px;margin:7px 0;border-radius:8px;border:1px solid var(--border-color);background:var(--box-bg);color:var(--text-color);font-size:14px}
 #firstPasswordModal .modal-content,#adminUsersModal .modal-content{max-height:90vh;overflow:auto}
+
+/* ===== MTmuhasebe PROFESYONEL YÖNETİCİ PANELİ ===== */
+.admin-pro-modal .modal-content{width:min(920px,94vw)!important;padding:0!important;border:1px solid rgba(64,157,255,.30)!important;border-radius:18px!important;overflow:hidden!important;background:linear-gradient(145deg,#071a2c,#0a2239)!important;box-shadow:0 28px 80px rgba(0,0,0,.55)!important;color:#eaf5ff!important}
+.admin-pro-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid rgba(120,190,255,.16);background:rgba(4,18,31,.45)}
+.admin-pro-title{display:flex;align-items:center;gap:13px}.admin-pro-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#137dff,#6b5cff);font-size:22px;box-shadow:0 8px 24px rgba(19,125,255,.28)}
+.admin-pro-title h3{margin:0;font-size:20px}.admin-pro-title small{display:block;margin-top:4px;color:#86a9c7;font-size:12px}.admin-pro-close{border:0!important;background:rgba(255,255,255,.07)!important;color:#dceeff!important;width:38px!important;height:38px!important;border-radius:10px!important;font-size:22px!important;padding:0!important;margin:0!important}
+.admin-pro-body{padding:22px 24px 25px}.admin-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.admin-stat{padding:15px;border:1px solid rgba(116,186,255,.14);border-radius:13px;background:rgba(255,255,255,.035)}.admin-stat span{display:block;color:#87a9c7;font-size:11px;text-transform:uppercase;letter-spacing:.6px}.admin-stat strong{display:block;margin-top:7px;font-size:18px}.admin-green{color:#5fe0a1}.admin-blue{color:#65b7ff}
+.admin-section{border:1px solid rgba(116,186,255,.14);border-radius:15px;background:rgba(0,0,0,.12);overflow:hidden}.admin-section-head{padding:15px 17px;border-bottom:1px solid rgba(116,186,255,.12);display:flex;justify-content:space-between;align-items:center}.admin-section-head strong{font-size:14px}.admin-section-head span{font-size:11px;color:#789bb9}.admin-form-grid{display:grid;grid-template-columns:1.15fr 1fr auto;gap:10px;padding:17px}.admin-form-grid input{margin:0!important;min-width:0!important;background:#061827!important;border:1px solid #214d70!important;color:#fff!important;border-radius:10px!important;padding:12px 13px!important}.admin-create-btn{margin:0!important;padding:0 18px!important;border:0!important;border-radius:10px!important;background:linear-gradient(135deg,#1688ff,#4966ff)!important;color:#fff!important;font-weight:700!important;white-space:nowrap!important;box-shadow:0 8px 20px rgba(24,126,255,.22)}
+.admin-note{margin:0 17px 17px;padding:12px 13px;border-radius:10px;background:rgba(41,150,255,.08);border:1px solid rgba(67,164,255,.16);font-size:11px;line-height:1.55;color:#91b7d5}.admin-status{min-height:18px;padding:0 17px 16px;font-size:12px}.admin-status.ok{color:#5fe0a1}.admin-status.err{color:#ff7d8d}.admin-session-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 17px}.admin-user-badge{display:flex;align-items:center;gap:10px}.admin-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#188cff,#675cff);font-weight:800}.admin-user-badge b{display:block;font-size:13px}.admin-user-badge small{display:block;color:#7fa5c3;font-size:11px;margin-top:2px}.admin-role-pill{padding:6px 10px;border-radius:999px;background:rgba(55,212,144,.10);border:1px solid rgba(55,212,144,.25);color:#65e3a7;font-size:11px;font-weight:700}
+.first-pass-card{width:min(440px,92vw)!important;border-radius:18px!important;background:linear-gradient(145deg,#071a2c,#0a2239)!important;border:1px solid rgba(64,157,255,.30)!important;color:#eaf5ff!important;box-shadow:0 28px 80px rgba(0,0,0,.55)!important}.first-pass-card h3{margin-top:0}.first-pass-card input{background:#061827!important;border:1px solid #214d70!important;color:#fff!important}.first-pass-card button{background:linear-gradient(135deg,#1688ff,#4966ff)!important;border-radius:10px!important;font-weight:700!important}
+@media(max-width:700px){.admin-stat-grid{grid-template-columns:1fr}.admin-form-grid{grid-template-columns:1fr}.admin-create-btn{min-height:44px}.admin-pro-head,.admin-pro-body{padding-left:15px;padding-right:15px}}
+
 </style>
 </head>
 <body id="mainBody" data-theme="light">
@@ -586,25 +598,42 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     </div>
 
     <div id="firstPasswordModal" class="modal" style="display:none;z-index:1000000;">
-      <div class="modal-content" style="width:min(430px,92vw);">
-        <h3>🔐 Yeni Şifre Belirle</h3>
-        <p style="font-size:13px;line-height:1.5">Yönetici hesabının geçici şifresi yalnızca ilk giriş içindir. Devam etmek için yeni şifrenizi belirleyin.</p>
-        <input id="adminNewPassword" type="password" placeholder="Yeni şifre (en az 8 karakter)">
-        <input id="adminNewPassword2" type="password" placeholder="Yeni şifre tekrar">
-        <button type="button" onclick="completeAdminFirstPassword()">Şifreyi Kaydet ve Devam Et</button>
+      <div class="modal-content first-pass-card">
+        <h3>🔐 İlk Giriş Güvenliği</h3>
+        <p style="font-size:13px;line-height:1.55;color:#9bbbd5">Geçici yönetici şifresi yalnızca ilk giriş içindir. Devam etmek için size özel yeni bir şifre belirleyin.</p>
+        <input id="adminNewPassword" type="password" autocomplete="new-password" placeholder="Yeni şifre (en az 8 karakter)">
+        <input id="adminNewPassword2" type="password" autocomplete="new-password" placeholder="Yeni şifre tekrar">
+        <button type="button" onclick="completeAdminFirstPassword()">Yeni Şifreyi Kaydet</button>
       </div>
     </div>
 
-    <div id="adminUsersModal" class="modal" style="display:none;z-index:999999;">
-      <div class="modal-content" style="width:min(480px,94vw);">
-        <span class="close" onclick="closeAdminUsersModal()">&times;</span>
-        <h3>♛ Kullanıcı Yönetimi</h3>
-        <div style="font-size:12px;margin:-4px 0 10px;color:#62b5ff;">Yönetici yetkisi aktif</div>
-        <p style="font-size:12px;opacity:.8">Yeni kullanıcı hesabını yalnızca Yönetici oluşturabilir. Mevcut kullanıcıların verileri değiştirilmez.</p>
-        <input id="adminCreateUsername" placeholder="Yeni kullanıcı adı">
-        <input id="adminCreatePassword" type="password" placeholder="Geçici şifre (en az 6 karakter)">
-        <button type="button" onclick="adminCreateUser()">Kullanıcı Oluştur</button>
-        <div id="adminCreateStatus" style="font-size:12px;margin-top:10px"></div>
+    <div id="adminUsersModal" class="modal admin-pro-modal" style="display:none;z-index:999999;">
+      <div class="modal-content">
+        <div class="admin-pro-head">
+          <div class="admin-pro-title"><div class="admin-pro-icon">♛</div><div><h3>Yönetim Merkezi</h3><small>MTmuhasebe · Kullanıcı ve erişim yönetimi</small></div></div>
+          <button type="button" class="admin-pro-close" onclick="closeAdminUsersModal()" aria-label="Kapat">×</button>
+        </div>
+        <div class="admin-pro-body">
+          <div class="admin-stat-grid">
+            <div class="admin-stat"><span>Oturum</span><strong class="admin-green">● Aktif</strong></div>
+            <div class="admin-stat"><span>Yetki Seviyesi</span><strong class="admin-blue">Yönetici</strong></div>
+            <div class="admin-stat"><span>Yeni Kayıt</span><strong>Yönetici Kontrollü</strong></div>
+          </div>
+          <div class="admin-section" style="margin-bottom:14px">
+            <div class="admin-section-head"><strong>Aktif Yönetici</strong><span>Bu oturum</span></div>
+            <div class="admin-session-row"><div class="admin-user-badge"><div class="admin-avatar">Y</div><div><b id="adminSessionName">Yönetici</b><small>Yönetim yetkisi etkin</small></div></div><div class="admin-role-pill">YÖNETİCİ</div></div>
+          </div>
+          <div class="admin-section">
+            <div class="admin-section-head"><strong>Yeni Kullanıcı Oluştur</strong><span>Mevcut kullanıcı verileri etkilenmez</span></div>
+            <div class="admin-form-grid">
+              <input id="adminCreateUsername" autocomplete="off" placeholder="Kullanıcı adı">
+              <input id="adminCreatePassword" type="password" autocomplete="new-password" placeholder="Geçici şifre (en az 6 karakter)">
+              <button type="button" id="adminCreateBtn" class="admin-create-btn" onclick="adminCreateUser()">＋ Kullanıcı Oluştur</button>
+            </div>
+            <div class="admin-note">Yeni hesap ayrı bir Firebase kullanıcı kimliğiyle oluşturulur. Mevcut kullanıcıların UID'leri, harcama kayıtları, gelirleri, borçları ve diğer verileri değiştirilmez.</div>
+            <div id="adminCreateStatus" class="admin-status"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1027,28 +1056,51 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if (selected) el.value = String(selected);
     }
     function isAdminUser() { return String(currentUser || '').toLocaleLowerCase('tr-TR') === ADMIN_USERNAME.toLocaleLowerCase('tr-TR'); }
-    function openAdminUsersModal(){ if(!isAdminUser()) return; document.getElementById('adminUsersModal').style.display='flex'; }
+    function openAdminUsersModal(){
+        if(!isAdminUser()) return;
+        const modal=document.getElementById('adminUsersModal');
+        const name=document.getElementById('adminSessionName');
+        const status=document.getElementById('adminCreateStatus');
+        if(name) name.textContent=currentUser || ADMIN_USERNAME;
+        if(status){ status.textContent=''; status.className='admin-status'; }
+        if(modal) modal.style.display='flex';
+    }
     function closeAdminUsersModal(){ document.getElementById('adminUsersModal').style.display='none'; }
     async function adminCreateUser(){
         if(!isAdminUser() || !window.currentAuthUser) return alert('Bu işlem yalnızca Yönetici içindir.');
         const u=document.getElementById('adminCreateUsername').value.trim();
         const p=document.getElementById('adminCreatePassword').value;
         const st=document.getElementById('adminCreateStatus');
-        if(!u || u.toLocaleLowerCase('tr-TR')===ADMIN_USERNAME.toLocaleLowerCase('tr-TR')) return alert('Geçerli bir kullanıcı adı girin.');
+        const btn=document.getElementById('adminCreateBtn');
+        if(st){ st.className='admin-status'; st.textContent=''; }
+        if(!u || u.length<2) return alert('Kullanıcı adı en az 2 karakter olmalı.');
+        if(u.toLocaleLowerCase('tr-TR')===ADMIN_USERNAME.toLocaleLowerCase('tr-TR')) return alert('Bu kullanıcı adı Yönetici hesabına ayrılmıştır.');
         if(!p || p.length<6) return alert('Geçici şifre en az 6 karakter olmalı.');
-        let secondary;
+        let secondary=null;
+        const oldText=btn?btn.textContent:'';
         try {
-            const name='adminCreate_'+Date.now();
+            if(btn){ btn.disabled=true; btn.textContent='Oluşturuluyor…'; }
+            const name='mtAdminCreate_'+Date.now();
             secondary=firebase.initializeApp(FIREBASE_CONFIG,name);
             const auth2=secondary.auth();
+            await auth2.setPersistence(firebase.auth.Auth.Persistence.NONE);
             const cred=await auth2.createUserWithEmailAndPassword(usernameToInternalEmail(u),p);
             await cred.user.updateProfile({displayName:u});
             await auth2.signOut();
-            rememberUsername(u);
-            document.getElementById('adminCreateUsername').value=''; document.getElementById('adminCreatePassword').value='';
-            st.textContent='✅ '+u+' kullanıcısı oluşturuldu.';
-        } catch(err){ console.error(err); st.textContent='❌ '+(err?.code==='auth/email-already-in-use'?'Bu kullanıcı zaten mevcut.':(err?.message||'Kullanıcı oluşturulamadı.')); }
-        finally { if(secondary) try{ await secondary.delete(); }catch(_){} }
+            document.getElementById('adminCreateUsername').value='';
+            document.getElementById('adminCreatePassword').value='';
+            if(st){ st.className='admin-status ok'; st.textContent='✓ '+u+' kullanıcısı başarıyla oluşturuldu.'; }
+        } catch(err){
+            console.error('Yönetici kullanıcı oluşturma hatası:',err);
+            let msg='Kullanıcı oluşturulamadı.';
+            if(err?.code==='auth/email-already-in-use') msg='Bu kullanıcı adı zaten mevcut.';
+            else if(err?.code==='auth/weak-password') msg='Şifre yeterince güçlü değil.';
+            else if(err?.code==='auth/network-request-failed') msg='İnternet bağlantısı kurulamadı.';
+            if(st){ st.className='admin-status err'; st.textContent='✕ '+msg; }
+        } finally {
+            if(secondary) try{ await secondary.delete(); }catch(_){}
+            if(btn){ btn.disabled=false; btn.textContent=oldText; }
+        }
     }
     async function completeAdminFirstPassword(){
         const p1=document.getElementById('adminNewPassword').value, p2=document.getElementById('adminNewPassword2').value;
@@ -1058,7 +1110,6 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         try{
             await window.currentAuthUser.updatePassword(p1);
             adminFirstPasswordRequired=false;
-            localStorage.setItem('mtAdminPasswordChanged_'+window.currentAuthUser.uid,'1');
             document.getElementById('firstPasswordModal').style.display='none';
             showApp();
             alert('Yönetici şifresi değiştirildi.');
@@ -1168,7 +1219,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             window.currentAuthUser = cred.user;
             rememberUsername(currentUser);
             await migrateLegacyLocalData(currentUser, cred.user.uid);
-            if (isAdminUser() && (adminFirstPasswordRequired || (password === ADMIN_INITIAL_PASSWORD && localStorage.getItem('mtAdminPasswordChanged_'+cred.user.uid)!=='1'))) {
+            if (isAdminUser() && (adminFirstPasswordRequired || password === ADMIN_INITIAL_PASSWORD)) {
                 adminFirstPasswordRequired = true;
                 document.getElementById('loginScreen').style.display='none';
                 document.getElementById('appScreen').style.display='none';

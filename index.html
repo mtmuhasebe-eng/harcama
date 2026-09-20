@@ -599,7 +599,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
       <div class="modal-content" style="width:min(480px,94vw);">
         <span class="close" onclick="closeAdminUsersModal()">&times;</span>
         <h3>♛ Kullanıcı Yönetimi</h3>
-        <p style="font-size:12px;opacity:.8">Yeni kullanıcı hesabını yalnızca Yönetici ekranından oluşturun.</p>
+        <div style="font-size:12px;margin:-4px 0 10px;color:#62b5ff;">Yönetici yetkisi aktif</div>
+        <p style="font-size:12px;opacity:.8">Yeni kullanıcı hesabını yalnızca Yönetici oluşturabilir. Mevcut kullanıcıların verileri değiştirilmez.</p>
         <input id="adminCreateUsername" placeholder="Yeni kullanıcı adı">
         <input id="adminCreatePassword" type="password" placeholder="Geçici şifre (en az 6 karakter)">
         <button type="button" onclick="adminCreateUser()">Kullanıcı Oluştur</button>
@@ -643,6 +644,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     <div class="dropdown-item" onclick="openProfileModal()">⚙️ Bilgileri Güncelle</div>
                     <div class="dropdown-item" onclick="openThemeModal()">🎨 Renk / Tema Değiştir</div>
                     <div class="dropdown-item" onclick="openCloudModal()">☁️ Senkron Durumu</div>
+                    <div class="dropdown-item" id="adminUsersDropdownItem" onclick="openAdminUsersModal()" style="display:none;color:#62b5ff;">♛ Kullanıcı Yönetimi</div>
                     <div class="dropdown-item" onclick="resetLayoutDefault()" style="color:#2980b9;">🔄 Düzeni Sıfırla</div>
                     <div class="dropdown-item" onclick="logout()" style="color:#e74c3c;">🚪 Çıkış Yap</div>
                 </div>
@@ -1013,26 +1015,16 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     function toggleAuthMode() { isRegisterMode = false; }
 
-    function rememberedUsernames() {
-        const set = new Set([ADMIN_USERNAME]);
-        try {
-            (JSON.parse(localStorage.getItem("mtRememberedUsers") || "[]") || []).forEach(x => x && set.add(String(x)));
-            (JSON.parse(localStorage.getItem("appUsers") || "[]") || []).forEach(x => x?.u && set.add(String(x.u)));
-        } catch (_) {}
-        return [...set];
-    }
+    // Kullanıcı adı alanı klasik metin alanıdır; seçim listesi kullanılmaz.
     function rememberUsername(name) {
         if (!name) return;
-        const users = rememberedUsernames();
-        if (!users.some(x => x.toLocaleLowerCase("tr-TR") === String(name).toLocaleLowerCase("tr-TR"))) users.push(name);
-        localStorage.setItem("mtRememberedUsers", JSON.stringify(users));
-        renderRememberedUsers(name);
+        try { localStorage.setItem("mtLastUsername", String(name)); } catch (_) {}
     }
     function renderRememberedUsers(selected) {
-        const el = document.getElementById("authUsername"); if (!el) return;
-        const current = selected || el.value;
-        el.innerHTML = '<option value="">Kullanıcı seç</option>' + rememberedUsernames().map(u => `<option value="${String(u).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">${String(u).replace(/&/g,'&amp;').replace(/</g,'&lt;')}</option>`).join('');
-        if (current && [...el.options].some(o => o.value === current)) el.value = current;
+        const el = document.getElementById("authUsername");
+        if (!el || el.tagName !== "INPUT") return;
+        // Kullanıcı adı otomatik doldurulmaz; tarayıcının autocomplete özelliği kullanılabilir.
+        if (selected) el.value = String(selected);
     }
     function isAdminUser() { return String(currentUser || '').toLocaleLowerCase('tr-TR') === ADMIN_USERNAME.toLocaleLowerCase('tr-TR'); }
     function openAdminUsersModal(){ if(!isAdminUser()) return; document.getElementById('adminUsersModal').style.display='flex'; }
@@ -1081,7 +1073,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('loginScreen').style.display = 'block';
         const form = document.getElementById('authForm');
         if (form) form.reset();
-        renderRememberedUsers();
+        const adminBtn=document.getElementById('adminUsersBtn'); if(adminBtn) adminBtn.style.display='none';
+        const adminDrop=document.getElementById('adminUsersDropdownItem'); if(adminDrop) adminDrop.style.display='none';
     }
 
     async function logout() {
@@ -1199,7 +1192,6 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
-        renderRememberedUsers();
         if (!initFirebase()) {
             setSignedOutUI();
             return;
@@ -1243,7 +1235,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
         document.getElementById('currentUsernameDisplay').textContent = currentUser;
-        const adminBtn=document.getElementById('adminUsersBtn'); if(adminBtn) adminBtn.style.display=isAdminUser()?'flex':'none';
+        const adminBtn=document.getElementById('adminUsersBtn');
+        if(adminBtn) adminBtn.style.display=isAdminUser()?'flex':'none';
+        const adminDrop=document.getElementById('adminUsersDropdownItem');
+        if(adminDrop) adminDrop.style.display=isAdminUser()?'block':'none';
         
         renderLayout();
         

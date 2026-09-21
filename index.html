@@ -653,7 +653,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <button type="button" onclick="appNavigate('banks',this)" data-page="banks">▤ <span>Banka Hesapları</span></button>
                 <button type="button" onclick="appNavigate('cutoffs',this)" data-page="cutoffs">◫ <span>Kesim Günleri</span></button>
                 <button type="button" onclick="appNavigate('installments',this)" data-page="installments">◈ <span>Borç & Taksitler</span></button>
-                            <button type="button" onclick="appNavigate('recurring',this)" data-page="recurring">↻ <span>Aylık Standart Harcamalar</span></button>
+                            <button type="button" onclick="appNavigate('recurring',this)" data-page="recurring">↻ <span>Düzenli Harcamalar</span></button>
             </nav>
             <div class="pro-side-bottom">
                 <button type="button" onclick="openThemeModal()">◉ <span>Tema Değiştir</span></button>
@@ -684,8 +684,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         
         <div class="app-page-title"><div><h2 id="appPageTitle">Ana Sayfa</h2><small id="appPageHint">Finansal özetin</small></div></div>
         <div class="dashboard-grid">
-            <div id="colLeft" class="drop-column" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
-            <div id="colRight" class="drop-column" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+            <div id="colLeft" class="drop-column"></div>
+            <div id="colRight" class="drop-column"></div>
         </div>
     </div>
 
@@ -710,7 +710,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     <!-- GİZLİ ŞABLON BLOKLARI -->
     <div id="templatesStore" style="display:none;">
-        <div id="mod_summary" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_summary" class="draggable-module" draggable="false">
             <div class="cards">
                 <div class="card"><h3>Bugün</h3><p id="t">0.00 TL</p></div>
                 <div class="card" style="border-left-color:#27ae60;"><h3>Bu Ay</h3><p id="m">0.00 TL</p></div>
@@ -718,7 +718,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             </div>
         </div>
 
-        <div id="mod_excel" class="draggable-module mt-report-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_excel" class="draggable-module mt-report-module" draggable="false">
             <div class="mt-report-head">
                 <div><h2>Finans Analizi</h2><p>Harcama ve gelirlerini tek ekranda detaylı incele.</p></div>
                 <div class="mt-report-tools">
@@ -743,12 +743,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <section class="mt-report-panel mt-report-table-panel"><div class="mt-report-title"><b>Detaylı İşlemler</b><span id="mtRptTableCount">0 kayıt</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Tarih</th><th>Kategori</th><th>Banka / Kart</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody id="mtRptRows"></tbody></table></div></section>
         </div>
 
-        <div id="mod_banks" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_banks" class="draggable-module" draggable="false">
             <h2>🏦 Kullandığım Bankalar / Kartlar</h2>
             <div class="bank-checkboxes" id="bankCheckboxes"></div>
         </div>
 
-        <div id="mod_cutoffs" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_cutoffs" class="draggable-module" draggable="false">
             <h2>⚙️ Seçili Banka Kesim Günleri</h2>
             <div style="overflow-x:auto;">
                 <table class="cutoff-table">
@@ -758,13 +758,13 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             </div>
         </div>
 
-        <div id="mod_bankstats" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_bankstats" class="draggable-module" draggable="false">
             <h2>💳 Banka Ekstre Durumu</h2>
             <div class="summary-grid" id="bankSummaryGrid"></div>
             <div id="paidStatementHistory" style="margin-top:12px;"></div>
         </div>
 
-        <div id="mod_addexpense" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_addexpense" class="draggable-module" draggable="false">
             <h2>✍️ Yeni Harcama Ekle</h2>
             <form id="f">
                 <input type="hidden" id="editIndex" value="-1">
@@ -788,25 +788,36 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         </div>
 
 
-        <div id="mod_recurring" class="draggable-module" draggable="true" ondragstart="drag(event)">
-            <h2>🔁 Aylık Standart Harcamalar</h2>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">Telefon, spor, internet, aidat gibi her ay tekrarlanan giderleri bir kez tanımla.</div>
+        <div id="mod_recurring" class="draggable-module" draggable="false">
+            <h2>🔁 Düzenli Harcamalar</h2>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">Sigara, ulaşım, telefon, spor, internet gibi düzenli giderlerini bir kez tanımla; günlük, haftalık veya aylık otomatik işlensin.</div>
             <form id="recurringForm">
                 <div class="recurring-grid">
-                    <input class="recurring-wide" type="text" id="recName" placeholder="Harcama adı (Telefon faturası)" required>
+                    <input class="recurring-wide" type="text" id="recName" placeholder="Harcama adı (Örn. Fatura)" required>
                     <select id="recCategory">
                         <option>Fatura</option><option>Spor</option><option>Market</option><option>Ulaşım</option><option>Alışveriş</option><option>Diğer</option>
                     </select>
                     <select id="recBank"></select>
                     <input type="text" inputmode="decimal" id="recAmount" placeholder="Tutar (TL)" onkeypress="return isNumberKey(event)" required>
-                    <input type="number" id="recDay" min="1" max="31" value="1" placeholder="Gün" required>
+                    <select id="recFrequency" onchange="updateRecurringScheduleField()">
+                        <option value="daily">Her Gün</option>
+                        <option value="weekly">Her Hafta</option>
+                        <option value="monthly" selected>Her Ay</option>
+                    </select>
+                    <div id="recScheduleWrap">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:260px;">
+                            <label style="display:grid;gap:4px;font-size:10px;color:var(--muted);">Başlangıç Tarihi<input type="date" id="recStartDate" required></label>
+                            <label style="display:grid;gap:4px;font-size:10px;color:var(--muted);">Bitiş Tarihi<input type="date" id="recEndDate" required></label>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" style="margin-top:2px;">Aylık Harcama Ekle</button>
+                <div id="recScheduleHint" style="font-size:10px;color:var(--muted);margin:5px 0 0;">Bu aylık ödeme yalnızca seçtiğin tarih aralığındaki aylarda bir kez Güncel Ekstre’ye eklenir.</div>
+                <button type="submit" style="margin-top:7px;">Düzenli Harcama Ekle</button>
             </form>
             <div id="recurringList" class="recurring-list"></div>
         </div>
 
-        <div id="mod_addinstallment" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_addinstallment" class="draggable-module" draggable="false">
             <h2>📅 Taksitli Harcama Ekle</h2>
             <form id="installmentForm">
                 <input type="date" id="idStartD" required>
@@ -852,7 +863,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             <div id="extraIncomeList" class="income-list"></div>
         </div>
 
-        <div id="mod_history" class="draggable-module" draggable="true" ondragstart="drag(event)">
+        <div id="mod_history" class="draggable-module" draggable="false">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 5px; flex-wrap: wrap;">
                 <h2 style="margin: 0; border: none;">📜 Harcama Geçmişi</h2>
                 <div style="display: flex; gap: 5px;">
@@ -933,7 +944,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         banks: {title:'Banka Hesapları', hint:'Kullandığın banka ve kartları yönet.', modules:['mod_banks','mod_bankstats']},
         cutoffs: {title:'Kesim Günleri', hint:'Kart kesim günlerini düzenle.', modules:['mod_cutoffs']},
         installments: {title:'Borç & Taksitler', hint:'Taksitli harcamalarını oluştur ve takip et.', modules:['mod_addinstallment']},
-        recurring: {title:'Aylık Standart Harcamalar', hint:'Telefon, spor, internet gibi tekrarlanan giderler.', modules:['mod_recurring']}
+        recurring: {title:'Düzenli Harcamalar', hint:'Günlük, haftalık veya aylık tekrarlanan giderlerini otomatik takip et.', modules:['mod_recurring']}
     };
     let currentAppPage = 'home';
 
@@ -1316,29 +1327,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         rd();
     }
 
-    function drag(ev) {
-        ev.dataTransfer.setData("text", ev.target.id);
-        ev.target.classList.add('dragging');
-    }
-
-    document.addEventListener('dragend', function(ev) {
-        if (ev.target.classList && ev.target.classList.contains('draggable-module')) {
-            ev.target.classList.remove('dragging');
-        }
-    });
-
-    function allowDrop(ev) { ev.preventDefault(); }
-
-    function drop(ev) {
-        ev.preventDefault();
-        let data = ev.dataTransfer.getData("text");
-        let draggedElement = document.getElementById(data);
-        let dropZone = ev.target.closest('.drop-column');
-        if (dropZone && draggedElement) {
-            dropZone.appendChild(draggedElement);
-            saveLayout();
-        }
-    }
+    // Sabit düzen: modüllerin/sütunların sürüklenerek taşınması kapalıdır.
+    function drag(ev) { if (ev) ev.preventDefault(); }
+    function allowDrop(ev) { /* sürükle-bırak kapalı */ }
+    function drop(ev) { if (ev) ev.preventDefault(); }
 
     function getLayout() {
         let saved = localStorage.getItem(currentStorageKey('layout'));
@@ -1848,28 +1840,85 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(pushCloud && window.cloudSync) window.cloudSync.pushAll();
     }
 
+    window.updateRecurringScheduleField = function() {
+        const freq = document.getElementById('recFrequency')?.value || 'monthly';
+        const wrap = document.getElementById('recScheduleWrap');
+        const hint = document.getElementById('recScheduleHint');
+        if(!wrap) return;
+        if(freq === 'daily') {
+            wrap.innerHTML = '<div style="height:38px;display:flex;align-items:center;padding:0 11px;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:11px;">Her gün otomatik</div>';
+            if(hint) hint.textContent = 'Her gün bir kez otomatik harcama oluşturulur.';
+        } else if(freq === 'weekly') {
+            wrap.innerHTML = '<select id="recWeekday" required><option value="1">Pazartesi</option><option value="2">Salı</option><option value="3">Çarşamba</option><option value="4">Perşembe</option><option value="5">Cuma</option><option value="6">Cumartesi</option><option value="0">Pazar</option></select>';
+            if(hint) hint.textContent = 'Her hafta seçtiğin günde otomatik harcama oluşturulur.';
+        } else {
+            const today = new Date();
+            const y = today.getFullYear();
+            const startDefault = `${y}-01-01`;
+            const endDefault = `${y}-12-31`;
+            wrap.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:260px;">
+                <label style="display:grid;gap:4px;font-size:10px;color:var(--muted);">Başlangıç Tarihi<input type="date" id="recStartDate" value="${startDefault}" required></label>
+                <label style="display:grid;gap:4px;font-size:10px;color:var(--muted);">Bitiş Tarihi<input type="date" id="recEndDate" value="${endDefault}" required></label>
+            </div>`;
+            if(hint) hint.textContent = 'Bu aylık ödeme yalnızca seçtiğin tarih aralığındaki aylarda bir kez Güncel Ekstre’ye eklenir.';
+        }
+    };
+
+    function recurringFrequency(r) {
+        return r.frequency || 'monthly'; // Eski kayıtlar aylık olarak aynen devam eder.
+    }
+
     function ensureRecurringForCurrentMonth() {
         if(!currentUser || !recurringExpenses.length) return false;
         const now = new Date();
         const y = now.getFullYear(), m = now.getMonth();
         const ym = `${y}-${String(m+1).padStart(2,'0')}`;
         const lastDay = new Date(y, m+1, 0).getDate();
+        const today = now.getDate();
         let changed = false;
-        recurringExpenses.forEach(r => {
-            const key = `rec:${r.id}:${ym}`;
-            if(ex.some(e => e.recurringKey === key)) return;
-            const day = Math.min(Math.max(parseInt(r.day)||1,1), lastDay);
+
+        const addOccurrence = (r, day, suffix) => {
+            const key = `rec:${r.id}:${ym}:${suffix}`;
+            if(ex.some(e => e.recurringKey === key || (recurringFrequency(r)==='monthly' && e.recurringKey === `rec:${r.id}:${ym}`))) return;
             ex.push({
                 d: `${ym}-${String(day).padStart(2,'0')}`,
                 c: r.category || 'Diğer',
                 b: r.bank || 'Nakit / Diğer',
                 a: String(Number(r.amount)||0),
                 inst: '-',
-                x: r.name || 'Aylık standart harcama',
+                x: r.name || 'Düzenli harcama',
                 recurringKey: key,
                 recurringId: r.id
             });
             changed = true;
+        };
+
+        recurringExpenses.forEach(r => {
+            const freq = recurringFrequency(r);
+            if(freq === 'daily') {
+                for(let day=1; day<=today; day++) addOccurrence(r, day, `d${day}`);
+            } else if(freq === 'weekly') {
+                const weekday = Number.isFinite(Number(r.weekday)) ? Number(r.weekday) : 1;
+                for(let day=1; day<=today; day++) {
+                    if(new Date(y,m,day).getDay() === weekday) addOccurrence(r, day, `w${day}`);
+                }
+            } else {
+                // Yeni aylık kayıtlarda gün seçimi yoktur; başlangıç/bitiş tarih aralığı geçerlidir.
+                if(r.startDate || r.endDate) {
+                    const monthStart = `${ym}-01`;
+                    const monthEnd = `${ym}-${String(lastDay).padStart(2,'0')}`;
+                    const start = r.startDate || '0000-01-01';
+                    const end = r.endDate || '9999-12-31';
+                    if(start <= monthEnd && end >= monthStart) {
+                        // Güncel ekstreye düşmesi için, aktif ayda kayıt bugünün tarihiyle bir kez oluşturulur.
+                        addOccurrence(r, today, 'month');
+                    }
+                } else {
+                    // Eski aylık kayıtların ayın günü mantığı geriye dönük uyumluluk için korunur.
+                    const day = Math.min(Math.max(parseInt(r.day)||1,1), lastDay);
+                    addOccurrence(r, day, `m${day}`);
+                }
+            }
         });
         if(changed) {
             localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
@@ -1878,22 +1927,32 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return changed;
     }
 
+    function formatRecurringDate(v) {
+        if(!v) return 'Süresiz';
+        const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return m ? `${m[3]}.${m[2]}.${m[1]}` : v;
+    }
+
     function renderRecurringList() {
         const box = document.getElementById('recurringList');
         if(!box) return;
         if(!recurringExpenses.length) {
-            box.innerHTML = '<div style="font-size:11px;opacity:.7;">Henüz aylık standart harcama yok.</div>';
+            box.innerHTML = '<div style="font-size:11px;opacity:.7;">Henüz düzenli harcama yok.</div>';
             return;
         }
-        box.innerHTML = recurringExpenses.map(r => `
-          <div class="recurring-row">
-            <div><b>${r.name}</b><small>${money(r.amount)} • Her ayın ${r.day}. günü • ${r.category} • ${r.bank}</small></div>
+        const weekNames = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+        box.innerHTML = recurringExpenses.map(r => {
+          const freq = recurringFrequency(r);
+          const schedule = freq === 'daily' ? 'Her gün' : freq === 'weekly' ? `Her ${weekNames[Number(r.weekday) || 0]}` : (r.startDate || r.endDate ? `Her ay • ${formatRecurringDate(r.startDate)} - ${formatRecurringDate(r.endDate)}` : `Her ayın ${r.day || 1}. günü`);
+          return `<div class="recurring-row">
+            <div><b>${r.name}</b><small>${money(r.amount)} • ${schedule} • ${r.category} • ${r.bank}</small></div>
             <button type="button" onclick="deleteRecurring('${r.id}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
-          </div>`).join('');
+          </div>`;
+        }).join('');
     }
 
     window.deleteRecurring = function(id) {
-        if(!confirm('Bu aylık standart harcama silinsin mi? Daha önce oluşmuş harcamalar silinmez.')) return;
+        if(!confirm('Bu düzenli harcama silinsin mi? Daha önce oluşmuş harcamalar silinmez.')) return;
         recurringExpenses = recurringExpenses.filter(r => String(r.id) !== String(id));
         saveRecurringExpenses(true);
         renderRecurringList();
@@ -1905,18 +1964,30 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             loadUserData();
             const amount = parseFloat(String(document.getElementById('recAmount').value).replace(',','.')) || 0;
             if(amount <= 0) { alert('Geçerli bir tutar girin.'); return; }
-            recurringExpenses.push({
+            const frequency = document.getElementById('recFrequency')?.value || 'monthly';
+            const item = {
                 id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
                 name: document.getElementById('recName').value.trim(),
                 category: document.getElementById('recCategory').value,
                 bank: document.getElementById('recBank').value,
                 amount,
-                day: Math.min(31, Math.max(1, parseInt(document.getElementById('recDay').value)||1))
-            });
+                frequency
+            };
+            if(frequency === 'monthly') {
+                const startDate = document.getElementById('recStartDate')?.value || '';
+                const endDate = document.getElementById('recEndDate')?.value || '';
+                if(!startDate || !endDate) { alert('Başlangıç ve bitiş tarihini seçin.'); return; }
+                if(startDate > endDate) { alert('Bitiş tarihi başlangıç tarihinden önce olamaz.'); return; }
+                item.startDate = startDate;
+                item.endDate = endDate;
+            }
+            if(frequency === 'weekly') item.weekday = parseInt(document.getElementById('recWeekday')?.value ?? '1');
+            recurringExpenses.push(item);
             saveRecurringExpenses(false);
             const created = ensureRecurringForCurrentMonth();
             e.target.reset();
-            document.getElementById('recDay').value = '1';
+            document.getElementById('recFrequency').value = 'monthly';
+            updateRecurringScheduleField();
             renderRecurringList();
             rd();
             if(window.cloudSync) window.cloudSync.pushAll();
@@ -1929,6 +2000,16 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         renderBankSelections();
         renderCutoffTableAndDropdown();
         fillRecurringBankSelect();
+        if(typeof updateRecurringScheduleField === 'function') {
+            const freqEl = document.getElementById('recFrequency');
+            const startEl = document.getElementById('recStartDate');
+            const endEl = document.getElementById('recEndDate');
+            if(freqEl?.value === 'monthly' && startEl && endEl && !startEl.value && !endEl.value) {
+                const y = new Date().getFullYear();
+                startEl.value = `${y}-01-01`;
+                endEl.value = `${y}-12-31`;
+            } else if(!document.getElementById('recScheduleWrap')?.children.length) updateRecurringScheduleField();
+        }
         const recurringCreated = ensureRecurringForCurrentMonth();
         renderRecurringList();
         if(recurringCreated && window.cloudSync && window.cloudSync.cloudReady && !window.cloudSync.applyingRemote) {

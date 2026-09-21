@@ -718,14 +718,29 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             </div>
         </div>
 
-        <div id="mod_excel" class="draggable-module" draggable="true" ondragstart="drag(event)">
-            <div class="excel-btns">
-                <button onclick="exportToExcel()">📊 Excel</button>
-                <button onclick="saveAsPDF()" style="background: #e74c3c;">📄 PDF Kaydet</button>
-                <label for="excelFileInput">📥 Yükle
-                    <input type="file" id="excelFileInput" accept=".csv" style="display:none" onchange="importFromExcel(event)">
-                </label>
+        <div id="mod_excel" class="draggable-module mt-report-module" draggable="true" ondragstart="drag(event)">
+            <div class="mt-report-head">
+                <div><h2>Finans Analizi</h2><p>Harcama ve gelirlerini tek ekranda detaylı incele.</p></div>
+                <div class="mt-report-tools">
+                    <select id="mtReportPeriod" onchange="mtRenderReports()">
+                        <option value="1">Bu Ay</option><option value="3">Son 3 Ay</option><option value="6">Son 6 Ay</option><option value="12" selected>Son 12 Ay</option><option value="all">Tüm Zamanlar</option>
+                    </select>
+                    <button type="button" onclick="exportToExcel()">📊 Excel</button>
+                    <button type="button" class="mt-pdf-btn" onclick="saveAsPDF()">📄 PDF</button>
+                </div>
             </div>
+            <div class="mt-report-kpis">
+                <div class="mt-report-kpi"><span>TOPLAM HARCAMA</span><strong id="mtRptTotal">0,00 TL</strong><small id="mtRptCount">0 işlem</small></div>
+                <div class="mt-report-kpi"><span>AYLIK ORTALAMA</span><strong id="mtRptAvg">0,00 TL</strong><small>Seçili dönem</small></div>
+                <div class="mt-report-kpi"><span>EN YÜKSEK HARCAMA</span><strong id="mtRptMax">0,00 TL</strong><small id="mtRptMaxInfo">—</small></div>
+                <div class="mt-report-kpi"><span>KALAN PARA</span><strong id="mtRptRemain">0,00 TL</strong><small id="mtRptIncome">Gelir: 0,00 TL</small></div>
+            </div>
+            <div class="mt-report-grid">
+                <section class="mt-report-panel mt-report-wide"><div class="mt-report-title"><b>Aylık Harcama Trendi</b><span id="mtRptTrendLabel">Son 12 ay</span></div><div id="mtRptBars" class="mt-report-bars"></div></section>
+                <section class="mt-report-panel"><div class="mt-report-title"><b>Kategori Dağılımı</b><span>Harcama payları</span></div><div id="mtRptCategories" class="mt-report-list"></div></section>
+                <section class="mt-report-panel"><div class="mt-report-title"><b>Banka / Kart Dağılımı</b><span>Kullanım özeti</span></div><div id="mtRptBanks" class="mt-report-list"></div></section>
+            </div>
+            <section class="mt-report-panel mt-report-table-panel"><div class="mt-report-title"><b>Detaylı İşlemler</b><span id="mtRptTableCount">0 kayıt</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Tarih</th><th>Kategori</th><th>Banka / Kart</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody id="mtRptRows"></tbody></table></div></section>
         </div>
 
         <div id="mod_banks" class="draggable-module" draggable="true" ondragstart="drag(event)">
@@ -2549,5 +2564,56 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
 </script>
 
+<style id="mtReportsOnlyStyle">
+#mod_excel.mt-report-module{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible}
+#mod_excel.mt-report-module:hover{transform:none!important;box-shadow:none!important}
+#mod_excel .mt-report-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}
+#mod_excel .mt-report-head h2{font-size:21px!important;color:#f3f8ff!important;border:0!important;margin:0 0 4px!important;padding:0!important}
+#mod_excel .mt-report-head p{margin:0;color:#829bb5;font-size:12px}
+#mod_excel .mt-report-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#mod_excel .mt-report-tools select,#mod_excel .mt-report-tools button{width:auto!important;min-width:105px;margin:0!important;height:38px;border-radius:9px;border:1px solid rgba(63,115,162,.5);background:#0d2238;color:#eaf4ff;padding:0 11px;font-size:12px!important}
+#mod_excel .mt-report-tools button{cursor:pointer;background:linear-gradient(135deg,#1577e8,#2457d8);border:0;font-weight:700}.mt-pdf-btn{background:linear-gradient(135deg,#d84d57,#a92e3b)!important}
+#mod_excel .mt-report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+#mod_excel .mt-report-kpi,#mod_excel .mt-report-panel{background:linear-gradient(145deg,rgba(13,35,57,.96),rgba(8,25,43,.96));border:1px solid rgba(54,100,143,.48);border-radius:15px;box-shadow:0 12px 28px rgba(0,0,0,.18)}
+#mod_excel .mt-report-kpi{padding:15px 16px;min-height:92px}#mod_excel .mt-report-kpi span{display:block;color:#7f9ab5;font-size:9px;font-weight:800;letter-spacing:.8px;margin-bottom:9px}#mod_excel .mt-report-kpi strong{display:block;color:#eef7ff;font-size:20px;line-height:1.15}#mod_excel .mt-report-kpi small{display:block;color:#6685a1;font-size:10px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mod_excel .mt-report-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:12px}#mod_excel .mt-report-panel{padding:15px;min-width:0}#mod_excel .mt-report-wide{grid-row:span 2}
+#mod_excel .mt-report-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}#mod_excel .mt-report-title b{font-size:13px;color:#d9ebfb}#mod_excel .mt-report-title span{font-size:9px;color:#718da8}
+#mod_excel .mt-report-bars{height:270px;display:flex;align-items:flex-end;gap:8px;padding:16px 4px 4px;border-top:1px solid rgba(67,109,148,.16);background:repeating-linear-gradient(to top,transparent 0,transparent 24%,rgba(87,130,169,.09) 25%)}
+#mod_excel .mt-rbar{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}.mt-rbar-v{font-size:8px;color:#8faac2;white-space:nowrap}.mt-rbar-fill{width:min(34px,72%);min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#3ca0ff,#1768dc);box-shadow:0 0 14px rgba(47,140,255,.18)}.mt-rbar-l{font-size:8px;color:#728da7;white-space:nowrap}
+#mod_excel .mt-report-list{display:flex;flex-direction:column;gap:11px}.mt-rlist-row{display:grid;grid-template-columns:minmax(85px,1fr) 1.3fr auto;gap:8px;align-items:center}.mt-rlist-name{font-size:10px;color:#bcd0e2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mt-rlist-track{height:6px;border-radius:999px;background:#071625;overflow:hidden}.mt-rlist-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#246de0,#42a6ff)}.mt-rlist-val{font-size:9px;color:#8ba6bf;text-align:right;white-space:nowrap}.mt-report-empty{padding:30px 8px;text-align:center;color:#65819b;font-size:11px}
+#mod_excel .mt-report-table-panel{margin-top:12px}.mt-report-table-wrap{overflow:auto;max-height:330px}.mt-report-table{width:100%;border-collapse:collapse;font-size:10px}.mt-report-table th{position:sticky;top:0;background:#0b1d30;color:#7995ae;text-align:left;padding:10px 8px;border-bottom:1px solid rgba(71,115,154,.28);font-size:9px;letter-spacing:.35px}.mt-report-table td{padding:10px 8px;border-bottom:1px solid rgba(71,115,154,.14);color:#b9cde0}.mt-report-table td:last-child,.mt-report-table th:last-child{text-align:right}.mt-report-amount{font-weight:800;color:#e9f5ff!important;white-space:nowrap}
+@media(max-width:900px){#mod_excel .mt-report-kpis{grid-template-columns:1fr 1fr}#mod_excel .mt-report-grid{grid-template-columns:1fr}#mod_excel .mt-report-wide{grid-row:auto}}
+@media(max-width:600px){#mod_excel .mt-report-head{flex-direction:column}#mod_excel .mt-report-tools{width:100%}#mod_excel .mt-report-tools select{flex:1}#mod_excel .mt-report-kpis{grid-template-columns:1fr 1fr;gap:7px}#mod_excel .mt-report-kpi{padding:11px;min-height:82px}#mod_excel .mt-report-kpi strong{font-size:15px}#mod_excel .mt-report-grid{gap:8px}#mod_excel .mt-report-bars{height:210px;gap:3px}.mt-rbar-v{display:none}.mt-rbar-l{font-size:7px}#mod_excel .mt-report-panel{padding:11px}.mt-rlist-row{grid-template-columns:85px 1fr auto}}
+</style>
+<script id="mtReportsOnlyScript">
+(function(){
+ const moneyR=v=>(Number(v)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';
+ const numR=v=>Number(String(v??0).replace(',','.'))||0;
+ const escR=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const mkeyR=d=>String(d||'').slice(0,7);
+ const monthLabelR=k=>{if(!k)return '—';const [y,m]=k.split('-');const a=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];return (a[(+m)-1]||m)+' '+String(y).slice(-2)};
+ window.mtRenderReports=function(){
+   const root=document.getElementById('mod_excel'); if(!root||!root.classList.contains('app-page-visible'))return;
+   if(typeof loadUserData==='function')loadUserData();
+   const period=document.getElementById('mtReportPeriod')?.value||'12', now=new Date(), cur=now.getFullYear()*12+now.getMonth();
+   const rows=(Array.isArray(window.ex)?window.ex:(typeof ex!=='undefined'?ex:[])).filter(x=>{if(period==='all')return true;const d=new Date(String(x.d||'')+'T00:00:00');if(isNaN(d))return false;const mi=d.getFullYear()*12+d.getMonth();return mi<=cur&&mi>cur-(+period)}).sort((a,b)=>String(b.d).localeCompare(String(a.d)));
+   const total=rows.reduce((a,x)=>a+numR(x.a),0), max=rows.reduce((a,x)=>numR(x.a)>numR(a?.a)?x:a,null);
+   const months=[...new Set(rows.map(x=>mkeyR(x.d)).filter(Boolean))]; const denom=Math.max(1,period==='all'?months.length:+period);
+   const extras=Array.isArray(window.extraIncomes)?window.extraIncomes:(typeof extraIncomes!=='undefined'?extraIncomes:[]);
+   const selectedMonths=new Set(months); let inc=0;
+   if(period==='all'){ inc=(Number(window.salary??(typeof salary!=='undefined'?salary:0))||0)*Math.max(1,months.length)+extras.reduce((a,x)=>a+numR(x.amount),0); }
+   else { for(let i=0;i<+period;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k=d.toISOString().slice(0,7);inc+=Number(window.salary??(typeof salary!=='undefined'?salary:0))||0;inc+=extras.filter(x=>mkeyR(x.date)===k).reduce((a,x)=>a+numR(x.amount),0);} }
+   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+   set('mtRptTotal',moneyR(total));set('mtRptCount',rows.length+' işlem');set('mtRptAvg',moneyR(total/denom));set('mtRptMax',moneyR(max?numR(max.a):0));set('mtRptMaxInfo',max?(max.c||'Harcama')+' • '+(max.d||''):'—');set('mtRptRemain',moneyR(inc-total));set('mtRptIncome','Gelir: '+moneyR(inc));
+   const monthMap={}; rows.forEach(x=>monthMap[mkeyR(x.d)]=(monthMap[mkeyR(x.d)]||0)+numR(x.a)); let keys=[];
+   if(period==='all')keys=Object.keys(monthMap).sort(); else for(let i=(+period)-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);keys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
+   const peak=Math.max(1,...keys.map(k=>monthMap[k]||0)); const bars=document.getElementById('mtRptBars');if(bars)bars.innerHTML=keys.map(k=>`<div class="mt-rbar"><span class="mt-rbar-v">${moneyR(monthMap[k]||0).replace(' TL','')}</span><div class="mt-rbar-fill" style="height:${Math.max(2,((monthMap[k]||0)/peak)*82)}%"></div><span class="mt-rbar-l">${monthLabelR(k)}</span></div>`).join(''); set('mtRptTrendLabel',period==='all'?'Tüm zamanlar':'Son '+period+' ay');
+   function dist(id,field){const map={};rows.forEach(x=>{const k=String(x[field]||'Belirsiz');map[k]=(map[k]||0)+numR(x.a)});const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);const el=document.getElementById(id);if(!el)return;el.innerHTML=arr.length?arr.slice(0,7).map(([k,v])=>`<div class="mt-rlist-row"><span class="mt-rlist-name">${escR(k)}</span><div class="mt-rlist-track"><div class="mt-rlist-fill" style="width:${total?Math.max(2,v/total*100):0}%"></div></div><span class="mt-rlist-val">${moneyR(v)}</span></div>`).join(''):'<div class="mt-report-empty">Bu dönem için harcama yok.</div>'}
+   dist('mtRptCategories','c');dist('mtRptBanks','b');
+   const tbody=document.getElementById('mtRptRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,100).map(x=>`<tr><td>${escR(x.d||'—')}</td><td>${escR(x.c||'—')}</td><td>${escR(x.b||'—')}</td><td>${escR(x.x||'—')}</td><td class="mt-report-amount">${moneyR(numR(x.a))}</td></tr>`).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Bu dönem için işlem bulunamadı.</div></td></tr>';set('mtRptTableCount',rows.length+' kayıt');
+ };
+ const root=document.getElementById('mod_excel'); if(root){new MutationObserver(()=>{if(root.classList.contains('app-page-visible'))setTimeout(window.mtRenderReports,0)}).observe(root,{attributes:true,attributeFilter:['class']});}
+})();
+</script>
 </body>
 </html>

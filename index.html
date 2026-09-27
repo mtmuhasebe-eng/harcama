@@ -741,6 +741,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     <select id="mtReportPeriod" onchange="mtRenderReports()">
                         <option value="1">Bu Ay</option><option value="3">Son 3 Ay</option><option value="6">Son 6 Ay</option><option value="12" selected>Son 12 Ay</option><option value="all">Tüm Zamanlar</option>
                     </select>
+                    <select id="mtReportMonth" onchange="mtRenderReports()"><option value="">Geçmiş Ay Seç</option></select>
+                    <select id="mtReportCategory" onchange="mtRenderReports()"><option value="all">Tüm Kategoriler</option></select>
+                    <select id="mtReportBank" onchange="mtRenderReports()"><option value="all">Tüm Bankalar</option></select>
+                    <button type="button" onclick="mtClearReportFilters()" style="background:#34495e">Filtreleri Temizle</button>
                     <button type="button" onclick="exportToExcel()">📊 Excel</button>
                     <button type="button" class="mt-pdf-btn" onclick="saveAsPDF()">📄 PDF</button>
                 </div>
@@ -756,6 +760,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <section class="mt-report-panel"><div class="mt-report-title"><b>Kategori Dağılımı</b><span>Harcama payları</span></div><div id="mtRptCategories" class="mt-report-list"></div></section>
                 <section class="mt-report-panel"><div class="mt-report-title"><b>Banka / Kart Dağılımı</b><span>Kullanım özeti</span></div><div id="mtRptBanks" class="mt-report-list"></div></section>
             </div>
+            <section class="mt-report-panel mt-report-monthly-panel"><div class="mt-report-title"><b>Geçmiş Aylar Toplamı</b><span>Ay ay gelir, harcama ve kalan</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Ay</th><th>Toplam Gelir</th><th>Toplam Harcama</th><th>Kalan</th><th>İşlem</th></tr></thead><tbody id="mtRptMonthlyRows"></tbody></table></div></section>
             <section class="mt-report-panel mt-report-table-panel"><div class="mt-report-title"><b>Detaylı İşlemler</b><span id="mtRptTableCount">0 kayıt</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Tarih</th><th>Kategori</th><th>Banka / Kart</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody id="mtRptRows"></tbody></table></div></section>
         </div>
 
@@ -890,9 +895,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                         <option value="next">Gelecek Borçlar</option>
                         <option value="paid">Geçmiş / Ödenen</option>
                     </select>
-                    <select id="monthFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="rd()">
+                    <select id="monthFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()">
                         <option value="all">Tüm Aylar</option>
                     </select>
+                    <select id="historyCategoryFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()"><option value="all">Tüm Kategoriler</option></select>
+                    <select id="historyBankFilter" style="width: 140px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()"><option value="all">Tüm Bankalar</option></select>
+                    <select id="historyPageSize" style="width: 95px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()"><option value="20" selected>20 kayıt</option><option value="50">50 kayıt</option><option value="100">100 kayıt</option></select>
                 </div>
             </div>
             <div id="filteredTotalBox" class="filtered-total">📊 Seçilen dönemin toplam harcaması: 0.00 TL</div>
@@ -914,6 +922,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     <tbody id="tb"></tbody>
                 </table>
             </div>
+            <div id="historyPagination" class="mt-history-pagination"></div>
         </div>
     </div>
 
@@ -2042,6 +2051,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }
     });
 
+    let mtHistoryPage = 1;
+    window.mtHistoryGoPage = function(page){ mtHistoryPage = Math.max(1, Number(page)||1); rd(); };
+
     function rd() {
         if(!currentUser) return;
         loadUserData();
@@ -2076,6 +2088,14 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         
         let selectedMonth = monthFilterSelect ? monthFilterSelect.value : 'all';
         let selectedStatus = statusFilterSelect ? statusFilterSelect.value : 'current';
+        const histCatEl = document.getElementById('historyCategoryFilter');
+        const histBankEl = document.getElementById('historyBankFilter');
+        const prevCat = histCatEl ? histCatEl.value : 'all';
+        const prevBank = histBankEl ? histBankEl.value : 'all';
+        if(histCatEl){ const vals=[...new Set(ex.map(x=>String(x.c||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')); histCatEl.innerHTML='<option value="all">Tüm Kategoriler</option>'+vals.map(v=>`<option value="${v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${v}</option>`).join(''); histCatEl.value=vals.includes(prevCat)?prevCat:'all'; }
+        if(histBankEl){ const vals=[...new Set(ex.map(x=>String(x.b||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')); histBankEl.innerHTML='<option value="all">Tüm Bankalar</option>'+vals.map(v=>`<option value="${v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${v}</option>`).join(''); histBankEl.value=vals.includes(prevBank)?prevBank:'all'; }
+        const selectedHistCat = histCatEl ? histCatEl.value : 'all';
+        const selectedHistBank = histBankEl ? histBankEl.value : 'all';
 
         let availableMonths = new Set();
         
@@ -2173,6 +2193,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 return; 
             }
 
+            if (selectedHistCat !== 'all' && String(item.c||'') !== selectedHistCat) return;
+            if (selectedHistBank !== 'all' && String(item.b||'') !== selectedHistBank) return;
+
             filteredTotal += amtNum;
             let k = item.originalIndex;
             let installmentText = item.inst || "-";
@@ -2217,7 +2240,21 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             if (byDate !== 0) return byDate;
             return b.originalIndex - a.originalIndex;
         });
-        if (tb) tb.innerHTML = displayRows.map(row => row.html).join('');
+        const pageSize = Math.max(1, Number(document.getElementById('historyPageSize')?.value || 20));
+        const totalPages = Math.max(1, Math.ceil(displayRows.length / pageSize));
+        if(mtHistoryPage > totalPages) mtHistoryPage = totalPages;
+        const pageRows = displayRows.slice((mtHistoryPage-1)*pageSize, mtHistoryPage*pageSize);
+        if (tb) tb.innerHTML = pageRows.map(row => row.html).join('');
+        const pg=document.getElementById('historyPagination');
+        if(pg){
+          if(displayRows.length<=pageSize){ pg.innerHTML=''; } else {
+            let parts=[`<button ${mtHistoryPage===1?'disabled':''} onclick="mtHistoryGoPage(${mtHistoryPage-1})">‹ Önceki</button>`];
+            const start=Math.max(1,mtHistoryPage-2), end=Math.min(totalPages,start+4);
+            for(let i=Math.max(1,end-4);i<=end;i++) parts.push(`<button class="${i===mtHistoryPage?'active':''}" onclick="mtHistoryGoPage(${i})">${i}</button>`);
+            parts.push(`<button ${mtHistoryPage===totalPages?'disabled':''} onclick="mtHistoryGoPage(${mtHistoryPage+1})">Sonraki ›</button>`);
+            pg.innerHTML=parts.join('');
+          }
+        }
 
         let tt = document.getElementById('t');
         let mt = document.getElementById('m');
@@ -2715,34 +2752,42 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 @media(max-width:900px){#mod_excel .mt-report-kpis{grid-template-columns:1fr 1fr}#mod_excel .mt-report-grid{grid-template-columns:1fr}#mod_excel .mt-report-wide{grid-row:auto}}
 @media(max-width:600px){#mod_excel .mt-report-head{flex-direction:column}#mod_excel .mt-report-tools{width:100%}#mod_excel .mt-report-tools select{flex:1}#mod_excel .mt-report-kpis{grid-template-columns:1fr 1fr;gap:7px}#mod_excel .mt-report-kpi{padding:11px;min-height:82px}#mod_excel .mt-report-kpi strong{font-size:15px}#mod_excel .mt-report-grid{gap:8px}#mod_excel .mt-report-bars{height:210px;gap:3px}.mt-rbar-v{display:none}.mt-rbar-l{font-size:7px}#mod_excel .mt-report-panel{padding:11px}.mt-rlist-row{grid-template-columns:85px 1fr auto}}
 </style>
+<style id="mtHistoryFilterPagingStyle">
+.mt-history-pagination{display:flex;justify-content:center;align-items:center;gap:5px;flex-wrap:wrap;margin-top:10px}.mt-history-pagination button{width:auto!important;min-width:32px;padding:5px 9px!important;margin:0!important;background:#102a43;color:#dcecff;border:1px solid #2b5578;border-radius:6px;font-size:10px}.mt-history-pagination button.active{background:#2478e8;border-color:#2478e8}.mt-history-pagination button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:600px){#historyCategoryFilter,#historyBankFilter,#historyPageSize{min-width:120px!important;flex:1}.mt-report-tools select,.mt-report-tools button{min-width:calc(50% - 5px)!important;flex:1}}
+</style>
 <script id="mtReportsOnlyScript">
 (function(){
  const moneyR=v=>(Number(v)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';
  const numR=v=>Number(String(v??0).replace(',','.'))||0;
  const escR=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const mkeyR=d=>String(d||'').slice(0,7);
- const monthLabelR=k=>{if(!k)return '—';const [y,m]=k.split('-');const a=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];return (a[(+m)-1]||m)+' '+String(y).slice(-2)};
+ const monthLabelR=k=>{if(!k)return '—';const [y,m]=k.split('-');const a=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];return (a[(+m)-1]||m)+' '+y};
+ function refill(id,values,allLabel){const el=document.getElementById(id);if(!el)return;const prev=el.value;el.innerHTML=`<option value="all">${allLabel}</option>`+values.map(v=>`<option value="${escR(v)}">${escR(v)}</option>`).join('');el.value=values.includes(prev)?prev:'all';}
+ function fillMonths(all){const el=document.getElementById('mtReportMonth');if(!el)return;const prev=el.value;const keys=[...new Set(all.map(x=>mkeyR(x.d)).filter(Boolean))].sort().reverse();el.innerHTML='<option value="">Geçmiş Ay Seç</option>'+keys.map(k=>`<option value="${k}">${monthLabelR(k)}</option>`).join('');if(keys.includes(prev))el.value=prev;}
+ window.mtClearReportFilters=function(){const p=document.getElementById('mtReportPeriod'),m=document.getElementById('mtReportMonth'),c=document.getElementById('mtReportCategory'),b=document.getElementById('mtReportBank');if(p)p.value='12';if(m)m.value='';if(c)c.value='all';if(b)b.value='all';mtRenderReports();};
  window.mtRenderReports=function(){
    const root=document.getElementById('mod_excel'); if(!root||!root.classList.contains('app-page-visible'))return;
    if(typeof loadUserData==='function')loadUserData();
-   const period=document.getElementById('mtReportPeriod')?.value||'12', now=new Date(), cur=now.getFullYear()*12+now.getMonth();
-   const rows=(Array.isArray(window.ex)?window.ex:(typeof ex!=='undefined'?ex:[])).filter(x=>{if(period==='all')return true;const d=new Date(String(x.d||'')+'T00:00:00');if(isNaN(d))return false;const mi=d.getFullYear()*12+d.getMonth();return mi<=cur&&mi>cur-(+period)}).sort((a,b)=>String(b.d).localeCompare(String(a.d)));
-   const total=rows.reduce((a,x)=>a+numR(x.a),0), max=rows.reduce((a,x)=>numR(x.a)>numR(a?.a)?x:a,null);
-   const months=[...new Set(rows.map(x=>mkeyR(x.d)).filter(Boolean))]; const denom=Math.max(1,period==='all'?months.length:+period);
-   const extras=Array.isArray(window.extraIncomes)?window.extraIncomes:(typeof extraIncomes!=='undefined'?extraIncomes:[]);
-   const selectedMonths=new Set(months); let inc=0;
-   if(period==='all'){ inc=(Number(window.salary??(typeof salary!=='undefined'?salary:0))||0)*Math.max(1,months.length)+extras.reduce((a,x)=>a+numR(x.amount),0); }
-   else { for(let i=0;i<+period;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const k=d.toISOString().slice(0,7);inc+=Number(window.salary??(typeof salary!=='undefined'?salary:0))||0;inc+=extras.filter(x=>mkeyR(x.date)===k).reduce((a,x)=>a+numR(x.amount),0);} }
-   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
-   set('mtRptTotal',moneyR(total));set('mtRptCount',rows.length+' işlem');set('mtRptAvg',moneyR(total/denom));set('mtRptMax',moneyR(max?numR(max.a):0));set('mtRptMaxInfo',max?(max.c||'Harcama')+' • '+(max.d||''):'—');set('mtRptRemain',moneyR(inc-total));set('mtRptIncome','Gelir: '+moneyR(inc));
-   const monthMap={}; rows.forEach(x=>monthMap[mkeyR(x.d)]=(monthMap[mkeyR(x.d)]||0)+numR(x.a)); let keys=[];
-   if(period==='all')keys=Object.keys(monthMap).sort(); else for(let i=(+period)-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);keys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
-   const peak=Math.max(1,...keys.map(k=>monthMap[k]||0)); const bars=document.getElementById('mtRptBars');if(bars)bars.innerHTML=keys.map(k=>`<div class="mt-rbar"><span class="mt-rbar-v">${moneyR(monthMap[k]||0).replace(' TL','')}</span><div class="mt-rbar-fill" style="height:${Math.max(2,((monthMap[k]||0)/peak)*82)}%"></div><span class="mt-rbar-l">${monthLabelR(k)}</span></div>`).join(''); set('mtRptTrendLabel',period==='all'?'Tüm zamanlar':'Son '+period+' ay');
-   function dist(id,field){const map={};rows.forEach(x=>{const k=String(x[field]||'Belirsiz');map[k]=(map[k]||0)+numR(x.a)});const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]);const el=document.getElementById(id);if(!el)return;el.innerHTML=arr.length?arr.slice(0,7).map(([k,v])=>`<div class="mt-rlist-row"><span class="mt-rlist-name">${escR(k)}</span><div class="mt-rlist-track"><div class="mt-rlist-fill" style="width:${total?Math.max(2,v/total*100):0}%"></div></div><span class="mt-rlist-val">${moneyR(v)}</span></div>`).join(''):'<div class="mt-report-empty">Bu dönem için harcama yok.</div>'}
-   dist('mtRptCategories','c');dist('mtRptBanks','b');
+   const all=(Array.isArray(window.ex)?window.ex:(typeof ex!=='undefined'?ex:[])); fillMonths(all);
+   refill('mtReportCategory',[...new Set(all.map(x=>String(x.c||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')),'Tüm Kategoriler');
+   refill('mtReportBank',[...new Set(all.map(x=>String(x.b||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')),'Tüm Bankalar');
+   const period=document.getElementById('mtReportPeriod')?.value||'12', chosenMonth=document.getElementById('mtReportMonth')?.value||'', cat=document.getElementById('mtReportCategory')?.value||'all', bank=document.getElementById('mtReportBank')?.value||'all';
+   const now=new Date(),cur=now.getFullYear()*12+now.getMonth();
+   let rows=all.filter(x=>{if(chosenMonth && mkeyR(x.d)!==chosenMonth)return false;if(!chosenMonth&&period!=='all'){const d=new Date(String(x.d||'')+'T00:00:00');if(isNaN(d))return false;const mi=d.getFullYear()*12+d.getMonth();if(!(mi<=cur&&mi>cur-(+period)))return false;}if(cat!=='all'&&String(x.c||'')!==cat)return false;if(bank!=='all'&&String(x.b||'')!==bank)return false;return true;}).sort((a,b)=>String(b.d).localeCompare(String(a.d)));
+   const total=rows.reduce((a,x)=>a+numR(x.a),0),max=rows.reduce((a,x)=>numR(x.a)>numR(a?.a)?x:a,null),months=[...new Set(rows.map(x=>mkeyR(x.d)).filter(Boolean))];
+   const denom=Math.max(1,chosenMonth?1:(period==='all'?months.length:+period));
+   const extras=Array.isArray(window.extraIncomes)?window.extraIncomes:(typeof extraIncomes!=='undefined'?extraIncomes:[]),sal=Number(window.salary??(typeof salary!=='undefined'?salary:0))||0;let inc=0;
+   const incomeForMonth=k=>sal+extras.filter(x=>mkeyR(x.date)===k).reduce((a,x)=>a+numR(x.amount),0);
+   if(chosenMonth)inc=incomeForMonth(chosenMonth);else if(period==='all'){inc=sal*Math.max(1,months.length)+extras.reduce((a,x)=>a+numR(x.amount),0);}else for(let i=0;i<+period;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);inc+=incomeForMonth(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
+   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};set('mtRptTotal',moneyR(total));set('mtRptCount',rows.length+' işlem');set('mtRptAvg',moneyR(total/denom));set('mtRptMax',moneyR(max?numR(max.a):0));set('mtRptMaxInfo',max?(max.c||'Harcama')+' • '+(max.d||''):'—');set('mtRptRemain',moneyR(inc-total));set('mtRptIncome','Gelir: '+moneyR(inc));
+   const monthMap={};rows.forEach(x=>monthMap[mkeyR(x.d)]=(monthMap[mkeyR(x.d)]||0)+numR(x.a));let keys=[];
+   if(chosenMonth)keys=[chosenMonth];else if(period==='all')keys=Object.keys(monthMap).sort();else for(let i=(+period)-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);keys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
+   const peak=Math.max(1,...keys.map(k=>monthMap[k]||0)),bars=document.getElementById('mtRptBars');if(bars)bars.innerHTML=keys.map(k=>`<div class="mt-rbar"><span class="mt-rbar-v">${moneyR(monthMap[k]||0).replace(' TL','')}</span><div class="mt-rbar-fill" style="height:${Math.max(2,((monthMap[k]||0)/peak)*82)}%"></div><span class="mt-rbar-l">${monthLabelR(k)}</span></div>`).join('');set('mtRptTrendLabel',chosenMonth?monthLabelR(chosenMonth):(period==='all'?'Tüm zamanlar':'Son '+period+' ay'));
+   function dist(id,field){const map={};rows.forEach(x=>{const k=String(x[field]||'Belirsiz');map[k]=(map[k]||0)+numR(x.a)});const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]),el=document.getElementById(id);if(!el)return;el.innerHTML=arr.length?arr.slice(0,7).map(([k,v])=>`<div class="mt-rlist-row"><span class="mt-rlist-name">${escR(k)}</span><div class="mt-rlist-track"><div class="mt-rlist-fill" style="width:${total?Math.max(2,v/total*100):0}%"></div></div><span class="mt-rlist-val">${moneyR(v)}</span></div>`).join(''):'<div class="mt-report-empty">Bu dönem için harcama yok.</div>'}dist('mtRptCategories','c');dist('mtRptBanks','b');
    const tbody=document.getElementById('mtRptRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,100).map(x=>`<tr><td>${escR(x.d||'—')}</td><td>${escR(x.c||'—')}</td><td>${escR(x.b||'—')}</td><td>${escR(x.x||'—')}</td><td class="mt-report-amount">${moneyR(numR(x.a))}</td></tr>`).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Bu dönem için işlem bulunamadı.</div></td></tr>';set('mtRptTableCount',rows.length+' kayıt');
  };
- const root=document.getElementById('mod_excel'); if(root){new MutationObserver(()=>{if(root.classList.contains('app-page-visible'))setTimeout(window.mtRenderReports,0)}).observe(root,{attributes:true,attributeFilter:['class']});}
+ const root=document.getElementById('mod_excel');if(root){new MutationObserver(()=>{if(root.classList.contains('app-page-visible'))setTimeout(window.mtRenderReports,0)}).observe(root,{attributes:true,attributeFilter:['class']});}
 })();
 </script>
 
@@ -2799,8 +2844,65 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   });
 })();
 </script>
+\n<script>
+/* MTmuhasebe: Raporlar - geçmiş ay verilerini mevcut kullanıcı kayıtlarından hesapla */
+(function(){
+  function amount(v){
+    if(typeof v==='number') return Number.isFinite(v)?v:0;
+    let t=String(v??'').trim().replace(/\s/g,'').replace(/TL/gi,'');
+    if(t.includes(',') && t.includes('.')) t=t.replace(/\./g,'').replace(',','.');
+    else if(t.includes(',')) t=t.replace(',','.');
+    const z=Number(t); return Number.isFinite(z)?z:0;
+  }
+  function monthKey(v){
+    const t=String(v||'').trim();
+    let m=t.match(/^(\d{4})-(\d{1,2})/); if(m)return m[1]+'-'+String(+m[2]).padStart(2,'0');
+    m=t.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})/); if(m)return m[3]+'-'+String(+m[2]).padStart(2,'0');
+    const d=new Date(t); if(!isNaN(d))return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    return '';
+  }
+  function label(k){ const [y,m]=String(k).split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('tr-TR',{month:'long',year:'numeric'}); }
+  function money(v){ return (Number(v)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL'; }
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function data(){
+    try{ if(typeof loadUserData==='function') loadUserData(); }catch(e){}
+    const expenses=Array.isArray(window.ex)?window.ex:[];
+    const incomes=Array.isArray(window.extraIncomes)?window.extraIncomes:[];
+    const salary=Number(window.salary)||0;
+    return {expenses,incomes,salary};
+  }
+  function renderMonthlyTotals(){
+    const body=document.getElementById('mtRptMonthlyRows'); if(!body)return;
+    const {expenses,incomes,salary}=data();
+    const cat=document.getElementById('mtReportCategory')?.value||'all';
+    const bank=document.getElementById('mtReportBank')?.value||'all';
+    const emap={};
+    expenses.forEach(x=>{
+      if(cat!=='all'&&String(x.c||'')!==cat)return;
+      if(bank!=='all'&&String(x.b||'')!==bank)return;
+      const k=monthKey(x.d); if(!k)return;
+      (emap[k]??={expense:0,count:0}); emap[k].expense+=amount(x.a); emap[k].count++;
+    });
+    const imap={}; incomes.forEach(x=>{const k=monthKey(x.date||x.d);if(k)imap[k]=(imap[k]||0)+amount(x.amount??x.a);});
+    const now=new Date(), current=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const keys=[...new Set([...Object.keys(emap),...Object.keys(imap)])].filter(k=>k<current).sort().reverse();
+    body.innerHTML=keys.length?keys.map(k=>{
+      const expense=emap[k]?.expense||0, count=emap[k]?.count||0;
+      const income=salary+(imap[k]||0), remain=income-expense;
+      return `<tr><td><b>${esc(label(k))}</b></td><td>${money(income)}</td><td class="mt-report-amount">${money(expense)}</td><td>${money(remain)}</td><td>${count} işlem</td></tr>`;
+    }).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Geçmiş aya ait kayıt bulunamadı.</div></td></tr>';
+  }
+  window.mtRenderMonthlyTotals=renderMonthlyTotals;
+  const original=window.mtRenderReports;
+  if(typeof original==='function') window.mtRenderReports=function(){ const r=original.apply(this,arguments); setTimeout(renderMonthlyTotals,0); return r; };
+  document.addEventListener('change',e=>{if(e.target&&['mtReportPeriod','mtReportMonth','mtReportCategory','mtReportBank'].includes(e.target.id))setTimeout(renderMonthlyTotals,0);});
+  window.addEventListener('DOMContentLoaded',()=>setTimeout(renderMonthlyTotals,100));
+  window.addEventListener('storage',()=>setTimeout(renderMonthlyTotals,50));
+})();
+</script>
 </body>
-</html>\n<script>
+</html>
+<script>
 /* MTmuhasebe: tarayici form gecmisi onerilerini engelle (giris alanlari haric) */
 (function(){
   function hardenField(el){
@@ -2828,4 +2930,55 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){ if(n.matches&&n.matches('input,textarea')) hardenField(n); harden(n); }});});
   }).observe(document.documentElement,{childList:true,subtree:true});
 })();
-</script>\n
+</script>
+
+<style id="mtFinalPaginationAndPrintFix">
+/* Kompakt Harcama Geçmişi sayfalama */
+.mt-history-pagination{display:flex!important;justify-content:center!important;align-items:center!important;gap:6px!important;flex-wrap:wrap!important;margin:14px auto 2px!important;width:auto!important}
+.mt-history-pagination button{flex:0 0 auto!important;width:auto!important;min-width:34px!important;max-width:none!important;height:34px!important;padding:0 10px!important;margin:0!important;border-radius:8px!important;font-size:12px!important;font-weight:700!important;line-height:32px!important;background:#0d2137!important;color:#b9cee3!important;border:1px solid #23496c!important;box-shadow:none!important}
+.mt-history-pagination button.active{background:#2f8cff!important;color:#fff!important;border-color:#4aa0ff!important;box-shadow:0 0 0 2px rgba(47,140,255,.14)!important}
+.mt-history-pagination button:disabled{opacity:.35!important}
+@media(max-width:600px){.mt-history-pagination{gap:4px!important}.mt-history-pagination button{min-width:30px!important;height:32px!important;padding:0 8px!important;font-size:11px!important;line-height:30px!important}}
+
+/* Raporlar -> profesyonel PDF / yazdırma */
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  html,body{background:#fff!important;color:#102030!important;height:auto!important;overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body.mt-print-report *{visibility:hidden!important}
+  body.mt-print-report #mod_excel,body.mt-print-report #mod_excel *{visibility:visible!important}
+  body.mt-print-report #mod_excel{display:block!important;position:absolute!important;left:0!important;top:0!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;border:0!important;box-shadow:none!important;color:#102030!important}
+  body.mt-print-report #mod_excel .mt-report-head{display:block!important;margin:0 0 8mm!important;padding:0 0 4mm!important;border-bottom:2px solid #2f8cff!important}
+  body.mt-print-report #mod_excel .mt-report-head h2{font-size:22pt!important;color:#0b1b2d!important;margin:0 0 2mm!important}
+  body.mt-print-report #mod_excel .mt-report-head p{color:#52697f!important;font-size:9pt!important;margin:0!important}
+  body.mt-print-report #mod_excel .mt-report-tools{display:none!important}
+  body.mt-print-report #mod_excel .mt-report-kpis{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:4mm!important;margin-bottom:5mm!important}
+  body.mt-print-report #mod_excel .mt-report-kpi{background:#f3f7fb!important;border:1px solid #cfdeeb!important;border-radius:8px!important;padding:4mm!important;min-height:22mm!important;break-inside:avoid!important}
+  body.mt-print-report #mod_excel .mt-report-kpi span{color:#587086!important;font-size:8pt!important}
+  body.mt-print-report #mod_excel .mt-report-kpi strong{color:#102f4c!important;font-size:15pt!important}
+  body.mt-print-report #mod_excel .mt-report-kpi small{color:#61798e!important}
+  body.mt-print-report #mod_excel .mt-report-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:5mm!important}
+  body.mt-print-report #mod_excel .mt-report-panel{display:block!important;background:#fff!important;border:1px solid #cfdeeb!important;border-radius:8px!important;padding:4mm!important;box-shadow:none!important;break-inside:avoid!important;page-break-inside:avoid!important;min-height:55mm!important}
+  body.mt-print-report #mod_excel .mt-report-wide{grid-column:1/-1!important}
+  body.mt-print-report #mod_excel .mt-report-title,body.mt-print-report #mod_excel .mt-report-title b{color:#173a59!important}
+  body.mt-print-report #mod_excel .mt-report-title span{color:#6a8297!important}
+  body.mt-print-report #mod_excel .mt-report-bars{height:55mm!important;min-height:55mm!important;overflow:visible!important}
+  body.mt-print-report #mod_excel .mt-rbar,body.mt-print-report #mod_excel [class*="bar"]{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body.mt-print-report #mod_excel .mt-rlist-row{color:#183650!important;border-color:#d8e4ee!important}
+  body.mt-print-report #mod_excel .mt-report-detail{grid-column:1/-1!important}
+  body.mt-print-report #mod_excel table{width:100%!important;border-collapse:collapse!important;font-size:7.5pt!important;color:#17334c!important}
+  body.mt-print-report #mod_excel th{background:#eaf2f9!important;color:#17334c!important;border:1px solid #c8d8e5!important;padding:2.2mm!important}
+  body.mt-print-report #mod_excel td{background:#fff!important;color:#17334c!important;border:1px solid #d8e4ee!important;padding:2mm!important}
+  body.mt-print-report #mod_excel tr{break-inside:avoid!important;page-break-inside:avoid!important}
+}
+</style>
+<script id="mtFinalPrintFix">
+(function(){
+  window.saveAsPDF=function(){
+    document.body.classList.add('mt-print-report');
+    var cleanup=function(){document.body.classList.remove('mt-print-report');window.removeEventListener('afterprint',cleanup);};
+    window.addEventListener('afterprint',cleanup);
+    setTimeout(function(){window.print();},80);
+    setTimeout(function(){document.body.classList.remove('mt-print-report');},3000);
+  };
+})();
+</script>

@@ -2800,4 +2800,32 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 })();
 </script>
 </body>
-</html>
+</html>\n<script>
+/* MTmuhasebe: tarayici form gecmisi onerilerini engelle (giris alanlari haric) */
+(function(){
+  function hardenField(el){
+    if(!el || !el.matches || !el.matches('input, textarea')) return;
+    if(el.closest('#loginScreen')) return;
+    var t=(el.getAttribute('type')||'text').toLowerCase();
+    if(['hidden','checkbox','radio','button','submit','reset','file'].includes(t)) return;
+    el.setAttribute('autocomplete','off');
+    el.setAttribute('autocorrect','off');
+    el.setAttribute('autocapitalize','off');
+    el.setAttribute('spellcheck','false');
+    // Chrome form-history is keyed heavily by name. App logic uses IDs; keep original for restore/debug.
+    if(el.hasAttribute('name')){
+      if(!el.dataset.mtOriginalName) el.dataset.mtOriginalName=el.getAttribute('name')||'';
+      el.removeAttribute('name');
+    }
+  }
+  function harden(root){
+    (root||document).querySelectorAll('form').forEach(function(f){ if(!f.closest('#loginScreen')) f.setAttribute('autocomplete','off'); });
+    (root||document).querySelectorAll('input, textarea').forEach(hardenField);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){harden(document);}); else harden(document);
+  document.addEventListener('focusin',function(e){hardenField(e.target);},true);
+  new MutationObserver(function(ms){
+    ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){ if(n.matches&&n.matches('input,textarea')) hardenField(n); harden(n); }});});
+  }).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>\n

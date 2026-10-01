@@ -1675,6 +1675,36 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     }
 
 
+    // Banka Ekstre Durumu için gerçek hesap kesim tarih aralığını hesaplar.
+    // Örnek: kesim günü 4 ise 01.10.2026 tarihinde aktif dönem 05.09.2026 - 04.10.2026 olur.
+    function getActiveStatementRange(cutoffDay, baseDate = new Date()) {
+        const day = parseInt(cutoffDay) || 0;
+        const today = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const makeCutoff = (y, m) => {
+            const last = new Date(y, m + 1, 0).getDate();
+            return new Date(y, m, Math.min(day, last));
+        };
+        if (!day) return { start: '0000-01-01', end: '9999-12-31', label: 'Kesim günü tanımlı değil' };
+
+        let end;
+        if (today.getDate() <= day) {
+            end = makeCutoff(today.getFullYear(), today.getMonth());
+        } else {
+            end = makeCutoff(today.getFullYear(), today.getMonth() + 1);
+        }
+        const previousEnd = makeCutoff(end.getFullYear(), end.getMonth() - 1);
+        const start = new Date(previousEnd);
+        start.setDate(start.getDate() + 1);
+
+        const nextEnd = makeCutoff(end.getFullYear(), end.getMonth() + 1);
+        const nextStart = new Date(end);
+        nextStart.setDate(nextStart.getDate() + 1);
+
+        const tr = (d) => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+        return { start: fmt(start), end: fmt(end), nextStart: fmt(nextStart), nextEnd: fmt(nextEnd), label: `${tr(start)} - ${tr(end)}` };
+    }
+
     function statementKey(bank, dueDate) {
         return String(bank) + '|' + String(dueDate);
     }
@@ -1925,6 +1955,47 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return r.frequency || 'monthly'; // Eski kayıtlar aylık olarak aynen devam eder.
     }
 
+    // Otomatik aylık ödeme/taksit ayın 1-...-kesim günü arasına denk gelirse
+    // önceki ekstreye düşmemesi için o bankanın yeni ekstre başlangıcına taşınır.
+    // Örn. kesim günü 4: 01.10 -> 05.10. Günlük/haftalık kayıtlar bu kurala tabi değildir.
+    function moveAutomaticDateToNewStatement(dateStr, bank) {
+        const m = String(dateStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if(!m) return dateStr;
+        const cutoff = parseInt(bankCutoffDays[bank], 10) || 0;
+        if(cutoff < 1 || cutoff > 31) return dateStr;
+        const y = Number(m[1]), mon = Number(m[2]) - 1, d = Number(m[3]);
+        if(d > cutoff) return dateStr;
+        const last = new Date(y, mon + 1, 0).getDate();
+        let target;
+        if(cutoff < last) target = new Date(y, mon, cutoff + 1);
+        else target = new Date(y, mon + 1, 1);
+        return `${target.getFullYear()}-${String(target.getMonth()+1).padStart(2,'0')}-${String(target.getDate()).padStart(2,'0')}`;
+    }
+
+    // Daha önce oluşturulmuş otomatik düzenli harcama ve taksit kayıtlarını da
+    // bankanın YENİ ekstre dönemine taşır. Manuel harcamalara dokunmaz.
+    // Örn. Garanti kesim günü 6 ise otomatik 01.10 kaydı 07.10 olur.
+    function normalizeExistingAutomaticStatementDates() {
+        if(!Array.isArray(ex) || !ex.length) return false;
+        let changed = false;
+        ex.forEach(item => {
+            const isRecurring = !!item.recurringKey || !!item.recurringId;
+            const isInstallment = !!item.inst && item.inst !== '-' && /Taksit/i.test(String(item.inst));
+            if(!isRecurring && !isInstallment) return;
+            const oldDate = item.d;
+            const newDate = moveAutomaticDateToNewStatement(oldDate, item.b || 'Nakit / Diğer');
+            if(newDate && newDate !== oldDate) {
+                item.d = newDate;
+                changed = true;
+            }
+        });
+        if(changed) {
+            localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
+            window.ex = ex;
+        }
+        return changed;
+    }
+
     function ensureRecurringForCurrentMonth() {
         if(!currentUser || !recurringExpenses.length) return false;
         const now = new Date();
@@ -1937,8 +2008,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         const addOccurrence = (r, day, suffix) => {
             const key = `rec:${r.id}:${ym}:${suffix}`;
             if(ex.some(e => e.recurringKey === key || (recurringFrequency(r)==='monthly' && e.recurringKey === `rec:${r.id}:${ym}`))) return;
+            const rawDate = `${ym}-${String(day).padStart(2,'0')}`;
+            const occurrenceDate = recurringFrequency(r) === 'monthly'
+                ? moveAutomaticDateToNewStatement(rawDate, r.bank || 'Nakit / Diğer')
+                : rawDate;
             ex.push({
-                d: `${ym}-${String(day).padStart(2,'0')}`,
+                d: occurrenceDate,
                 c: r.category || 'Diğer',
                 b: r.bank || 'Nakit / Diğer',
                 a: String(Number(r.amount)||0),
@@ -2071,6 +2146,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             } else if(!document.getElementById('recScheduleWrap')?.children.length) updateRecurringScheduleField();
         }
         const recurringCreated = ensureRecurringForCurrentMonth();
+        const automaticDatesAdjusted = normalizeExistingAutomaticStatementDates();
+        if(automaticDatesAdjusted && window.cloudSync) window.cloudSync.pushAll();
         renderRecurringList();
         if(recurringCreated && window.cloudSync && window.cloudSync.cloudReady && !window.cloudSync.applyingRemote) {
             setTimeout(() => window.cloudSync.pushAll(), 0);
@@ -2232,6 +2309,26 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             });
         });
 
+        // Banka Hesapları > Banka Ekstre Durumu:
+        // Borç tutarlarını her bankanın kendi hesap kesim gününe göre gerçek tarih aralığından yeniden hesapla.
+        // Böylece örn. kesim günü 4 olan kartta 5 Eylül - 4 Ekim tek ekstre dönemidir.
+        activeBanks.forEach(bank => {
+            const range = getActiveStatementRange(bankCutoffDays[bank]);
+            let currentAmount = 0;
+            let nextAmount = 0;
+            indexedEx.forEach(item => {
+                if (item.b !== bank || item.statementPaid) return;
+                const txDate = String(item.d || '');
+                const amount = Number(String(item.a).replace(',', '.')) || 0;
+                if (txDate >= range.start && txDate <= range.end) currentAmount += amount;
+                else if (range.nextStart && txDate >= range.nextStart && txDate <= range.nextEnd) nextAmount += amount;
+            });
+            if (!bankStats[bank]) bankStats[bank] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 };
+            bankStats[bank].thisMonthBill = currentAmount;
+            bankStats[bank].nextMonthBill = nextAmount;
+            bankStats[bank].statementRange = range;
+        });
+
         // KESİN GÖRÜNTÜLEME SIRASI:
         // Filtrelerden geçen kayıtlar, tabloya yazılmadan SON aşamada
         // gerçek "İşlem" tarihine göre yeniden -> eskiye sıralanır.
@@ -2297,6 +2394,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                             <b>${bank}</b>
                             <div>Toplam: ${data.total.toFixed(2)} TL</div>
                             <div style="color:#d35400;">Bu Ekstre: ${data.thisMonthBill.toFixed(2)} TL</div>
+                            <div style="font-size:10px;color:var(--muted);margin-top:2px;">Dönem: ${data.statementRange ? data.statementRange.label : '-'}</div>
                             <div style="color:#27ae60;">Gelecek Ekstre: ${data.nextMonthBill.toFixed(2)} TL</div>
                             <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border-color);font-size:11px;font-weight:700;">${getCutoffCountdownText(bankCutoffDays[bank])}</div>
                             ${overdueHtml}
@@ -2449,6 +2547,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 let dCopy = new Date(startDate);
                 dCopy.setMonth(dCopy.getMonth() + i);
                 let dateStr = dCopy.toISOString().split('T')[0];
+                // Taksit ayın kesim gününe kadar olan bölümüne denk gelirse yeni ekstre başlangıcına al.
+                dateStr = moveAutomaticDateToNewStatement(dateStr, b);
 
                 ex.push({
                     d: dateStr,

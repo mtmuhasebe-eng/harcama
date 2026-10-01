@@ -594,6 +594,14 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 .session-loading-dots::after{content:'...';animation:mtLoadingDots 1.2s steps(4,end) infinite;}
 @keyframes mtLoadingDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%,100%{content:'...'}}
 </style>
+
+<style id="cutoff-bank-grid-layout">
+#mod_income_summary .cutoff-period-bank-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px;margin-bottom:10px}
+#mod_income_summary .cutoff-period-bank-grid .income-card{min-width:0}
+#mod_income_summary .cutoff-period-bank-grid .cutoff-total-card{border-color:#287fff!important;background:linear-gradient(145deg,#0d4ca2,#092c68)!important}
+@media(max-width:900px){#mod_income_summary .cutoff-period-bank-grid{grid-template-columns:1fr 1fr;gap:7px}}
+@media(max-width:520px){#mod_income_summary .cutoff-period-bank-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body id="mainBody" data-theme="light">
     <div id="sessionLoadingScreen" aria-live="polite">
@@ -865,6 +873,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <div class="income-card"><small>Bu Ay Harcama</small><b id="incomeExpenseCard">0.00 TL</b></div>
                 <div class="income-card"><small>Kalan Param</small><b id="incomeRemainingCard">0.00 TL</b></div>
             </div>
+            <div id="cutoffPeriodBankCards" class="cutoff-period-bank-grid"></div>
         </div>
 
         <div id="mod_income" class="draggable-module" draggable="false">
@@ -1571,6 +1580,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         window.activeBanks = activeBanks;
         if (window.cloudSync) window.cloudSync.pushAll();
         rd();
+        updateIncomeCards();
     }
 
     function renderCutoffTableAndDropdown() {
@@ -1794,6 +1804,42 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return Math.max(0, raw - paidThisMonthTotal());
     }
 
+    function currentCutoffPeriodExpenseForBank(bank) {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+
+        return ex.reduce((sum, item) => {
+            if (item.b !== bank) return sum;
+            const cutoff = bankCutoffDays[bank] !== undefined ? bankCutoffDays[bank] : 0;
+            const details = getDueDateDetails(item.d, cutoff);
+            const cutoffDate = new Date(details.cutoffDateStr + 'T00:00:00');
+            if (cutoffDate.getFullYear() !== currentYear || cutoffDate.getMonth() !== currentMonth) return sum;
+            return sum + (Number(String(item.a).replace(',', '.')) || 0);
+        }, 0);
+    }
+
+    function renderCutoffPeriodBankCards() {
+        const box = document.getElementById('cutoffPeriodBankCards');
+        if (!box) return;
+
+        let cutoffTotal = 0;
+        const bankCards = activeBanks.map(bank => {
+            const amount = currentCutoffPeriodExpenseForBank(bank);
+            cutoffTotal += amount;
+            const safeBank = String(bank)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            return `<div class="income-card cutoff-bank-card"><small>Kesim Dönemi • ${safeBank}</small><b>${money(amount)}</b></div>`;
+        }).join('');
+
+        const totalCard = `<div class="income-card cutoff-total-card"><small>Kesim Dönemi • Toplam</small><b>${money(cutoffTotal)}</b></div>`;
+        box.innerHTML = bankCards + totalCard;
+    }
+
     function updateIncomeCards() {
         if(!currentUser) return;
         loadUserData();
@@ -1821,6 +1867,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
         setText('incomeTotalCard', monthlyIncome);
         setText('incomeExpenseCard', monthlyExpense);
+        renderCutoffPeriodBankCards();
         setText('incomeRemainingCard', remaining);
 
         const salaryInput = document.getElementById('salaryAmount');
@@ -2844,7 +2891,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   });
 })();
 </script>
-\n<script>
+<script>
 /* MTmuhasebe: Raporlar - geçmiş ay verilerini mevcut kullanıcı kayıtlarından hesapla */
 (function(){
   function amount(v){

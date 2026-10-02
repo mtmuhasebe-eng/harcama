@@ -2246,8 +2246,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             // Ana sayfada yalnızca güncel, henüz ödenmemiş harcamalar gösterilir.
             if (!item.statementPaid) {
                 if (item.d === ds) ts += amtNum;
-                // "Bu Ay" = ödenmemiş güncel/gecikmiş ekstre borcu.
-                if (item.cycle === 'thisMonth' || item.cycle === 'past') ms += amtNum;
+                // "Bu Ay" yalnızca takvim ayını gösterir: ayın 1'i ile son günü.
+                // Banka hesap kesim tarihi bu kartın toplamını etkilemez.
+                if (monthKey(item.d) === cm) ms += amtNum;
             }
 
             if (!bankStats[item.b]) bankStats[item.b] = { total: 0, thisMonthBill: 0, nextMonthBill: 0 };

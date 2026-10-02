@@ -3077,3 +3077,33 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   };
 })();
 </script>
+
+<script id="mtVisibleNewlineArtifactCleaner">
+(function(){
+  function cleanTextNode(node){
+    if(!node || node.nodeType!==3) return;
+    var p=node.parentNode;
+    if(!p || /^(SCRIPT|STYLE|TEXTAREA|PRE|CODE)$/i.test(p.nodeName)) return;
+    var v=node.nodeValue;
+    if(!v) return;
+    var nv=v.replace(/\\n/g,'').replace(/\/n(?=(?:\/|\s|$))/g,'');
+    if(nv!==v) node.nodeValue=nv;
+  }
+  function clean(root){
+    if(!root) return;
+    if(root.nodeType===3){ cleanTextNode(root); return; }
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+    var n; while((n=w.nextNode())) cleanTextNode(n);
+  }
+  function start(){
+    clean(document.body);
+    new MutationObserver(function(ms){
+      ms.forEach(function(m){
+        if(m.type==='characterData') cleanTextNode(m.target);
+        m.addedNodes && m.addedNodes.forEach(clean);
+      });
+    }).observe(document.body,{subtree:true,childList:true,characterData:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
+})();
+</script>

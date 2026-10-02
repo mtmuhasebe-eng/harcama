@@ -1819,6 +1819,42 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         }, 0);
     }
 
+    // Yalnızca ANA SAYFA üstteki "BU AY" kartı için:
+    // Her banka kendi hesap kesim gününe göre değerlendirilir.
+    // Örn. kesim 4 => ayın 5'i ve sonrası; kesim 6 => ayın 7'si ve sonrası.
+    // Düzenli/taksit otomatik kayıtlarında varsa statementMonth önceliklidir.
+    function topThisMonthByBankCutoff() {
+        const now = new Date();
+        const cm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+        return ex.reduce((sum, x) => {
+            const cutoff = parseInt(bankCutoffDays[x.b], 10) || 0;
+            let statementMonth = '';
+
+            if (x.statementMonth) {
+                statementMonth = String(x.statementMonth);
+            } else {
+                const ds = String(x.d || '');
+                const parts = ds.split('-').map(Number);
+                if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return sum;
+
+                let y = parts[0], m = parts[1], d = parts[2];
+                if (cutoff >= 1 && cutoff <= 31 && d <= cutoff) {
+                    m -= 1;
+                    if (m === 0) { m = 12; y -= 1; }
+                }
+                statementMonth = `${y}-${String(m).padStart(2,'0')}`;
+            }
+
+            if (statementMonth !== cm) return sum;
+
+            const details = getItemDueDateDetails(x, cutoff);
+            if (isStatementPaid(x.b, details.dueDateStr)) return sum;
+
+            return sum + (Number(String(x.a).replace(',', '.')) || 0);
+        }, 0);
+    }
+
     function currentMonthExpenseAfterPayments() {
         // Üstteki “BU AY” kartı yalnızca takvim ayını esas alır:
         // ayın 1'i ile son günü arasındaki, henüz ödenmemiş işlemler.
@@ -2360,7 +2396,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         let futureCard = document.getElementById('futureTotalCard');
         
         if(tt) tt.textContent = ts.toFixed(2) + ' TL'; 
-        if(mt) mt.textContent = currentMonthExpenseAfterPayments().toFixed(2) + ' TL';
+        if(mt) mt.textContent = topThisMonthByBankCutoff().toFixed(2) + ' TL';
         if(futureCard) futureCard.textContent = futureTotal.toFixed(2) + ' TL';
         let filteredBox = document.getElementById('filteredTotalBox');
         if(filteredBox) {

@@ -1685,6 +1685,29 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         return { dueDateStr, cycle, cutoffDateStr };
     }
 
+    // Düzenli harcama ve taksitler, oluşturuldukları nominal ayın YENİ ekstresine aittir.
+    // Manuel harcamalar ise gerçek işlem tarihi + bankanın kesim gününe göre aynen hesaplanır.
+    function getItemDueDateDetails(item, cutoffDay) {
+        const isRecurring = !!(item && (item.recurringKey || item.recurringId));
+        const isInstallment = !!(item && (item.installmentAuto || /Taksit/i.test(String(item.inst || ''))));
+        const forcedMonth = item && item.statementMonth ? String(item.statementMonth) : ((isRecurring || isInstallment) ? monthKey(item.d) : '');
+
+        if (forcedMonth && cutoffDay >= 1 && cutoffDay <= 31) {
+            const parts = forcedMonth.split('-').map(Number);
+            if (parts.length === 2 && parts[0] && parts[1] >= 1 && parts[1] <= 12) {
+                // O ayın kesim gününden sonraki ilk geçerli tarihi temsilci tarih olarak kullan.
+                // Böylece örn. kesim 4: Ekim otomatik borcu 5 Ekim–4 Kasım ekstresine gider.
+                const y = parts[0], m = parts[1] - 1;
+                const cutoffLast = new Date(y, m + 1, 0).getDate();
+                const cut = Math.min(Number(cutoffDay), cutoffLast);
+                const representative = new Date(y, m, cut + 1);
+                const repStr = `${representative.getFullYear()}-${String(representative.getMonth()+1).padStart(2,'0')}-${String(representative.getDate()).padStart(2,'0')}`;
+                return getDueDateDetails(repStr, cutoffDay);
+            }
+        }
+        return getDueDateDetails(item.d, cutoffDay);
+    }
+
 
     function statementKey(bank, dueDate) {
         return String(bank) + '|' + String(dueDate);
@@ -1808,7 +1831,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     function activeStatementSummary() {
         const items = ex.map((item, index) => {
             const cutoff = bankCutoffDays[item.b] !== undefined ? bankCutoffDays[item.b] : 0;
-            const details = getDueDateDetails(item.d, cutoff);
+            const details = getItemDueDateDetails(item, cutoff);
             return { ...item, originalIndex:index, dueDate:details.dueDateStr, statementPaid:isStatementPaid(item.b, details.dueDateStr) };
         });
 
@@ -2014,7 +2037,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 inst: '-',
                 x: r.name || 'Düzenli harcama',
                 recurringKey: key,
-                recurringId: r.id
+                recurringId: r.id,
+                statementMonth: ym
             });
             changed = true;
         };
@@ -2170,7 +2194,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         
         let indexedEx = ex.map((item, index) => {
             let cutoff = bankCutoffDays[item.b] !== undefined ? bankCutoffDays[item.b] : 0;
-            let details = getDueDateDetails(item.d, cutoff);
+            let details = getItemDueDateDetails(item, cutoff);
             let sortPriority = (details.cycle === 'nextMonth') ? 1 : 0;
             
             let itemMonth = details.dueDateStr.substring(0, 7);
@@ -2525,7 +2549,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     b: b,
                     a: monthlyA,
                     inst: `${i + 1}/${count} Taksit`,
-                    x: x ? `${x} (${i + 1}/${count})` : `${i + 1}/${count} Taksit`
+                    x: x ? `${x} (${i + 1}/${count})` : `${i + 1}/${count} Taksit`,
+                    installmentAuto: true,
+                    statementMonth: dateStr.substring(0, 7)
                 });
             }
 
@@ -2913,7 +2939,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   });
 })();
 </script>
-\n<script>
+<script>
 /* MTmuhasebe: Raporlar - geçmiş ay verilerini mevcut kullanıcı kayıtlarından hesapla */
 (function(){
   function amount(v){

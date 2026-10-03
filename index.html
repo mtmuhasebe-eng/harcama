@@ -594,6 +594,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 .session-loading-dots::after{content:'...';animation:mtLoadingDots 1.2s steps(4,end) infinite;}
 @keyframes mtLoadingDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%,100%{content:'...'}}
 </style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body id="mainBody" data-theme="light">
     <div id="sessionLoadingScreen" aria-live="polite">
@@ -2444,18 +2445,49 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     function exportToExcel() {
         if(ex.length === 0) { alert("Veri yok!"); return; }
-        let csvContent = "\uFEFFTarih,Kategori,Banka,Tutar,Taksit,Aciklama\n";
-        ex.forEach(item => {
-            csvContent += `"${item.d}","${item.c}","${item.b}","${item.a}","${item.inst || ''}","${item.x || ''}"\n`;
+        if(typeof XLSX === "undefined") {
+            alert("Excel bileşeni yüklenemedi. İnternet bağlantını kontrol edip tekrar dene.");
+            return;
+        }
+
+        const data = [
+            ["Tarih", "Kategori", "Banka", "Tutar (TL)", "Taksit", "Açıklama"],
+            ...ex.map(item => [
+                item.d || "",
+                item.c || "",
+                item.b || "",
+                Number(item.a) || 0,
+                item.inst || "",
+                item.x || ""
+            ])
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        ws["!cols"] = [
+            {wch: 13}, {wch: 20}, {wch: 24},
+            {wch: 15}, {wch: 13}, {wch: 38}
+        ];
+        ws["!autofilter"] = { ref: "A1:F" + data.length };
+
+        for(let r = 2; r <= data.length; r++) {
+            const cell = ws["D" + r];
+            if(cell) {
+                cell.t = "n";
+                cell.z = '#,##0.00 "TL"';
+            }
+        }
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Harcamalar");
+
+        const safeUser = String(currentUser || "kullanici")
+            .replace(/[\\/:*?"<>|]+/g, "_")
+            .trim() || "kullanici";
+
+        XLSX.writeFile(wb, "harcamalar_" + safeUser + ".xlsx", {
+            bookType: "xlsx",
+            compression: true
         });
-        let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement('a');
-        a.href = url;
-        a.download = `harcamalar_${currentUser}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
     }
 
     function saveAsPDF() {

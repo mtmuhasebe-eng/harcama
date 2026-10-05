@@ -613,6 +613,13 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         <form id="authForm">
             <input type="text" id="authUsername" placeholder="Kullanıcı Adı" autocomplete="username" autocapitalize="none" spellcheck="false" required>
             <input type="password" id="authPassword" placeholder="Şifre" required>
+            <div id="mtRememberRow" style="display:flex;align-items:center;margin:2px 1px 9px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:#8fa3bd;user-select:none;">
+                <input type="checkbox" id="mtRememberUsername" style="width:15px!important;height:15px!important;margin:0!important;accent-color:#2587ff;">
+                Kullanıcı adımı hatırla
+              </label>
+            </div>
+
             <button type="submit" id="authBtn">Giriş Yap</button>
         </form>
     </div>
@@ -762,7 +769,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <section class="mt-report-panel"><div class="mt-report-title"><b>Banka / Kart Dağılımı</b><span>Kullanım özeti</span></div><div id="mtRptBanks" class="mt-report-list"></div></section>
             </div>
             <section class="mt-report-panel mt-report-monthly-panel"><div class="mt-report-title"><b>Geçmiş Aylar Toplamı</b><span>Ay ay gelir, harcama ve kalan</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Ay</th><th>Toplam Gelir</th><th>Toplam Harcama</th><th>Kalan</th><th>İşlem</th></tr></thead><tbody id="mtRptMonthlyRows"></tbody></table></div></section>
-            <section class="mt-report-panel mt-report-table-panel"><div class="mt-report-title"><b>Detaylı İşlemler</b><span id="mtRptTableCount">0 kayıt</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Tarih</th><th>Kategori</th><th>Banka / Kart</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody id="mtRptRows"></tbody></table></div></section>
+            <section class="mt-report-panel mt-report-table-panel"><div class="mt-report-title"><b>Detaylı İşlemler</b><span id="mtRptTableCount">0 kayıt</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Tarih</th><th>Kategori</th><th>Banka / Kart</th><th>Açıklama</th><th>Tutar</th></tr></thead><tbody id="mtRptRows"></tbody><tfoot><tr class="mt-report-grand-total"><td colspan="4" style="text-align:right;font-weight:800;">TOPLAM HARCAMA</td><td id="mtRptGrandTotal" class="mt-report-amount" style="font-weight:900;"></td></tr></tfoot></table></div></section>
         </div>
 
         <div id="mod_banks" class="draggable-module" draggable="false">
@@ -908,7 +915,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                         <option value="paid">Geçmiş / Ödenen</option>
                     </select>
                     <select id="monthFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()">
-                        <option value="all">Tüm Aylar</option>
+                        <option value="all">Tüm Ekstreler</option>
                     </select>
                     <select id="historyCategoryFilter" style="width: 130px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()"><option value="all">Tüm Kategoriler</option></select>
                     <select id="historyBankFilter" style="width: 140px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()"><option value="all">Tüm Bankalar</option></select>
@@ -1109,17 +1116,32 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     function toggleAuthMode() { isRegisterMode = false; }
 
-    // Kullanıcı adı alanı klasik metin alanıdır; seçim listesi kullanılmaz.
+    // Giriş kolaylığı: yalnız kullanıcı adı cihazda tutulur; şifre ASLA kaydedilmez.
     function rememberUsername(name) {
         if (!name) return;
-        try { localStorage.setItem("mtLastUsername", String(name)); } catch (_) {}
+        const checked = !!document.getElementById("mtRememberUsername")?.checked;
+        try {
+            if (checked) localStorage.setItem("mtLastUsername", String(name));
+            else localStorage.removeItem("mtLastUsername");
+        } catch (_) {}
     }
     function renderRememberedUsers(selected) {
         const el = document.getElementById("authUsername");
         if (!el || el.tagName !== "INPUT") return;
-        // Kullanıcı adı otomatik doldurulmaz; tarayıcının autocomplete özelliği kullanılabilir.
         if (selected) el.value = String(selected);
     }
+    function loadRememberedUsername() {
+        const input = document.getElementById("authUsername");
+        const check = document.getElementById("mtRememberUsername");
+        if (!input || !check) return;
+        let saved = "";
+        try { saved = localStorage.getItem("mtLastUsername") || ""; } catch (_) {}
+        if (saved) {
+            input.value = saved;
+            check.checked = true;
+        }
+    }
+    document.addEventListener("DOMContentLoaded", loadRememberedUsername);
     function isAdminUser() { return String(currentUser || '').toLocaleLowerCase('tr-TR') === ADMIN_USERNAME.toLocaleLowerCase('tr-TR'); }
     const ADMIN_REGISTRY_KEY='mtAdminUserRegistryV2';
     function loadAdminRegistry(){
@@ -2138,10 +2160,118 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
           const schedule = freq === 'daily' ? 'Her gün' : freq === 'weekly' ? `Her ${weekNames[Number(r.weekday) || 0]}` : (r.startDate || r.endDate ? `Her ay • ${formatRecurringDate(r.startDate)} - ${formatRecurringDate(r.endDate)}` : `Her ayın ${r.day || 1}. günü`);
           return `<div class="recurring-row">
             <div><b>${r.name}</b><small>${money(r.amount)} • ${schedule} • ${r.category} • ${r.bank}</small></div>
-            <button type="button" onclick="deleteRecurring('${r.id}')" style="flex:0 0 auto;background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
+            <div style="display:flex;gap:6px;flex:0 0 auto;">
+              <button type="button" onclick="editRecurring('${r.id}')" style="background:#2980b9;padding:6px 9px;font-size:11px!important;min-height:34px;">Düzenle</button>
+              <button type="button" onclick="deleteRecurring('${r.id}')" style="background:#e74c3c;padding:6px 9px;font-size:11px!important;min-height:34px;">Sil</button>
+            </div>
           </div>`;
         }).join('');
     }
+
+    window.editRecurring = function(id) {
+        const r = recurringExpenses.find(x => String(x.id) === String(id));
+        if(!r) return;
+
+        let modal = document.getElementById('mtRecurringEditModal');
+        if(!modal) {
+            modal = document.createElement('div');
+            modal.id = 'mtRecurringEditModal';
+            modal.innerHTML = `
+            <div class="mt-rec-edit-backdrop"></div>
+            <div class="mt-rec-edit-card">
+              <div class="mt-rec-edit-head">
+                <div>
+                  <div class="mt-rec-edit-title">Düzenli Harcamayı Düzenle</div>
+                  <div class="mt-rec-edit-sub">Bilgileri güncelle, düzenli ödeme planın otomatik yenilensin.</div>
+                </div>
+                <button type="button" class="mt-rec-edit-x">×</button>
+              </div>
+              <form id="mtRecurringEditForm">
+                <input type="hidden" id="mtRecEditId">
+                <div class="mt-rec-edit-grid">
+                  <label class="mt-rec-field mt-rec-wide"><span>Harcama Adı</span><input id="mtRecEditName" required></label>
+                  <label class="mt-rec-field"><span>Tutar (TL)</span><input id="mtRecEditAmount" inputmode="decimal" required></label>
+                  <label class="mt-rec-field"><span>Kategori</span><select id="mtRecEditCategory"><option>Market</option><option>Yemek</option><option>Ulaşım</option><option>Fatura</option><option>Alışveriş</option><option>Diğer</option></select></label>
+                  <label class="mt-rec-field mt-rec-wide"><span>Banka / Kart</span><select id="mtRecEditBank"></select></label>
+                  <div id="mtRecEditDates" class="mt-rec-date-grid mt-rec-wide">
+                    <label class="mt-rec-field"><span>Başlangıç Tarihi</span><input type="date" id="mtRecEditStart"></label>
+                    <label class="mt-rec-field"><span>Bitiş Tarihi</span><input type="date" id="mtRecEditEnd"></label>
+                  </div>
+                </div>
+                <div class="mt-rec-edit-actions">
+                  <button type="button" class="mt-rec-cancel">Vazgeç</button>
+                  <button type="submit" class="mt-rec-save">Değişiklikleri Kaydet</button>
+                </div>
+              </form>
+            </div>`;
+            const style=document.createElement('style');
+            style.textContent=`
+#mtRecurringEditModal{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:20px}
+#mtRecurringEditModal .mt-rec-edit-backdrop{position:absolute;inset:0;background:rgba(1,7,18,.78);backdrop-filter:blur(8px)}
+#mtRecurringEditModal .mt-rec-edit-card{position:relative;width:min(560px,96vw);background:linear-gradient(145deg,#101d34 0%,#091426 100%);border:1px solid rgba(59,130,246,.32);border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.58),0 0 0 1px rgba(255,255,255,.025);overflow:hidden;color:#f8fafc}
+.mt-rec-edit-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;padding:22px 24px 18px;border-bottom:1px solid rgba(148,163,184,.12)}
+.mt-rec-edit-title{font-size:19px;font-weight:900;letter-spacing:-.2px}.mt-rec-edit-sub{font-size:11px;color:#8fa3bd;margin-top:5px}
+.mt-rec-edit-x{width:36px!important;height:36px!important;min-height:36px!important;padding:0!important;border-radius:11px!important;background:#13233c!important;border:1px solid rgba(148,163,184,.16)!important;color:#a9bad0!important;font-size:21px!important}
+#mtRecurringEditForm{padding:21px 24px 24px}.mt-rec-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.mt-rec-wide{grid-column:1/-1}
+.mt-rec-field{display:grid;gap:7px}.mt-rec-field span{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#8fa3bd}
+.mt-rec-field input,.mt-rec-field select{width:100%!important;box-sizing:border-box!important;background:#091426!important;border:1px solid #223654!important;color:#eef5ff!important;border-radius:11px!important;padding:11px 12px!important;min-height:43px!important;outline:none!important}
+.mt-rec-field input:focus,.mt-rec-field select:focus{border-color:#3b82f6!important;box-shadow:0 0 0 3px rgba(59,130,246,.12)!important}
+.mt-rec-date-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.mt-rec-edit-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:17px;border-top:1px solid rgba(148,163,184,.1)}
+.mt-rec-cancel,.mt-rec-save{width:auto!important;min-height:40px!important;padding:9px 16px!important;border-radius:11px!important;font-size:12px!important;font-weight:800!important}
+.mt-rec-cancel{background:#13233c!important;border:1px solid #263b5a!important;color:#b9c8db!important}.mt-rec-save{background:linear-gradient(135deg,#2563eb,#3b82f6)!important;border:0!important;color:white!important;box-shadow:0 9px 24px rgba(37,99,235,.28)!important}
+@media(max-width:560px){#mtRecurringEditModal{padding:12px}.mt-rec-edit-grid,.mt-rec-date-grid{grid-template-columns:1fr}.mt-rec-wide{grid-column:auto}.mt-rec-edit-head,#mtRecurringEditForm{padding-left:17px;padding-right:17px}.mt-rec-edit-actions{display:grid;grid-template-columns:1fr 1fr}.mt-rec-cancel,.mt-rec-save{width:100%!important}}
+`;
+            document.head.appendChild(style);
+            document.body.appendChild(modal);
+            const close=()=>modal.style.display='none';
+            modal.querySelector('.mt-rec-edit-x').onclick=close;
+            modal.querySelector('.mt-rec-cancel').onclick=close;
+            modal.querySelector('.mt-rec-edit-backdrop').onclick=close;
+
+            modal.querySelector('#mtRecurringEditForm').addEventListener('submit',e=>{
+                e.preventDefault();
+                const item=recurringExpenses.find(x=>String(x.id)===String(modal.querySelector('#mtRecEditId').value));
+                if(!item) return close();
+                const amount=parseFloat(String(modal.querySelector('#mtRecEditAmount').value).replace(',','.'))||0;
+                if(amount<=0){alert('Geçerli bir tutar girin.');return}
+                const name=modal.querySelector('#mtRecEditName').value.trim();
+                if(!name){alert('Harcama adını girin.');return}
+                item.name=name;
+                item.amount=amount;
+                item.category=modal.querySelector('#mtRecEditCategory').value;
+                item.bank=modal.querySelector('#mtRecEditBank').value;
+                if(recurringFrequency(item)==='monthly' && (item.startDate||item.endDate)){
+                    const st=modal.querySelector('#mtRecEditStart').value,en=modal.querySelector('#mtRecEditEnd').value;
+                    if(!st||!en){alert('Başlangıç ve bitiş tarihini seçin.');return}
+                    if(st>en){alert('Bitiş tarihi başlangıç tarihinden önce olamaz.');return}
+                    item.startDate=st; item.endDate=en;
+                }
+                saveRecurringExpenses(true);
+                renderRecurringList();
+                close();
+                rd();
+            });
+        }
+
+        modal.querySelector('#mtRecEditId').value=r.id;
+        modal.querySelector('#mtRecEditName').value=r.name||'';
+        modal.querySelector('#mtRecEditAmount').value=String(r.amount??'').replace('.',',');
+        modal.querySelector('#mtRecEditCategory').value=r.category||'Diğer';
+
+        const bankSel=modal.querySelector('#mtRecEditBank');
+        const bankValues=[...new Set([...(activeBanks||[]),r.bank||'Nakit / Diğer'].filter(Boolean))];
+        bankSel.innerHTML=bankValues.map(v=>`<option value="${String(v).replace(/"/g,'&quot;')}">${v}</option>`).join('');
+        bankSel.value=r.bank||bankValues[0]||'';
+
+        const dates=modal.querySelector('#mtRecEditDates');
+        const showDates=recurringFrequency(r)==='monthly' && !!(r.startDate||r.endDate);
+        dates.style.display=showDates?'grid':'none';
+        modal.querySelector('#mtRecEditStart').value=r.startDate||'';
+        modal.querySelector('#mtRecEditEnd').value=r.endDate||'';
+
+        modal.style.display='flex';
+        setTimeout(()=>modal.querySelector('#mtRecEditName')?.focus(),50);
+    };
 
     window.deleteRecurring = function(id) {
         if(!confirm('Bu düzenli harcama silinsin mi? Daha önce oluşmuş harcamalar silinmez.')) return;
@@ -2233,27 +2363,119 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         const selectedHistBank = histBankEl ? histBankEl.value : 'all';
 
         let availableMonths = new Set();
-        
+
+        // SADECE Tüm Harcamalar: düzenli ödemelerin gelecek ekstre aylarını seçilebilir yap.
+        // Bu önizlemeler gerçek harcama olarak kaydedilmez.
+        const nowForHistory = new Date();
+        const historyHorizon = new Date(nowForHistory.getFullYear() + 2, nowForHistory.getMonth(), 1);
+        recurringExpenses.forEach(r => {
+            let cursor = new Date(nowForHistory.getFullYear(), nowForHistory.getMonth(), 1);
+            if (r.startDate) {
+                const sp = String(r.startDate).split('-').map(Number);
+                if (sp.length === 3 && sp[0] && sp[1]) {
+                    const st = new Date(sp[0], sp[1]-1, 1);
+                    if (st > cursor) cursor = st;
+                }
+            }
+            let end = historyHorizon;
+            if (r.endDate) {
+                const ep = String(r.endDate).split('-').map(Number);
+                if (ep.length === 3 && ep[0] && ep[1]) {
+                    const en = new Date(ep[0], ep[1]-1, 1);
+                    if (en < end) end = en;
+                }
+            }
+            while (cursor <= end) {
+                availableMonths.add(`${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}`);
+                cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+            }
+        });
+
         let indexedEx = ex.map((item, index) => {
             let cutoff = bankCutoffDays[item.b] !== undefined ? bankCutoffDays[item.b] : 0;
             let details = getItemDueDateDetails(item, cutoff);
             let sortPriority = (details.cycle === 'nextMonth') ? 1 : 0;
             
-            let itemMonth = details.dueDateStr.substring(0, 7);
+            // Tüm Harcamalar ay seçimi = ekstre döneminin başladığı ay.
+            // Örn. kesim 4 ise Eylül ekstresi: 5 Eylül - 4 Ekim.
+            let itemMonth = '';
+            if (item.statementMonth) {
+                itemMonth = String(item.statementMonth);
+            } else {
+                const txParts = String(item.d || '').split('-').map(Number);
+                if (txParts.length === 3 && txParts[0] && txParts[1] >= 1 && txParts[1] <= 12) {
+                    let sy = txParts[0], sm = txParts[1], sd = txParts[2];
+                    if (cutoff >= 1 && cutoff <= 31 && sd <= cutoff) {
+                        sm -= 1;
+                        if (sm === 0) { sm = 12; sy -= 1; }
+                    }
+                    itemMonth = `${sy}-${String(sm).padStart(2,'0')}`;
+                } else {
+                    itemMonth = details.dueDateStr.substring(0, 7);
+                }
+            }
             availableMonths.add(itemMonth);
 
             return { ...item, originalIndex: index, sortPriority: sortPriority, dueDate: details.dueDateStr, cutoffDate: details.cutoffDateStr, cycle: details.cycle, itemMonth: itemMonth, statementPaid: isStatementPaid(item.b, details.dueDateStr) };
         });
 
+        // Seçilen ekstrede henüz oluşmamış düzenli ödemeleri yalnızca önizleme olarak ekle.
+        const requestedHistoryMonth = monthFilterSelect ? monthFilterSelect.value : 'all';
+        if (requestedHistoryMonth !== 'all' && /^\d{4}-\d{2}$/.test(requestedHistoryMonth)) {
+            const hp = requestedHistoryMonth.split('-').map(Number);
+            const hy = hp[0], hm = hp[1]-1;
+            const last = new Date(hy, hm+1, 0).getDate();
+
+            const addPlannedRecurring = (r, day, suffix) => {
+                const dd = Math.min(Math.max(Number(day)||1,1), last);
+                const dateStr = `${requestedHistoryMonth}-${String(dd).padStart(2,'0')}`;
+                const key = `rec:${r.id}:${requestedHistoryMonth}:${suffix}`;
+                const legacyKey = `rec:${r.id}:${requestedHistoryMonth}`;
+                if (ex.some(e => e.recurringKey === key || (recurringFrequency(r)==='monthly' && e.recurringKey === legacyKey))) return;
+                const virtualItem = {
+                    d: dateStr, c: r.category || 'Diğer', b: r.bank || 'Nakit / Diğer',
+                    a: String(Number(r.amount)||0), inst: '-',
+                    x: (r.name || 'Düzenli harcama') + ' • Planlı',
+                    recurringKey: key, recurringId: r.id,
+                    statementMonth: requestedHistoryMonth, plannedVirtual: true
+                };
+                const cutoff = bankCutoffDays[virtualItem.b] !== undefined ? bankCutoffDays[virtualItem.b] : 0;
+                const details = getItemDueDateDetails(virtualItem, cutoff);
+                indexedEx.push({...virtualItem, originalIndex:-1,
+                    sortPriority:(details.cycle==='nextMonth')?1:0,
+                    dueDate:details.dueDateStr, cutoffDate:details.cutoffDateStr,
+                    cycle:details.cycle, itemMonth:requestedHistoryMonth, statementPaid:false});
+            };
+
+            recurringExpenses.forEach(r => {
+                const monthStart = `${requestedHistoryMonth}-01`;
+                const monthEnd = `${requestedHistoryMonth}-${String(last).padStart(2,'0')}`;
+                const start = r.startDate || '0000-01-01', end = r.endDate || '9999-12-31';
+                if (start > monthEnd || end < monthStart) return;
+                const freq = recurringFrequency(r);
+                if (freq === 'daily') {
+                    for(let day=1; day<=last; day++) addPlannedRecurring(r,day,`d${day}`);
+                } else if (freq === 'weekly') {
+                    const weekday = Number.isFinite(Number(r.weekday)) ? Number(r.weekday) : 1;
+                    for(let day=1; day<=last; day++) if(new Date(hy,hm,day).getDay()===weekday) addPlannedRecurring(r,day,`w${day}`);
+                } else if (r.startDate || r.endDate) {
+                    addPlannedRecurring(r,1,'month');
+                } else {
+                    const day=Math.min(Math.max(parseInt(r.day)||1,1),last);
+                    addPlannedRecurring(r,day,`m${day}`);
+                }
+            });
+        }
+
         if(monthFilterSelect) {
             let currentSelection = monthFilterSelect.value;
             let sortedMonths = Array.from(availableMonths).sort().reverse();
             
-            monthFilterSelect.innerHTML = `<option value="all">Tüm Aylar</option>`;
+            monthFilterSelect.innerHTML = `<option value="all">Tüm Ekstreler</option>`;
             sortedMonths.forEach(m => {
                 let parts = m.split('-');
                 let monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-                let label = `${monthNames[parseInt(parts[1])-1]} ${parts[0]}`;
+                let label = `${monthNames[parseInt(parts[1])-1]} ${parts[0]} Ekstresi`;
                 monthFilterSelect.innerHTML += `<option value="${m}">${label}</option>`;
             });
             monthFilterSelect.value = sortedMonths.includes(currentSelection) ? currentSelection : 'all';
@@ -2318,11 +2540,15 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             const isNextStatus = !item.statementPaid && !isCurrentStatus;
             const isCutStatement = isCurrentStatus && item.cutoffDate <= ds;
 
-            if (selectedStatus === 'current' && !isCurrentStatus) return;
-            if (selectedStatus === 'statement' && !isCutStatement) return;
-            if (selectedStatus === 'next' && !isNextStatus) return;
-            if (selectedStatus === 'paid' && !item.statementPaid) return;
-            if (selectedStatus === 'all' && item.statementPaid) return;
+            // Belirli bir ekstre seçildiğinde o ekstre ayı esas alınır.
+            // Böylece o aya ait gelecek taksit ve planlı düzenli ödeme kaybolmaz.
+            if (selectedMonth === 'all') {
+                if (selectedStatus === 'current' && !isCurrentStatus) return;
+                if (selectedStatus === 'statement' && !isCutStatement) return;
+                if (selectedStatus === 'next' && !isNextStatus) return;
+                if (selectedStatus === 'paid' && !item.statementPaid) return;
+                if (selectedStatus === 'all' && item.statementPaid) return;
+            }
 
             // Ay Filtresi Kontrolü
             if (selectedMonth !== 'all' && item.itemMonth !== selectedMonth) {
@@ -2360,10 +2586,10 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     <td>${currentCell}</td>
                     <td>${nextCell}</td>
                     <td>${item.x || ''}</td>
-                    <td><div class="action-btns">
+                    <td>${item.plannedVirtual ? '<span style="font-size:10px;color:#7f8c8d;">Planlı</span>' : `<div class="action-btns">
                         <button style="background:#2980b9;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="editExpense(${k})">Düzenle</button>
                         <button style="background:#e74c3c;padding:2px 5px;font-size:10px;color:white;border:none;border-radius:3px;" onclick="dl(${k})">Sil</button>
-                    </div></td>
+                    </div>`}</td>
                 </tr>`
             });
         });
@@ -2401,10 +2627,9 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(futureCard) futureCard.textContent = futureTotal.toFixed(2) + ' TL';
         let filteredBox = document.getElementById('filteredTotalBox');
         if(filteredBox) {
-            const shownTotal = (selectedStatus === 'current')
-                ? currentMonthExpenseAfterPayments()
-                : filteredTotal;
-            filteredBox.textContent = '📊 Seçilen dönemin toplam harcaması: ' + money(shownTotal);
+            // Üst toplam, Tüm Harcamalar ekranındaki mevcut durum + ekstre + kategori + banka
+            // filtrelerinden geçen kayıtların TAM toplamıdır (sayfalama bu toplamı etkilemez).
+            filteredBox.textContent = '📊 Seçilen dönemin toplam harcaması: ' + money(filteredTotal);
         }
         updateIncomeCards();
 
@@ -2954,7 +3179,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
    if(chosenMonth)keys=[chosenMonth];else if(period==='all')keys=Object.keys(monthMap).sort();else for(let i=(+period)-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);keys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
    const peak=Math.max(1,...keys.map(k=>monthMap[k]||0)),bars=document.getElementById('mtRptBars');if(bars)bars.innerHTML=keys.map(k=>`<div class="mt-rbar"><span class="mt-rbar-v">${moneyR(monthMap[k]||0).replace(' TL','')}</span><div class="mt-rbar-fill" style="height:${Math.max(2,((monthMap[k]||0)/peak)*82)}%"></div><span class="mt-rbar-l">${monthLabelR(k)}</span></div>`).join('');set('mtRptTrendLabel',chosenMonth?monthLabelR(chosenMonth):(period==='all'?'Tüm zamanlar':'Son '+period+' ay'));
    function dist(id,field){const map={};rows.forEach(x=>{const k=String(x[field]||'Belirsiz');map[k]=(map[k]||0)+numR(x.a)});const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]),el=document.getElementById(id);if(!el)return;el.innerHTML=arr.length?arr.slice(0,7).map(([k,v])=>`<div class="mt-rlist-row"><span class="mt-rlist-name">${escR(k)}</span><div class="mt-rlist-track"><div class="mt-rlist-fill" style="width:${total?Math.max(2,v/total*100):0}%"></div></div><span class="mt-rlist-val">${moneyR(v)}</span></div>`).join(''):'<div class="mt-report-empty">Bu dönem için harcama yok.</div>'}dist('mtRptCategories','c');dist('mtRptBanks','b');
-   const tbody=document.getElementById('mtRptRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,100).map(x=>`<tr><td>${escR(x.d||'—')}</td><td>${escR(x.c||'—')}</td><td>${escR(x.b||'—')}</td><td>${escR(x.x||'—')}</td><td class="mt-report-amount">${moneyR(numR(x.a))}</td></tr>`).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Bu dönem için işlem bulunamadı.</div></td></tr>';set('mtRptTableCount',rows.length+' kayıt');
+   const tbody=document.getElementById('mtRptRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,100).map(x=>`<tr><td>${escR(x.d||'—')}</td><td>${escR(x.c||'—')}</td><td>${escR(x.b||'—')}</td><td>${escR(x.x||'—')}</td><td class="mt-report-amount">${moneyR(numR(x.a))}</td></tr>`).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Bu dönem için işlem bulunamadı.</div></td></tr>';set('mtRptTableCount',rows.length+' kayıt');set('mtRptGrandTotal',moneyR(total));
  };
  const root=document.getElementById('mod_excel');if(root){new MutationObserver(()=>{if(root.classList.contains('app-page-visible'))setTimeout(window.mtRenderReports,0)}).observe(root,{attributes:true,attributeFilter:['class']});}
 })();
@@ -3138,6 +3363,33 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
   body.mt-print-report #mod_excel th{background:#eaf2f9!important;color:#17334c!important;border:1px solid #c8d8e5!important;padding:2.2mm!important}
   body.mt-print-report #mod_excel td{background:#fff!important;color:#17334c!important;border:1px solid #d8e4ee!important;padding:2mm!important}
   body.mt-print-report #mod_excel tr{break-inside:avoid!important;page-break-inside:avoid!important}
+
+  /* Harcama detayları ekrana sığan satırlarla sınırlanmasın. */
+  body.mt-print-report #mod_excel .mt-report-table-panel{
+    grid-column:1/-1!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    break-inside:auto!important;
+    page-break-inside:auto!important;
+    page-break-before:always!important;
+  }
+  body.mt-print-report #mod_excel .mt-report-table-wrap{
+    max-height:none!important;
+    height:auto!important;
+    overflow:visible!important;
+  }
+  body.mt-print-report #mod_excel .mt-report-table{
+    display:table!important;
+    width:100%!important;
+  }
+  body.mt-print-report #mod_excel .mt-report-table thead{display:table-header-group!important}
+  body.mt-print-report #mod_excel .mt-report-table tbody{display:table-row-group!important}
+  body.mt-print-report #mod_excel .mt-report-table tfoot{display:table-footer-group!important}
+  body.mt-print-report #mod_excel .mt-report-grand-total{break-inside:avoid!important;page-break-inside:avoid!important}
+  body.mt-print-report #mod_excel .mt-report-table tr{display:table-row!important}
+  body.mt-print-report #mod_excel .mt-report-table th,
+  body.mt-print-report #mod_excel .mt-report-table td{display:table-cell!important}
 }
 </style>
 <script id="mtFinalPrintFix">

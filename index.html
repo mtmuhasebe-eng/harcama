@@ -1141,7 +1141,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             check.checked = true;
         }
     }
-    document.addEventListener("DOMContentLoaded", loadRememberedUsername);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", loadRememberedUsername);
+    } else {
+        loadRememberedUsername();
+    }
     function isAdminUser() { return String(currentUser || '').toLocaleLowerCase('tr-TR') === ADMIN_USERNAME.toLocaleLowerCase('tr-TR'); }
     const ADMIN_REGISTRY_KEY='mtAdminUserRegistryV2';
     function loadAdminRegistry(){
@@ -1211,6 +1215,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         document.getElementById('loginScreen').style.display = 'block';
         const form = document.getElementById('authForm');
         if (form) form.reset();
+        // Form sıfırlansa bile cihazda hatırlanan kullanıcı adını yeniden yükle.
+        loadRememberedUsername();
         const adminBtn=document.getElementById('adminUsersBtn'); if(adminBtn) adminBtn.style.display='none';
         const adminDrop=document.getElementById('adminUsersDropdownItem'); if(adminDrop) adminDrop.style.display='none';
     }
@@ -2529,7 +2535,16 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 }
 
                 const gKey = statementKey(item.b, item.dueDate);
-                if (!statementGroups[gKey]) statementGroups[gKey] = {bank:item.b, dueDate:item.dueDate, amount:0};
+                if (!statementGroups[gKey]) statementGroups[gKey] = {
+                    bank:item.b,
+                    dueDate:item.dueDate,
+                    cutoffDate:item.cutoffDate,
+                    amount:0
+                };
+                // Aynı ekstre grubunun gerçek hesap kesim tarihi.
+                if (!statementGroups[gKey].cutoffDate && item.cutoffDate) {
+                    statementGroups[gKey].cutoffDate = item.cutoffDate;
+                }
                 statementGroups[gKey].amount += amtNum;
             }
 
@@ -2643,11 +2658,11 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 if (data && data.total > 0) {
                     const todayStr = new Date().toISOString().split('T')[0];
                     const overdue = Object.values(statementGroups)
-                        .filter(g => g.bank === bank && g.dueDate < todayStr && !isStatementPaid(g.bank, g.dueDate))
+                        .filter(g => g.bank === bank && g.cutoffDate && g.cutoffDate < todayStr && !isStatementPaid(g.bank, g.dueDate))
                         .sort((a,b) => a.dueDate.localeCompare(b.dueDate));
                     const overdueHtml = overdue.map(g => `
                         <div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border-color);">
-                            <div style="color:#e67e22;font-weight:700;">Ödeme bekliyor</div>
+                            <div style="color:#e67e22;font-weight:700;">Kesilmiş Ekstre</div>
                             <div style="font-size:10px;">Son ödeme: ${g.dueDate} • ${money(g.amount)}</div>
                             <button type="button" onclick="markStatementPaid('${encodeURIComponent(bank)}','${g.dueDate}',${g.amount})"
                                 style="margin-top:5px;padding:5px 8px;background:#27ae60;color:#fff;border:0;border-radius:6px;font-size:10px;">✓ Ödendi</button>

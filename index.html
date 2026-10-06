@@ -2850,7 +2850,18 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     inst: `${i + 1}/${count} Taksit`,
                     x: x ? `${x} (${i + 1}/${count})` : `${i + 1}/${count} Taksit`,
                     installmentAuto: true,
-                    statementMonth: dateStr.substring(0, 7)
+                    // Taksit ekstresi gerçek taksit tarihi + seçilen bankanın kesim gününe göre belirlenir.
+                    // Örn. kesim 6 ise ayın 5'indeki taksit önceki ekstrede kalır; 7'si yeni ekstreye geçer.
+                    statementMonth: (() => {
+                        const parts = dateStr.split('-').map(Number);
+                        let sy = parts[0], sm = parts[1], sd = parts[2];
+                        const cutoff = parseInt(bankCutoffDays[b], 10) || 0;
+                        if (cutoff >= 1 && cutoff <= 31 && sd <= cutoff) {
+                            sm -= 1;
+                            if (sm === 0) { sm = 12; sy -= 1; }
+                        }
+                        return `${sy}-${String(sm).padStart(2, '0')}`;
+                    })()
                 });
             }
 

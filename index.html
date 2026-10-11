@@ -922,6 +922,42 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                     <select id="historyPageSize" style="width: 95px; margin: 0; padding: 3px;" onchange="mtHistoryPage=1;rd()"><option value="20" selected>20 kayıt</option><option value="50">50 kayıt</option><option value="100">100 kayıt</option></select>
                 </div>
             </div>
+            <style>
+              #mtHistoryDateRange{display:flex;align-items:flex-end;justify-content:flex-end;gap:8px;flex-wrap:nowrap;width:max-content;max-width:100%;margin:10px 0 12px auto;padding:0;border:0;background:transparent;position:relative}
+              #mtHistoryDateRange .mt-date-field{display:flex;flex:0 0 162px;flex-direction:column;gap:6px;min-width:0;width:162px}
+              #mtHistoryDateRange .mt-date-field>span{font-size:11px;font-weight:600;color:var(--muted,#64748b)}
+              #mtHistoryDateRange .mt-date-control{position:relative;display:flex;align-items:center;width:162px;height:37px;border:1px solid var(--border-color,#cbd5e1);border-radius:9px;background:var(--card-bg,var(--bg-secondary,#fff));overflow:hidden}
+              #mtHistoryDateRange .mt-date-control:focus-within{border-color:#64748b;box-shadow:0 0 0 2px rgba(100,116,139,.12)}
+              #mtHistoryDateRange .mt-date-text{width:100%;min-width:0;height:100%;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:0 6px 0 11px!important;margin:0!important;color:inherit;font-size:12px}
+              #mtHistoryDateRange .mt-calendar-trigger{position:relative;display:grid;place-items:center;flex:0 0 35px;height:35px;color:var(--muted,#64748b);cursor:pointer}
+              #mtHistoryDateRange .mt-calendar-native{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;padding:0}
+              #mtHistoryDateRange .mt-date-clear{flex:0 0 76px!important;width:76px!important;min-width:76px!important;max-width:76px!important;align-self:flex-end!important;height:37px;margin:0!important;padding:0 12px!important;border:1px solid var(--border-color,#cbd5e1)!important;border-radius:9px!important;background:transparent!important;color:inherit!important;font-size:11px!important;line-height:1!important;font-weight:500!important;white-space:nowrap!important}
+              #mtHistoryDateRange .mt-date-clear:hover{background:rgba(128,128,128,.08)!important}
+              #mtHistoryDateRange .mt-date-error{position:absolute;right:0;top:100%;font-size:11px;color:#dc2626;white-space:nowrap}
+              @media(max-width:540px){#mtHistoryDateRange{width:100%;flex-wrap:wrap;justify-content:flex-end;gap:8px}#mtHistoryDateRange .mt-date-field{flex:1 1 135px;width:auto}#mtHistoryDateRange .mt-date-control{width:100%}#mtHistoryDateRange .mt-date-clear{flex:0 0 76px!important}}
+            </style>
+            <div id="mtHistoryDateRange">
+              <label class="mt-date-field"><span>Başlangıç tarihi</span>
+                <span class="mt-date-control">
+                  <input id="mtHistoryDateStartText" class="mt-date-text" type="text" inputmode="numeric" maxlength="10" placeholder="GG.AA.YYYY" aria-label="Başlangıç tarihi yaz" oninput="mtHistoryDateTyping(this)" onblur="mtHistoryDateTextChanged('Start')" onkeydown="if(event.key==='Enter'){this.blur()}">
+                  <span class="mt-calendar-trigger" title="Takvimden başlangıç tarihi seç">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                    <input id="mtHistoryDateStart" class="mt-calendar-native" type="date" aria-label="Başlangıç tarihini takvimden seç" onchange="mtHistoryCalendarChanged('Start')">
+                  </span>
+                </span>
+              </label>
+              <label class="mt-date-field"><span>Bitiş tarihi</span>
+                <span class="mt-date-control">
+                  <input id="mtHistoryDateEndText" class="mt-date-text" type="text" inputmode="numeric" maxlength="10" placeholder="GG.AA.YYYY" aria-label="Bitiş tarihi yaz" oninput="mtHistoryDateTyping(this)" onblur="mtHistoryDateTextChanged('End')" onkeydown="if(event.key==='Enter'){this.blur()}">
+                  <span class="mt-calendar-trigger" title="Takvimden bitiş tarihi seç">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                    <input id="mtHistoryDateEnd" class="mt-calendar-native" type="date" aria-label="Bitiş tarihini takvimden seç" onchange="mtHistoryCalendarChanged('End')">
+                  </span>
+                </span>
+              </label>
+              <button type="button" class="mt-date-clear" onclick="mtHistoryClearDates()">Temizle</button>
+              <span id="mtHistoryDateError" class="mt-date-error" role="status"></span>
+            </div>
             <div id="filteredTotalBox" class="filtered-total">📊 Seçilen dönemin toplam harcaması: 0.00 TL</div>
             <div style="overflow-x:auto;">
                 <table>
@@ -2325,7 +2361,64 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
     let mtHistoryPage = 1;
     window.mtHistoryGoPage = function(page){ mtHistoryPage = Math.max(1, Number(page)||1); rd(); };
 
-    function rd() {
+    function mtHistoryDateTyping(el){
+        let digits=el.value.replace(/\D/g,'').slice(0,9);
+        if(digits.length===9 && digits[4]==='2' && /^20\d{2}$/.test(digits.slice(5))){
+            digits=digits.slice(0,4)+digits.slice(5);
+        } else if(digits.length>8){digits=digits.slice(0,8);}
+        let formatted=digits.slice(0,2);
+        if(digits.length>2)formatted+='.'+digits.slice(2,4);
+        if(digits.length>4)formatted+='.'+digits.slice(4);
+        el.value=formatted;
+        if(digits.length===8){
+            const which=el.id.includes('Start')?'Start':'End';
+            mtHistoryDateTextChanged(which);
+        }
+    }
+    function mtHistoryDateTextChanged(which){
+        const textEl=document.getElementById('mtHistoryDate'+which+'Text');
+        const dateEl=document.getElementById('mtHistoryDate'+which);
+        const error=document.getElementById('mtHistoryDateError');
+        if(!textEl||!dateEl)return;
+        let raw=textEl.value.trim();
+        const compact=raw.replace(/\D/g,'');
+        if(compact.length===9 && compact[4]==='2' && /^20\d{2}$/.test(compact.slice(5))) raw=compact.slice(0,4)+compact.slice(5);
+        if(!raw){dateEl.value='';if(error)error.textContent='';mtHistoryPage=1;rd();return;}
+        const m=raw.match(/^(\\d{1,2})[.\\/\\-](\\d{1,2})[.\\/\\-](\\d{4})$/);
+        if(!m){if(error)error.textContent='Tarihi GG.AA.YYYY biçiminde yazın.';return;}
+        const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]);
+        const d=new Date(year,month-1,day);
+        if(d.getFullYear()!==year||d.getMonth()!==month-1||d.getDate()!==day){if(error)error.textContent='Geçerli bir tarih girin.';return;}
+        const iso=String(year).padStart(4,'0')+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+        dateEl.value=iso;
+        textEl.value=String(day).padStart(2,'0')+'.'+String(month).padStart(2,'0')+'.'+year;
+        if(error)error.textContent='';
+        mtHistoryPage=1;rd();
+    }
+    function mtHistoryCalendarChanged(which){
+        const dateEl=document.getElementById('mtHistoryDate'+which);
+        const textEl=document.getElementById('mtHistoryDate'+which+'Text');
+        if(!dateEl||!textEl)return;
+        const parts=dateEl.value.split('-');
+        textEl.value=parts.length===3?parts[2]+'.'+parts[1]+'.'+parts[0]:'';
+        mtHistoryPage=1;rd();
+    }
+    function mtHistoryClearDates(){
+    const a=document.getElementById('mtHistoryDateStart');
+    const b=document.getElementById('mtHistoryDateEnd');
+    if(a) a.value='';
+    if(b) b.value='';
+    const at=document.getElementById('mtHistoryDateStartText');
+    const bt=document.getElementById('mtHistoryDateEndText');
+    if(at)at.value='';
+    if(bt)bt.value='';
+    const err=document.getElementById('mtHistoryDateError');
+    if(err)err.textContent='';
+    mtHistoryPage=1;
+    rd();
+}
+
+function rd() {
         if(!currentUser) return;
         loadUserData();
         renderBankSelections();
@@ -2367,6 +2460,13 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(histBankEl){ const vals=[...new Set(ex.map(x=>String(x.b||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')); histBankEl.innerHTML='<option value="all">Tüm Bankalar</option>'+vals.map(v=>`<option value="${v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${v}</option>`).join(''); histBankEl.value=vals.includes(prevBank)?prevBank:'all'; }
         const selectedHistCat = histCatEl ? histCatEl.value : 'all';
         const selectedHistBank = histBankEl ? histBankEl.value : 'all';
+        const dateStart = document.getElementById('mtHistoryDateStart')?.value || '';
+        const dateEnd = document.getElementById('mtHistoryDateEnd')?.value || '';
+        const invalidDateRange = !!(dateStart && dateEnd && dateStart > dateEnd);
+        const dateError = document.getElementById('mtHistoryDateError');
+        if(dateError && (invalidDateRange || !dateError.textContent || dateError.textContent === 'Başlangıç tarihi bitişten sonra olamaz.')) dateError.textContent = invalidDateRange ? 'Başlangıç tarihi bitişten sonra olamaz.' : '';
+        const hasDateRange = !!(dateStart || dateEnd);
+
 
         let availableMonths = new Set();
 
@@ -2548,6 +2648,12 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 statementGroups[gKey].amount += amtNum;
             }
 
+            // Tarih aralığı gerçek harcama/işlem tarihine göre uygulanır.
+            // Tarih aralığı kullanıldığında ödenmiş kayıtlar da görüntülenir.
+            if (invalidDateRange) return;
+            if (dateStart && String(item.d || '') < dateStart) return;
+            if (dateEnd && String(item.d || '') > dateEnd) return;
+
             // Durum Filtresi:
             // Güncel Borç = her kartın en yakın ödenmemiş dönemi.
             // Ödendi denince sıradaki dönem otomatik olarak güncele geçer.
@@ -2557,7 +2663,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
             // Belirli bir ekstre seçildiğinde o ekstre ayı esas alınır.
             // Böylece o aya ait gelecek taksit ve planlı düzenli ödeme kaybolmaz.
-            if (selectedMonth === 'all') {
+            if (selectedMonth === 'all' && !hasDateRange) {
                 if (selectedStatus === 'current' && !isCurrentStatus) return;
                 if (selectedStatus === 'statement' && !isCutStatement) return;
                 if (selectedStatus === 'next' && !isNextStatus) return;
@@ -2640,6 +2746,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         if(tt) tt.textContent = ts.toFixed(2) + ' TL'; 
         if(mt) mt.textContent = topThisMonthByBankCutoff().toFixed(2) + ' TL';
         if(futureCard) futureCard.textContent = futureTotal.toFixed(2) + ' TL';
+        // Tarih filtresi toplamı da aynı satır filtresinden hesaplanır.
         let filteredBox = document.getElementById('filteredTotalBox');
         if(filteredBox) {
             // Üst toplam, Tüm Harcamalar ekranındaki mevcut durum + ekstre + kategori + banka

@@ -595,6 +595,48 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 @keyframes mtLoadingDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%,100%{content:'...'}}
 </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style id="mtStmtCheckCss">
+/* ===== Ekstre Kontrol ===== */
+#mod_stmtcheck .sc-hint{font-size:12px;line-height:1.6;color:var(--muted);margin:2px 0 12px}
+#mod_stmtcheck .sc-drop{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 14px;border:2px dashed var(--border-color);border-radius:14px;background:var(--card-bg);cursor:pointer;text-align:center;transition:.2s}
+#mod_stmtcheck .sc-drop:hover,#mod_stmtcheck .sc-drop.over{border-color:var(--primary-color);box-shadow:0 0 0 3px var(--glow)}
+#mod_stmtcheck .sc-drop b{font-size:14px}#mod_stmtcheck .sc-drop span{font-size:12px;color:var(--muted)}
+#mod_stmtcheck .sc-status{display:none;margin:10px 0;padding:9px 12px;border-radius:9px;font-size:12px;background:var(--card-bg);border:1px solid var(--border-color)}
+#mod_stmtcheck .sc-status.err{border-color:#c0504d;color:#ff9b97}#mod_stmtcheck .sc-status.ok{border-color:#27ae60;color:#6fe3a2}
+#mod_stmtcheck .sc-stmt{margin:10px 0;padding:11px 12px;border:1px solid var(--border-color);border-radius:12px;background:var(--card-bg)}
+#mod_stmtcheck .sc-stmt-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#mod_stmtcheck .sc-stmt-top .sc-muted{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mod_stmtcheck .sc-x{flex:none!important;width:30px;min-height:30px!important;height:30px;padding:0!important;background:transparent!important;border:1px solid var(--border-color)!important;color:var(--muted)!important;box-shadow:none!important;font-size:18px!important;line-height:1}
+#mod_stmtcheck .sc-stmt-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--muted)}
+#mod_stmtcheck .sc-muted{color:var(--muted);font-size:12px}
+#mod_stmtcheck .sc-ok{margin-top:8px;font-size:12px;color:#6fe3a2}
+#mod_stmtcheck .sc-warn{margin-top:8px;font-size:12px;color:#ffc470;line-height:1.5}
+#mod_stmtcheck .sc-big{padding:14px;text-align:center;font-size:14px;border:1px solid #1f6b46;border-radius:12px;background:rgba(39,174,96,.08)}
+#mod_stmtcheck .sc-empty{padding:16px;text-align:center;font-size:12px;color:var(--muted)}
+#mod_stmtcheck .sc-fix-inputs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#mod_stmtcheck .sc-fix-inputs select,#mod_stmtcheck .sc-fix-inputs input{flex:1;min-width:140px;margin:0}
+#mod_stmtcheck .sc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 10px}
+#mod_stmtcheck .sc-sum{padding:10px 8px;border-radius:12px;background:var(--card-bg);border:1px solid var(--border-color);text-align:center}
+#mod_stmtcheck .sc-sum b{display:block;font-size:22px;line-height:1.1}#mod_stmtcheck .sc-sum span{font-size:11px;color:var(--muted)}
+#mod_stmtcheck .sc-sum.good b{color:#6fe3a2}#mod_stmtcheck .sc-sum.warn b{color:#ffc470}#mod_stmtcheck .sc-sum.bad b{color:#ff8e8a}
+#mod_stmtcheck .sc-sec{margin:10px 0;border:1px solid var(--border-color);border-radius:12px;background:rgba(255,255,255,.015);overflow:hidden}
+#mod_stmtcheck .sc-sec>summary{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;cursor:pointer;font-weight:700;font-size:13px;list-style:none}
+#mod_stmtcheck .sc-sec>summary::-webkit-details-marker{display:none}
+#mod_stmtcheck .sc-sec>summary em{font-style:normal;font-size:12px;padding:2px 9px;border-radius:99px;background:var(--card-bg)}
+#mod_stmtcheck .sc-sec.warn{border-left:4px solid #f5a623}#mod_stmtcheck .sc-sec.bad{border-left:4px solid #e0605b}#mod_stmtcheck .sc-sec.good{border-left:4px solid #27ae60}#mod_stmtcheck .sc-sec.cat{border-left:4px solid #8e7cf0}#mod_stmtcheck .sc-sec.info{border-left:4px solid #5b7fa3}
+#mod_stmtcheck .sc-sec-hint{padding:0 13px 8px;font-size:11px;color:var(--muted);line-height:1.5}
+#mod_stmtcheck .sc-row{display:flex;gap:10px;align-items:flex-start;padding:10px 13px;border-top:1px solid var(--border-color);cursor:pointer;font-size:12.5px}
+#mod_stmtcheck .sc-row.static{cursor:default}
+#mod_stmtcheck .sc-row input{flex:none;width:18px;height:18px;min-height:0;margin:2px 0 0;accent-color:var(--primary-color)}
+#mod_stmtcheck .sc-main{min-width:0;flex:1}#mod_stmtcheck .sc-l1{line-height:1.5;word-break:break-word}#mod_stmtcheck .sc-l2{margin-top:3px;font-size:11.5px;color:var(--muted);line-height:1.8}
+#mod_stmtcheck .sc-cat{font-size:10.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--border-color);color:var(--muted)}
+#mod_stmtcheck .sc-chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--card-bg);border:1px solid var(--border-color);color:var(--text-color)}
+#mod_stmtcheck .sc-chip.fix{border-color:#8a6a2a;color:#ffd592}#mod_stmtcheck .sc-chip.bad{border-color:#8a3a38;color:#ffaaa6}#mod_stmtcheck .sc-chip.cat{border-color:#5b4fb0;color:#c4baff}#mod_stmtcheck .sc-chip.low{border-style:dashed;color:var(--muted)}
+#mod_stmtcheck .sc-bar{position:sticky;bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--box-bg);border:1px solid var(--primary-color);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#mod_stmtcheck .sc-bar-btns{display:flex;gap:8px}#mod_stmtcheck .sc-bar-btns button{flex:none!important}
+#mod_stmtcheck #scUndo{background:transparent!important;border:1px solid var(--border-color)!important;color:var(--muted)!important;box-shadow:none!important;margin-top:12px;font-size:12px!important;flex:none}
+@media(max-width:600px){#mod_stmtcheck .sc-summary{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body id="mainBody" data-theme="light">
     <div id="sessionLoadingScreen" aria-live="polite">
@@ -678,6 +720,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
                 <button type="button" onclick="appNavigate('cutoffs',this)" data-page="cutoffs">◫ <span>Kesim Günleri</span></button>
                 <button type="button" onclick="appNavigate('installments',this)" data-page="installments">◈ <span>Borç & Taksitler</span></button>
                             <button type="button" onclick="appNavigate('recurring',this)" data-page="recurring">↻ <span>Düzenli Harcamalar</span></button>
+                <button type="button" onclick="appNavigate('stmtcheck',this)" data-page="stmtcheck">✓ <span>Ekstre Kontrol</span></button>
             </nav>
             <div class="pro-side-bottom">
                 <button type="button" onclick="openThemeModal()">◉ <span>Tema Değiştir</span></button>
@@ -727,6 +770,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         <button type="button" onclick="appNavigate('cutoffs');closeMobileMore()">◫ Kesim Günleri</button>
         <button type="button" onclick="appNavigate('installments');closeMobileMore()">◈ Borç & Taksitler</button>
         <button type="button" onclick="appNavigate('recurring');closeMobileMore()">↻ Düzenli Harcamalar</button>
+        <button type="button" onclick="appNavigate('stmtcheck');closeMobileMore()">✓ Ekstre Kontrol</button>
         <button type="button" onclick="openThemeModal();closeMobileMore()">◉ Tema</button>
         <button type="button" onclick="openProfileModal();closeMobileMore()">● Profil</button>
         <button type="button" onclick="logout()" style="color:#ff7373!important">↪ Çıkış Yap</button>
@@ -982,6 +1026,20 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             </div>
             <div id="historyPagination" class="mt-history-pagination"></div>
         </div>
+
+        <div id="mod_stmtcheck" class="draggable-module" draggable="false">
+            <h2>🧾 Ekstre Kontrol</h2>
+            <p class="sc-hint">Banka ekstresi PDF'ini yükle (Garanti BBVA / Yapı Kredi); sistem harcamalarını ekstreyle satır satır karşılaştırıp yanlış kart, tarih, taksit numarası ve tutarı, çift kayıtları ve eksikleri bulur. PDF'ler yalnızca tarayıcında okunur, hiçbir yere gönderilmez. İki bankanın ekstresini birlikte yüklersen kartlar arası karışıklıklar da yakalanır.</p>
+            <label class="sc-drop" id="scDrop">
+                <input type="file" id="scFile" accept="application/pdf,.pdf" multiple hidden>
+                <b>＋ Ekstre PDF'lerini seç</b>
+                <span>veya buraya sürükleyip bırak</span>
+            </label>
+            <div id="scStatus" class="sc-status"></div>
+            <div id="scStatements"></div>
+            <div id="scResults"></div>
+            <button type="button" id="scUndo" style="display:none">↩ Son işlemi geri al</button>
+        </div>
     </div>
 
     <!-- MODALLAR -->
@@ -1027,7 +1085,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
         banks: {title:'Banka Hesapları', hint:'Kullandığın banka ve kartları yönet.', modules:['mod_banks','mod_bankstats']},
         cutoffs: {title:'Kesim Günleri', hint:'Kart kesim günlerini düzenle.', modules:['mod_cutoffs']},
         installments: {title:'Borç & Taksitler', hint:'Taksitli harcamalarını oluştur ve takip et.', modules:['mod_addinstallment']},
-        recurring: {title:'Düzenli Harcamalar', hint:'Günlük, haftalık veya aylık tekrarlanan giderlerini otomatik takip et.', modules:['mod_recurring']}
+        recurring: {title:'Düzenli Harcamalar', hint:'Günlük, haftalık veya aylık tekrarlanan giderlerini otomatik takip et.', modules:['mod_recurring']},
+        stmtcheck: {title:'Ekstre Kontrol', hint:'Banka ekstresini yükle, kayıtlarındaki hataları otomatik bul.', modules:['mod_stmtcheck']}
     };
     let currentAppPage = 'home';
 
@@ -1410,7 +1469,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     const defaultLayout = {
         left: ['mod_income_summary', 'mod_summary', 'mod_income', 'mod_history', 'mod_excel', 'mod_addexpense', 'mod_recurring'],
-        right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment']
+        right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment', 'mod_stmtcheck']
     };
 
     function showApp() {
@@ -1481,7 +1540,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             'mod_banks',
             'mod_cutoffs',
             'mod_bankstats',
-            'mod_addinstallment'
+            'mod_addinstallment',
+            'mod_stmtcheck'
         ];
 
         // Buluttan boş/eksik düzen gelirse ekranın boş kalmasını engelle.
@@ -3442,6 +3502,623 @@ function rd() {
   window.addEventListener('DOMContentLoaded',()=>setTimeout(renderMonthlyTotals,100));
   window.addEventListener('storage',()=>setTimeout(renderMonthlyTotals,50));
 })();
+</script>
+<script id="mtStmtCheckCore">
+/* MT Ekstre Kontrol – çekirdek mantık (DOM'a bağımlı değil) */
+(function (root) {
+  'use strict';
+
+  var MONTHS = { ocak: 1, 'şubat': 2, subat: 2, mart: 3, nisan: 4, 'mayıs': 5, mayis: 5, haziran: 6, temmuz: 7,
+    'ağustos': 8, agustos: 8, 'eylül': 9, eylul: 9, ekim: 10, 'kasım': 11, kasim: 11, 'aralık': 12, aralik: 12 };
+
+  var PROFILES = {
+    'Yapı Kredi':   { amount: 'first', instDateMonthly: false },
+    'Garanti BBVA': { amount: 'last',  instDateMonthly: true  },
+    generic:         { amount: 'last',  instDateMonthly: true  }
+  };
+
+  var MONEY = /(?:([+-])\s?)?(\d{1,3}(?:\.\d{3})*,\d{2})(\s?[+-](?![\w]))?/g;
+  var DATE_START = /^\s*(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]+)\s+(\d{4})\b/;
+  var SKIP_DESC = /BONUS BEDAVA|ÖDEMENİZ|ÖDEME-|ÖDEME İÇİN|ÖNCEKİ DÖNEM|HESAP ÖZETİ BORCU|DEVİR EDİLEN|^TOPLAM/;
+
+  function tr(s) { return String(s || '').toLocaleUpperCase('tr-TR'); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function iso(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
+
+  function parseTrDate(str) {
+    var m = String(str || '').match(/(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]+)\s+(\d{4})/);
+    if (m) {
+      var mo = MONTHS[m[2].toLocaleLowerCase('tr-TR')];
+      if (mo) return iso(+m[3], mo, +m[1]);
+    }
+    m = String(str || '').match(/(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+    return m ? iso(+m[3], +m[2], +m[1]) : null;
+  }
+
+  function toCents(s) { return Math.round(parseFloat(String(s).replace(/\./g, '').replace(',', '.')) * 100); }
+  function cents2str(c) { return (c / 100).toFixed(2); }
+  function fmtTL(c) { return (c / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL'; }
+
+  function dayNum(d) { var p = d.split('-').map(Number); return Math.round(Date.UTC(p[0], p[1] - 1, p[2]) / 864e5); }
+  function dayDiff(a, b) { return dayNum(a) - dayNum(b); }
+  function addMonths(d, k) {
+    var p = d.split('-').map(Number), y = p[0], m = p[1] + k, day = p[2];
+    while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; }
+    var last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return iso(y, m, Math.min(day, last));
+  }
+
+  /* ---------- pdf.js metin öğelerinden satır üret ---------- */
+  function groupLines(items) {
+    var arr = items.filter(function (it) { return it && typeof it.str === 'string' && it.str.trim() !== ''; })
+      .map(function (it) { return { s: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0 }; });
+    arr.sort(function (a, b) { return Math.abs(a.y - b.y) > 2.5 ? b.y - a.y : a.x - b.x; });
+    var rows = [], cur = null;
+    arr.forEach(function (it) {
+      if (!cur || Math.abs(cur.y - it.y) > 2.5) { cur = { y: it.y, items: [] }; rows.push(cur); }
+      cur.items.push(it);
+    });
+    return rows.map(function (r) {
+      r.items.sort(function (a, b) { return a.x - b.x; });
+      var out = '', prevEnd = null;
+      r.items.forEach(function (it) {
+        if (prevEnd !== null) out += (it.x - prevEnd > 1.2 ? ' ' : '');
+        out += it.s; prevEnd = it.x + it.w;
+      });
+      return out.replace(/\bbosluk\b/g, ' ').replace(/\s+/g, ' ').trim();
+    }).filter(Boolean);
+  }
+
+  function detectBank(text) {
+    if (/YAPI\s*(?:ve|VE|Ve)\s*KREDİ|WORLDCARD|WORLDPUAN/i.test(text)) return 'Yapı Kredi';
+    if (/GARANTİ|GARANTI|BONUS\s+(?:CLASSIC|GOLD|PLATINUM|TRINK|PROGRAM)/i.test(text)) return 'Garanti BBVA';
+    if (/AKBANK|AXESS/i.test(text)) return 'Akbank';
+    if (/İŞ\s*BANKASI|IS\s*BANKASI|MAXIMUM/i.test(text)) return 'İş Bankası';
+    if (/ZİRAAT|ZIRAAT/i.test(text)) return 'Ziraat';
+    if (/ENPARA/i.test(text)) return 'Enpara';
+    return null;
+  }
+
+  function sectorCategory(line) {
+    var u = tr(line);
+    if (u.length > 48) return undefined;
+    if (/^AKARYAKIT\b/.test(u)) return 'Ulaşım';
+    if (/CAFE\s*&\s*RESTAURANT|^FAST FOOD|^PASTANE|^RESTORAN/.test(u)) return 'Yemek';
+    if (/^S[ÜU]PERMARKET|^MARKET/.test(u)) return 'Market';
+    if (/^G[İI]Y[İI]M|^HED[İI]YEL[İI]K/.test(u)) return 'Alışveriş';
+    if (/D[İI]ĞER HARCAMALARINIZ|PROGRAM ORTAKLARI/.test(u)) return null;
+    return undefined;
+  }
+
+  function keywordCategory(desc) {
+    var u = tr(desc);
+    if (/PETROL|PETRO\b|AKARYAKIT|\bSHELL\b|\bOPET\b|HEMTA[ŞS]|TOTAL ?ENERG|\bBP\b/.test(u)) return 'Ulaşım';
+    if (/PEGASUS|ISTANBULKART|İSTANBULKART|\bTHY\b|TÜRK HAVA|ANADOLUJET|OTOPARK/.test(u)) return 'Ulaşım';
+    if (/MARKET|M[İI]GROS|\bŞOK\b|\bSOK\b|\bA101\b|\bB[İI]M\b|CARREFOUR/.test(u)) return 'Market';
+    if (/TURKCELL|VODAFONE|TÜRK TELEKOM|TURKTELEKOM/.test(u)) return 'Fatura';
+    return null;
+  }
+
+  /* ---------- ekstre ayrıştırma ---------- */
+  function parseStatement(lines, forcedBank) {
+    var flat = lines.join(' ');
+    var bank = forcedBank || detectBank(flat) || 'Bilinmeyen';
+    var prof = PROFILES[bank] || PROFILES.generic;
+
+    var cutoff = null, re = /Hesap\s+Kesim\s+Tarihi\s*:?\s*(\d{1,2}\s+[A-Za-zÇĞİÖŞÜçğıöşü]+\s+\d{4})/gi, m;
+    while ((m = re.exec(flat))) {
+      if (/Sonraki/i.test(flat.slice(Math.max(0, m.index - 24), m.index))) continue;
+      cutoff = parseTrDate(m[1]); break;
+    }
+    var prev = null;
+    m = flat.match(/önceki\s+hesap\s+kesim\s+tarihiniz\s+(\d{1,2}\s+[A-Za-zÇĞİÖŞÜçğıöşü]+\s+\d{4})/i);
+    if (m) prev = parseTrDate(m[1]);
+    if (!prev && cutoff) prev = addMonths(cutoff, -1);
+
+    var total = null;
+    m = flat.match(/Dönem\s+Borcu(?:nuz)?\s*:?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/i);
+    if (m) total = toCents(m[1]);
+    var reported = null; // ekstrenin kendi bildirdiği dönem içi harcama toplamı
+    m = flat.match(/Dönem\s+İçi\s+Harcamalar\s*:?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/i);
+    if (m) reported = toCents(m[1]);
+    var feesRep = null;
+    m = flat.match(/Dönem\s+Harcamaları\s+Faiz\s+ve\s+Ücretler[\s\S]{0,40}?(\d{1,3}(?:\.\d{3})*,\d{2})\s*TL\s*\+\s*(\d{1,3}(?:\.\d{3})*,\d{2})\s*TL\s*[-+]/i);
+    if (m) { reported = toCents(m[1]); feesRep = toCents(m[2]); }
+
+    var items = [], credits = [], cur = null, sector = null, seenDate = false;
+    lines.forEach(function (line) {
+      var dm = line.match(DATE_START);
+      var mo = dm && MONTHS[dm[2].toLocaleLowerCase('tr-TR')];
+      if (dm && mo) {
+        seenDate = true;
+        var rest = line.slice(dm[0].length).trim();
+        var toks = Array.from(rest.matchAll(MONEY));
+        cur = null;
+        if (!toks.length) return;
+        var desc = rest.slice(0, toks[0].index).trim();
+        var pick = prof.amount === 'first' ? toks[0] : toks[toks.length - 1];
+        var cents = toCents(pick[2]);
+        var signed = ((pick[1] || '') + (pick[3] || '')).replace(/\s/g, '');
+        var d = iso(+dm[3], mo, +dm[1]);
+        if (signed || SKIP_DESC.test(tr(desc))) { credits.push({ d: d, desc: desc, cents: cents, sign: signed }); return; }
+        var it = { d: d, desc: desc, cents: cents, inst: null, sector: sector };
+        var im = rest.match(/x\s*(\d+)\s*=\s*[\d.,]+\s*(\d+)\s*\.?\s*Taksit/i);
+        if (im) it.inst = { n: +im[2], t: +im[1] };
+        items.push(it); cur = it;
+      } else {
+        var sc = sectorCategory(line);
+        if (sc !== undefined) { sector = sc; cur = null; }
+        else if (cur) {
+          var tm = line.match(/(\d+)\s*\/\s*(\d+)\s*taksid/i);
+          if (tm) cur.inst = { n: +tm[1], t: +tm[2] };
+        }
+      }
+    });
+
+    items.forEach(function (it) {
+      it.cat = it.sector || null;
+      it.catSrc = it.sector ? 'sector' : null;
+    });
+
+    var sum = items.reduce(function (s, it) { return s + it.cents; }, 0);
+    return { bank: bank, cutoff: cutoff, prev: prev, total: total, reported: reported, feesRep: feesRep,
+      items: items, credits: credits, sum: sum, profile: prof };
+  }
+
+  /* ---------- eşleştirme ---------- */
+  function parseInst(str) {
+    var m = String(str || '').match(/(\d+)\s*\/\s*(\d+)/);
+    return m ? { n: +m[1], t: +m[2] } : null;
+  }
+  function tokens(s) {
+    return tr(s).replace(/[^A-ZÇĞİÖŞÜ0-9 ]/g, ' ').split(/\s+/).filter(function (w) { return w.length >= 4 && !/^(TAKSIT|TAKSİT|MARKET)$/.test(w); });
+  }
+  function overlap(a, b) { var tb = tokens(b); return tokens(a).some(function (w) { return tb.indexOf(w) >= 0; }); }
+
+  function appCents(v) {
+    if (typeof v === 'number') return Math.round(v * 100);
+    var t = String(v == null ? '' : v).replace(/[^\d.,-]/g, '');
+    if (!t) return NaN;
+    var lc = t.lastIndexOf(','), ld = t.lastIndexOf('.');
+    if (lc >= 0 && ld >= 0) t = lc > ld ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+    else if (lc >= 0) t = t.replace(',', '.');
+    return Math.round(parseFloat(t) * 100);
+  }
+  function appDate(d) {
+    var t = String(d || '').trim(), m;
+    if ((m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return iso(+m[1], +m[2], +m[3]);
+    if ((m = t.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/))) return iso(+m[3], +m[2], +m[1]);
+    return null;
+  }
+  function bankKey(b) {
+    var u = tr(b);
+    if (/GARANT/.test(u)) return 'Garanti BBVA';
+    if (/YAPI/.test(u)) return 'Yapı Kredi';
+    return String(b || '').trim();
+  }
+  function normApp(r, i) {
+    var cents = appCents(r.a);
+    var inst = parseInst(r.inst);
+    if (!inst && /taksit|\(\d+\/\d+\)/i.test(r.x || '')) inst = parseInst(r.x);
+    return { i: i, d: appDate(r.d), b: bankKey(r.b), bRaw: r.b, c: r.c, x: r.x || '', cents: cents, inst: inst, raw: r };
+  }
+
+  function inWin(st, d, slack) {
+    return dayDiff(d, st.prev) > -slack && dayDiff(d, st.cutoff) <= slack;
+  }
+  function inWinStrict(st, d) { return dayDiff(d, st.prev) > 0 && dayDiff(d, st.cutoff) <= 0; }
+
+  function analyze(statements, ex, opts) {
+    opts = opts || {};
+    var sts = statements.filter(function (s) { return s.cutoff && s.prev; });
+    var S = [], A = [];
+    sts.forEach(function (st, si) { st.items.forEach(function (it, k) { S.push({ id: si + ':' + k, st: st, bank: st.bank, d: it.d, cents: it.cents, inst: it.inst, desc: it.desc, cat: it.cat, catSrc: it.catSrc }); }); });
+    var unread = 0;
+    (ex || []).forEach(function (r, i) { if (!r) return; var n = normApp(r, i); if (!n.d || isNaN(n.cents)) { unread++; return; } A.push(n); });
+
+    var usedS = {}, usedA = {}, pairs = [];
+    function pass(name, fn) {
+      var c = [];
+      S.forEach(function (s) { if (usedS[s.id]) return;
+        A.forEach(function (a) { if (usedA[a.i]) return; var cost = fn(s, a); if (cost !== null && cost !== undefined) c.push({ s: s, a: a, cost: cost }); }); });
+      c.sort(function (x, y) { return x.cost - y.cost; });
+      c.forEach(function (p) { if (usedS[p.s.id] || usedA[p.a.i]) return; usedS[p.s.id] = 1; usedA[p.a.i] = 1; pairs.push({ s: p.s, a: p.a, pass: name }); });
+    }
+    function sameFrac(x, y) { return x && y && x.n === y.n && x.t === y.t; }
+
+    pass('exact', function (s, a) {
+      if (a.b !== s.bank || a.cents !== s.cents) return null;
+      if (s.inst) {
+        if (!inWin(s.st, a.d, 10)) return null;
+        var dd = Math.min(30, Math.abs(dayDiff(a.d, s.d))) / 100;
+        if (sameFrac(a.inst, s.inst)) return 0.1 + dd;
+        if (a.inst) return 5 + dd;
+        return 6 + dd;
+      }
+      var df = Math.abs(dayDiff(a.d, s.d));
+      return df > 7 ? null : df;
+    });
+    pass('otherbank', function (s, a) {
+      if (a.b === s.bank || a.cents !== s.cents) return null;
+      if (s.inst) { if (!inWin(s.st, a.d, 10)) return null; return a.inst ? 1 : 3; }
+      var df = Math.abs(dayDiff(a.d, s.d));
+      return df > 10 ? null : df;
+    });
+    pass('amount', function (s, a) {
+      if (a.b !== s.bank) return null;
+      var df = Math.abs(dayDiff(a.d, s.d)), ratio = Math.min(a.cents, s.cents) / Math.max(a.cents, s.cents || 1);
+      if (s.inst && a.inst && sameFrac(a.inst, s.inst) && inWin(s.st, a.d, 10)) return 0.5;
+      if (s.inst || df > 1) return null;
+      if (ratio >= 0.7) return df + (1 - ratio);
+      return null;
+    });
+
+    var results = { ok: [], fix: [], missing: [], extra: [], next: [], cat: [] };
+
+    pairs.forEach(function (p) {
+      var s = p.s, a = p.a, fx = {}, notes = [], conf = 'high';
+      if (a.b !== s.bank) { fx.b = s.bank; notes.push('Kart: ' + a.b + ' → ' + s.bank); if (p.pass === 'otherbank' && !(s.inst && a.inst)) conf = 'mid'; }
+      if (a.cents !== s.cents) { fx.a = cents2str(s.cents); notes.push('Tutar: ' + fmtTL(a.cents) + ' → ' + fmtTL(s.cents)); conf = 'mid'; }
+      if (s.inst && (!a.inst || a.inst.n !== s.inst.n || a.inst.t !== s.inst.t)) {
+        fx.inst = s.inst.n + '/' + s.inst.t + ' Taksit';
+        notes.push('Taksit: ' + (a.inst ? a.inst.n + '/' + a.inst.t : 'yok') + ' → ' + s.inst.n + '/' + s.inst.t);
+        var nx = a.x; if (/\d+\s*\/\s*\d+/.test(nx)) nx = nx.replace(/\d+\s*\/\s*\d+/, s.inst.n + '/' + s.inst.t); fx.x = nx;
+        if (p.pass === 'otherbank' && Math.abs((a.inst ? a.inst.n : 0) - s.inst.n) > 1) conf = 'mid';
+      }
+      var wantDate = !s.inst || s.st.profile.instDateMonthly;
+      if (wantDate && a.d !== s.d && (!s.inst || Math.abs(dayDiff(a.d, s.d)) <= 10)) { fx.d = s.d; notes.push('Tarih: ' + a.d + ' → ' + s.d); }
+      if (Object.keys(fx).length) {
+        results.fix.push({ type: 'fix', a: a, s: s, fix: fx, notes: notes, conf: conf, fp: fp(a) });
+      } else results.ok.push({ type: 'ok', a: a, s: s });
+      if (s.cat && a.c && s.cat !== a.c) {
+        results.cat.push({ type: 'cat', a: a, s: s, fix: { c: s.cat }, notes: ['Kategori: ' + a.c + ' → ' + s.cat], conf: s.catSrc === 'kw' ? 'mid' : 'low', fp: fp(a) });
+      }
+    });
+
+    S.forEach(function (s) {
+      if (usedS[s.id]) return;
+      var why = '';
+      var same = A.filter(function (a) { return a.cents === s.cents; })
+        .sort(function (x, y) { return Math.abs(dayDiff(x.d, s.d)) - Math.abs(dayDiff(y.d, s.d)); })[0];
+      if (!same) why = 'Uygulamada ' + fmtTL(s.cents) + ' tutarında hiç kayıt yok.';
+      else if (usedA[same.i]) why = 'Aynı tutarlı kayıt (' + same.d + ', ' + same.bRaw + ') başka bir ekstre satırıyla eşleşti; bu satır için ikinci kayıt yok.';
+      else if (s.inst) why = 'Aynı tutarlı kayıt var (' + same.d + ', ' + same.bRaw + ') ama dönem aralığı/taksit uyuşmadı.';
+      else why = 'Aynı tutarlı en yakın kayıt: ' + same.d + ', ' + same.bRaw + ' — tarih farkı ' + Math.abs(dayDiff(same.d, s.d)) + ' gün.';
+      var near = A.filter(function (a) { return a.b === s.bank && Math.abs(dayDiff(a.d, s.d)) <= 3 && !s.inst; })
+        .map(function (a) { return a.d.slice(5) + ' ' + fmtTL(a.cents); });
+      if (!s.inst) why += near.length ? ' O tarihe yakın ' + s.bank + ' kayıtların: ' + near.join(' • ') : ' O tarihe yakın (±3 gün) ' + s.bank + ' kaydın hiç yok.';
+      results.missing.push({ type: 'missing', why: why, s: s, add: { d: s.d, c: s.cat || 'Diğer', b: s.bank, a: cents2str(s.cents), inst: s.inst ? s.inst.n + '/' + s.inst.t + ' Taksit' : '-', x: s.desc + (s.inst ? ' (' + s.inst.n + '/' + s.inst.t + ')' : '') }, conf: 'mid' });
+    });
+
+    A.forEach(function (a) {
+      if (usedA[a.i]) return;
+      var st = sts.filter(function (t) { return t.bank === a.b; });
+      if (!st.length) return;
+      var hit = st.filter(function (t) { return inWinStrict(t, a.d); })[0];
+      if (hit) {
+        var dup = pairs.some(function (p) { return p.a.b === a.b && p.a.cents === a.cents && Math.abs(dayDiff(p.a.d, a.d)) <= 40; });
+        results.extra.push({ type: 'extra', a: a, dup: dup, conf: dup ? 'mid' : 'low', fp: fp(a) });
+        return;
+      }
+      var after = st.filter(function (t) { var df = dayDiff(a.d, t.cutoff); return df > 0 && df <= 45; })[0];
+      if (after) results.next.push({ type: 'next', a: a, st: after });
+    });
+
+    results.unread = unread;
+    results.stats = { total: A.length, perStatement: sts.map(function (st) {
+      var inW = A.filter(function (a) { return a.b === st.bank && inWinStrict(st, a.d); });
+      var last = A.filter(function (a) { return a.b === st.bank; }).map(function (a) { return a.d; }).sort().pop() || '-';
+      return { bank: st.bank, cutoff: st.cutoff, inWin: inW.length, stItems: st.items.length, last: last };
+    }) };
+    return results;
+  }
+  function fp(a) { return [a.d, a.b, a.cents, a.x].join('|'); }
+
+  var API = { MONTHS: MONTHS, groupLines: groupLines, detectBank: detectBank, parseStatement: parseStatement,
+    analyze: analyze, normApp: normApp, fmtTL: fmtTL, parseTrDate: parseTrDate, dayDiff: dayDiff, fp: fp, cents2str: cents2str };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.MTSC = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script id="mtStmtCheckUi">
+/* MT Ekstre Kontrol – arayüz */
+(function () {
+  'use strict';
+  var C = window.MTSC;
+  var PDFJS_VER = '3.11.174';
+  var PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/';
+  var BACKUP_SUFFIX = 'ex_backup_stmtcheck';
+  var statements = [];   // {file, lines, bank, ...parsed}
+  var actions = [];      // son analizdeki işaretlenebilir işlemler
+  var pdfReady = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fmtD(d) { var p = String(d).split('-'); return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : d; }
+  function fmtC(c) { return C.fmtTL(c); }
+  function storageKey(s) { try { return currentStorageKey(s); } catch (e) { return 'mt_' + s; } }
+
+  /* ---------- pdf.js ---------- */
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    if (pdfReady) return pdfReady;
+    pdfReady = new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = PDFJS_BASE + 'pdf.min.js';
+      s.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.js'; res(); };
+      s.onerror = function () { pdfReady = null; rej(new Error('PDF okuyucu yüklenemedi. İnternet bağlantını kontrol edip tekrar dene.')); };
+      document.head.appendChild(s);
+    });
+    return pdfReady;
+  }
+
+  function readPdfLines(file) {
+    return file.arrayBuffer().then(function (buf) {
+      var task = window.pdfjsLib.getDocument({ data: new Uint8Array(buf) });
+      task.onPassword = function (update, reason) {
+        var p = window.prompt(reason === 2 ? 'Şifre yanlış. Tekrar dene:' : 'Bu PDF şifreli. Şifreyi gir:');
+        if (p === null) task.destroy(); else update(p);
+      };
+      return task.promise.then(function (doc) {
+        var all = [], chain = Promise.resolve();
+        for (var p = 1; p <= doc.numPages; p++) (function (n) {
+          chain = chain.then(function () { return doc.getPage(n); })
+            .then(function (pg) { return pg.getTextContent(); })
+            .then(function (tc) { all = all.concat(C.groupLines(tc.items)); });
+        })(p);
+        return chain.then(function () { return all; });
+      });
+    });
+  }
+
+  /* ---------- dosya işleme ---------- */
+  function setStatus(msg, kind) {
+    var el = $('scStatus'); if (!el) return;
+    el.className = 'sc-status' + (kind ? ' ' + kind : '');
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  function handleFiles(fileList) {
+    var files = Array.from(fileList || []).filter(function (f) { return /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name); });
+    if (!files.length) { setStatus('Lütfen PDF dosyası seç.', 'err'); return; }
+    setStatus('PDF okunuyor…');
+    loadPdfJs().then(function () {
+      var chain = Promise.resolve(), failed = [];
+      files.forEach(function (f) {
+        chain = chain.then(function () { return readPdfLines(f); }).then(function (lines) {
+          var st = C.parseStatement(lines);
+          st.file = f.name; st.lines = lines;
+          if (!st.items.length) { failed.push(f.name + ' (işlem satırı bulunamadı; taranmış/görsel PDF olabilir)'); return; }
+          statements = statements.filter(function (o) { return !(o.bank === st.bank && o.cutoff && o.cutoff === st.cutoff); });
+          statements.push(st);
+        }).catch(function (e) { failed.push(f.name + ' (' + (e && e.message ? e.message : 'okunamadı') + ')'); });
+      });
+      return chain.then(function () {
+        setStatus(failed.length ? 'Okunamayan dosya: ' + failed.join('; ') : '', failed.length ? 'err' : '');
+        refresh();
+      });
+    }).catch(function (e) { setStatus(e.message, 'err'); });
+  }
+
+  /* ---------- analiz & çizim ---------- */
+  function currentEx() {
+    try { if (typeof loadUserData === 'function') loadUserData(); } catch (e) {}
+    try { return Array.isArray(ex) ? ex : []; } catch (e) { return []; }
+  }
+
+  function stmtCard(st, i) {
+    var diffC = (st.reported != null ? st.reported : st.total);
+    var okSum = diffC == null ? null : Math.abs(st.sum - diffC) < 2;
+    var h = '<div class="sc-stmt">';
+    h += '<div class="sc-stmt-top"><b>' + esc(st.bank) + '</b><span class="sc-muted">' + esc(st.file) + '</span>' +
+      '<button type="button" class="sc-x" data-rm="' + i + '" title="Bu ekstreyi kaldır">×</button></div>';
+    if (st.bank === 'Bilinmeyen' || !st.cutoff) {
+      h += '<div class="sc-warn">Banka veya hesap kesim tarihi otomatik okunamadı. Elle seç:</div><div class="sc-fix-inputs">';
+      h += '<select data-bank="' + i + '">' + ['', 'Garanti BBVA', 'Yapı Kredi', 'Akbank', 'İş Bankası', 'Ziraat', 'Enpara'].map(function (b) { return '<option value="' + esc(b) + '"' + (b === st.bank ? ' selected' : '') + '>' + (b || 'Banka seç') + '</option>'; }).join('') + '</select>';
+      h += '<input type="date" data-cut="' + i + '" value="' + esc(st.cutoff || '') + '" title="Hesap kesim tarihi"></div>';
+    } else {
+      h += '<div class="sc-stmt-meta"><span>Kesim: <b>' + fmtD(st.cutoff) + '</b></span><span>Dönem: ' + fmtD(st.prev) + ' – ' + fmtD(st.cutoff) + '</span><span>' + st.items.length + ' işlem</span></div>';
+      if (okSum === true) h += '<div class="sc-ok">✓ Okunan toplam ekstre toplamıyla tutuyor (' + fmtC(st.sum) + ')</div>';
+      else if (okSum === false) h += '<div class="sc-warn">⚠ Okunan toplam ' + fmtC(st.sum) + ', ekstre toplamı ' + fmtC(diffC) + '. Fark: ' + fmtC(Math.abs(st.sum - diffC)) + ' — bazı satırlar okunamamış ya da iade/ücret kalemi olabilir; sonuçları buna göre değerlendir.</div>';
+    }
+    return h + '</div>';
+  }
+
+  function chip(t, k) { return '<span class="sc-chip ' + (k || '') + '">' + esc(t) + '</span>'; }
+  function recLine(a) {
+    return '<b>' + fmtD(a.d) + '</b> · ' + esc(a.b) + ' · ' + fmtC(a.cents) + (a.inst ? ' · ' + a.inst.n + '/' + a.inst.t : '') + (a.x && !/^\s*\d+\s*\/\s*\d+\s*taksit\s*$/i.test(a.x) ? ' · <span class="sc-muted">' + esc(a.x) + '</span>' : '') + (a.c ? ' <span class="sc-cat">' + esc(a.c) + '</span>' : '');
+  }
+  function stLine(s) {
+    return '<b>' + fmtD(s.d) + '</b> · ' + esc(s.bank) + ' · ' + fmtC(s.cents) + (s.inst ? ' · ' + s.inst.n + '/' + s.inst.t : '') + ' · <span class="sc-muted">' + esc(s.desc) + '</span>';
+  }
+
+  function section(title, count, cls, body, open, hint) {
+    if (!count) return '';
+    return '<details class="sc-sec ' + cls + '"' + (open ? ' open' : '') + '><summary><span>' + title + '</span><em>' + count + '</em></summary>' + (hint ? '<div class="sc-sec-hint">' + hint + '</div>' : '') + '<div class="sc-list">' + body + '</div></details>';
+  }
+  function row(act, checked, mainHtml, subHtml) {
+    var k = actions.push(act) - 1;
+    return '<label class="sc-row"><input type="checkbox" class="sc-chk" data-k="' + k + '"' + (checked ? ' checked' : '') + '><div class="sc-main"><div class="sc-l1">' + mainHtml + '</div>' + (subHtml ? '<div class="sc-l2">' + subHtml + '</div>' : '') + '</div></label>';
+  }
+
+  function refresh() {
+    var box = $('scStatements'), res = $('scResults'); if (!box || !res) return;
+    actions = [];
+    box.innerHTML = statements.map(stmtCard).join('');
+    updateUndo();
+    var ready = statements.filter(function (s) { return s.cutoff && s.prev; });
+    if (!ready.length) { res.innerHTML = statements.length ? '' : '<div class="sc-empty">Henüz ekstre yüklenmedi.</div>'; return; }
+    if (typeof currentUser !== 'undefined' && !currentUser) { res.innerHTML = '<div class="sc-warn">Karşılaştırma için önce giriş yapmalısın.</div>'; return; }
+
+    var r = C.analyze(ready, currentEx());
+    var sum = '<div class="sc-summary">' +
+      '<div class="sc-sum good"><b>' + r.ok.length + '</b><span>Doğru eşleşen</span></div>' +
+      '<div class="sc-sum ' + (r.fix.length ? 'warn' : 'good') + '"><b>' + r.fix.length + '</b><span>Düzeltilecek</span></div>' +
+      '<div class="sc-sum ' + (r.missing.length ? 'warn' : 'good') + '"><b>' + r.missing.length + '</b><span>Eksik kayıt</span></div>' +
+      '<div class="sc-sum ' + (r.extra.length ? 'bad' : 'good') + '"><b>' + r.extra.length + '</b><span>Ekstrede yok</span></div></div>';
+
+    var fixHtml = r.fix.map(function (f) {
+      return row(f, f.conf === 'high', recLine(f.a), 'Ekstre: ' + esc(f.s.desc) + '<br>' + f.notes.map(function (n) { return chip(n, 'fix'); }).join(' ') + (f.conf !== 'high' ? ' ' + chip('düşük güven — kontrol et', 'low') : ''));
+    }).join('');
+    var missHtml = r.missing.map(function (m) {
+      return row(m, false, stLine(m.s), chip('Uygulamada karşılığı bulunamadı', 'fix') + '<br>' + esc(m.why));
+    }).join('');
+    var extraHtml = r.extra.map(function (e) {
+      return row(e, false, recLine(e.a), chip(e.dup ? 'Olası çift kayıt (aynı tutar ekstrede bir kez geçiyor)' : 'Bu dönemde ekstrede karşılığı yok', 'bad'));
+    }).join('');
+    var catHtml = r.cat.map(function (c) {
+      return row(c, false, recLine(c.a), 'Ekstre: ' + esc(c.s.desc) + '<br>' + chip(c.notes[0], 'cat'));
+    }).join('');
+    var nextHtml = r.next.map(function (n) {
+      return '<div class="sc-row static"><div class="sc-main"><div class="sc-l1">' + recLine(n.a) + '</div></div></div>';
+    }).join('');
+    var okHtml = r.ok.map(function (o) {
+      return '<div class="sc-row static"><div class="sc-main"><div class="sc-l1">' + recLine(o.a) + '</div></div></div>';
+    }).join('');
+
+    var unreadNote = r.unread ? '<div class="sc-warn">⚠ ' + r.unread + ' kaydın tarihi/tutarı okunamadı, karşılaştırmaya katılmadı.</div>' : '';
+    var statNote = '<div class="sc-muted" style="margin:6px 2px">Uygulamadan okunan kayıt: <b>' + r.stats.total + '</b> · ' + r.stats.perStatement.map(function (p) { return esc(p.bank) + ' dönem içinde ' + p.inWin + ' kayıt (ekstrede ' + p.stItems + ' işlem, en yeni kayıt ' + fmtD(p.last) + ')'; }).join(' · ') + '</div>';
+    var body = sum + statNote + unreadNote +
+      section('⚠ Düzeltilmesi gerekenler', r.fix.length, 'warn', fixHtml, true, 'Kart, tarih, taksit no veya tutar ekstreyle uyuşmuyor. Yüksek güvenli olanlar işaretli geliyor.') +
+      section('➕ Ekstrede var, uygulamada yok', r.missing.length, 'warn', missHtml, true, 'İşaretleyip uygularsan kayıt olarak eklenir.') +
+      section('✖ Uygulamada var, ekstrede yok', r.extra.length, 'bad', extraHtml, true, 'Kesim tarihi içinde kalıp ekstrede görünmeyen kayıtlar. İşaretlersen silinir; emin değilsen dokunma.') +
+      section('🏷 Kategori önerileri', r.cat.length, 'cat', catHtml, false, 'Ekstredeki işyeri türüne göre öneri; tutarlar doğru, sadece kategori farkı.') +
+      section('⏭ Sonraki ekstreye ait kayıtlar', r.next.length, 'info', nextHtml, false, 'Kesim tarihinden sonra olduğu için bu ekstrede doğrulanamadı.') +
+      section('✓ Doğru eşleşenler', r.ok.length, 'good', okHtml, false);
+
+    var bar = '';
+    if (r.fix.length + r.missing.length + r.extra.length + r.cat.length) {
+      bar = '<div class="sc-bar"><div id="scSelCount" class="sc-muted"></div><div class="sc-bar-btns">' +
+        '<button type="button" id="scApply">Seçilenleri uygula</button></div></div>';
+    } else {
+      bar = '<div class="sc-ok sc-big">🎉 Seçili dönemlerde kayıtların ekstrelerle birebir uyumlu.</div>';
+    }
+    res.innerHTML = body + bar;
+    updateCount();
+  }
+
+  function updateCount() {
+    var n = document.querySelectorAll('#scResults .sc-chk:checked').length;
+    var el = $('scSelCount'); if (el) el.textContent = n + ' işlem seçili';
+    var b = $('scApply'); if (b) { b.disabled = !n; b.style.opacity = n ? '' : '.5'; }
+  }
+
+  /* ---------- uygulama ---------- */
+  function recomputeStatementMonth(rec) {
+    try {
+      var parts = rec.d.split('-').map(Number), sy = parts[0], sm = parts[1], sd = parts[2];
+      var cutoff = parseInt(bankCutoffDays[rec.b], 10) || 0;
+      if (cutoff >= 1 && cutoff <= 31 && sd <= cutoff) { sm -= 1; if (sm === 0) { sm = 12; sy -= 1; } }
+      rec.statementMonth = sy + '-' + String(sm).padStart(2, '0');
+    } catch (e) {}
+  }
+
+  function persist(list, backup) {
+    if (backup != null) { try { localStorage.setItem(storageKey(BACKUP_SUFFIX), backup); } catch (e) {} }
+    localStorage.setItem(storageKey('ex'), JSON.stringify(list));
+    window.ex = list;
+    try { if (window.cloudSync) window.cloudSync.pushAll(); } catch (e) {}
+    try { if (typeof rd === 'function') rd(); } catch (e) {}
+  }
+
+  function applySelected() {
+    var picked = Array.from(document.querySelectorAll('#scResults .sc-chk:checked')).map(function (i) { return actions[+i.dataset.k]; }).filter(Boolean);
+    if (!picked.length) return;
+    var list = currentEx();
+    var backup = JSON.stringify(list);
+    var edits = {}, adds = [], dels = [], skipped = 0;
+
+    picked.forEach(function (p) {
+      if (p.type === 'fix' || p.type === 'cat') {
+        var cur = list[p.a.i];
+        if (!cur || C.fp(C.normApp(cur, p.a.i)) !== p.fp) { skipped++; return; }
+        edits[p.a.i] = Object.assign(edits[p.a.i] || {}, p.fix);
+      } else if (p.type === 'extra') {
+        var c2 = list[p.a.i];
+        if (!c2 || C.fp(C.normApp(c2, p.a.i)) !== p.fp) { skipped++; return; }
+        dels.push(p.a.i);
+      } else if (p.type === 'missing') adds.push(p.add);
+    });
+    var nEdit = Object.keys(edits).length;
+    var msg = 'Şunlar uygulanacak:\n• ' + nEdit + ' kayıt düzeltilecek\n• ' + adds.length + ' kayıt eklenecek\n• ' + dels.length + ' kayıt silinecek' +
+      (skipped ? '\n\n(' + skipped + ' işlem, kayıt analizden sonra değiştiği için atlanacak)' : '') + '\n\nDevam edilsin mi? (Sonrasında “Son işlemi geri al” ile dönebilirsin.)';
+    if (!window.confirm(msg)) return;
+
+    Object.keys(edits).forEach(function (k) {
+      var rec = list[k], f = edits[k];
+      Object.keys(f).forEach(function (key) { rec[key] = f[key]; });
+      if (rec.installmentAuto && (f.b || f.d)) recomputeStatementMonth(rec);
+    });
+    adds.forEach(function (a) { list.push(Object.assign({}, a)); });
+    dels.sort(function (x, y) { return y - x; }).forEach(function (i) { list.splice(i, 1); });
+    persist(list, backup);
+    setStatus('✓ ' + nEdit + ' düzeltme, ' + adds.length + ' ekleme, ' + dels.length + ' silme uygulandı.', 'ok');
+    refresh();
+  }
+
+  function hasBackup() { try { return !!localStorage.getItem(storageKey(BACKUP_SUFFIX)); } catch (e) { return false; } }
+  function updateUndo() { var b = $('scUndo'); if (b) b.style.display = hasBackup() ? '' : 'none'; }
+  function undo() {
+    var raw; try { raw = localStorage.getItem(storageKey(BACKUP_SUFFIX)); } catch (e) {}
+    if (!raw) return;
+    if (!window.confirm('Ekstre kontrolünden önceki duruma dönülsün mü? Bundan sonra yaptığın değişiklikler de geri alınır.')) return;
+    currentEx();
+    persist(JSON.parse(raw), null);
+    try { localStorage.removeItem(storageKey(BACKUP_SUFFIX)); } catch (e) {}
+    setStatus('Önceki duruma dönüldü.', 'ok');
+    refresh();
+  }
+
+  /* ---------- olaylar ---------- */
+  function init() {
+    var f = $('scFile'); if (!f || f.dataset.bound) return; f.dataset.bound = '1';
+    f.addEventListener('change', function () { handleFiles(f.files); f.value = ''; });
+    var drop = $('scDrop');
+    ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+    drop.addEventListener('drop', function (e) { handleFiles(e.dataTransfer && e.dataTransfer.files); });
+
+    var root = $('mod_stmtcheck');
+    root.addEventListener('change', function (e) {
+      var t = e.target;
+      if (t.classList.contains('sc-chk')) updateCount();
+      if (t.dataset.bank !== undefined || t.dataset.cut !== undefined) {
+        var i = +(t.dataset.bank !== undefined ? t.dataset.bank : t.dataset.cut), st = statements[i]; if (!st) return;
+        var bankSel = root.querySelector('[data-bank="' + i + '"]'), cutIn = root.querySelector('[data-cut="' + i + '"]');
+        var ns = C.parseStatement(st.lines, bankSel && bankSel.value || null);
+        ns.file = st.file; ns.lines = st.lines;
+        if (cutIn && cutIn.value) { ns.cutoff = cutIn.value; ns.prev = addMonths(ns.cutoff); }
+        statements[i] = ns; refresh();
+      }
+    });
+    root.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.id === 'scApply') applySelected();
+      if (t.id === 'scUndo') undo();
+      if (t.dataset && t.dataset.rm !== undefined) { statements.splice(+t.dataset.rm, 1); refresh(); }
+    });
+    refresh();
+  }
+  function addMonths(d) {
+    var p = d.split('-').map(Number), y = p[0], m = p[1] - 1, day = p[2];
+    if (m < 1) { m += 12; y--; }
+    var last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return y + '-' + String(m).padStart(2, '0') + '-' + String(Math.min(day, last)).padStart(2, '0');
+  }
+
+  var origNav = window.appNavigate;
+  if (typeof origNav === 'function') {
+    window.appNavigate = function (page) {
+      var r = origNav.apply(this, arguments);
+      if (page === 'stmtcheck') { init(); refresh(); }
+      return r;
+    };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  window.MTSC_UI = { refresh: refresh, handleFiles: handleFiles };
+})();
+
 </script>
 </body>
 </html>

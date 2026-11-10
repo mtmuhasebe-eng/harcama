@@ -1486,7 +1486,7 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
 
     const defaultLayout = {
         left: ['mod_income_summary', 'mod_summary', 'mod_income', 'mod_history', 'mod_excel', 'mod_addexpense', 'mod_recurring'],
-        right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment', 'mod_stmtcheck']
+        right: ['mod_banks', 'mod_cutoffs', 'mod_bankstats', 'mod_addinstallment', 'mod_instlist', 'mod_backup', 'mod_stmtcheck']
     };
 
     function showApp() {
@@ -1558,6 +1558,8 @@ td{padding:9px 7px!important;background:rgba(10,31,51,.72);border-bottom:1px sol
             'mod_cutoffs',
             'mod_bankstats',
             'mod_addinstallment',
+            'mod_instlist',
+            'mod_backup',
             'mod_stmtcheck'
         ];
 
@@ -4164,6 +4166,7 @@ function rd() {
 .mt-ir-main{min-width:0;flex:1;line-height:1.5}
 .mt-ir-btns{display:flex;gap:6px;flex:none}
 .mt-ir.done{opacity:.55}
+#mtEyeBtn,#mtChatBtn{border-radius:50%!important;aspect-ratio:1/1;}
 #mtEyeBtn{position:fixed;right:18px;bottom:18px;width:44px;height:44px;border-radius:50%;border:1px solid var(--border-color);background:var(--box-bg);color:var(--text-color);font-size:20px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:1300;box-shadow:0 4px 14px rgba(0,0,0,.3);padding:0;min-height:0}
 @media(max-width:600px){
   #mtEyeBtn{bottom:78px;right:12px;width:42px;height:42px}
@@ -4489,7 +4492,7 @@ function rd() {
 
 <style id="mtChatCss">
 #mtChatBtn{position:fixed;right:18px;bottom:72px;width:44px;height:44px;border-radius:50%;border:0;background:linear-gradient(135deg,#087cff,#0b5fe8);color:#fff;font-size:20px;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:1300;box-shadow:0 4px 14px rgba(0,0,0,.35);padding:0;min-height:0}
-#mtChat{display:none;position:fixed;right:18px;bottom:128px;width:380px;max-width:calc(100vw - 24px);height:min(540px,calc(100vh - 150px));background:var(--box-bg);color:var(--text-color);border:1px solid var(--border-color);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.45);z-index:1500;flex-direction:column;overflow:hidden}
+#mtChat{display:none;position:fixed;right:18px;bottom:24px;width:380px;max-width:calc(100vw - 24px);height:min(540px,calc(100vh - 150px));background:var(--box-bg);color:var(--text-color);border:1px solid var(--border-color);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.45);z-index:1500;flex-direction:column;overflow:hidden}
 #mtChat.open{display:flex}
 .mtc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border-color);font-weight:700;font-size:14px}
 .mtc-head small{display:block;font-weight:400;font-size:11px;opacity:.7}
@@ -4849,6 +4852,24 @@ function rd() {
 })();
 </script>
 
+<style id="mtHdrToolsCss">
+.mt-hdr-right{display:flex;align-items:center;gap:8px;flex:none}
+#mtEyeBtn.mt-hdr-btn,#mtChatBtn.mt-hdr-btn{position:static!important;width:38px!important;height:38px!important;right:auto!important;bottom:auto!important;box-shadow:none!important;flex:none;font-size:18px}
+</style>
+<script id="mtHeaderTools">
+(function(){
+  function place(){
+    var um=document.querySelector('.user-menu-container'), c=document.getElementById('mtChatBtn'), e=document.getElementById('mtEyeBtn');
+    if(!um||!c||!e||um.parentElement.classList.contains('mt-hdr-right')) return;
+    var w=document.createElement('div'); w.className='mt-hdr-right';
+    um.parentElement.insertBefore(w,um);
+    [c,e].forEach(function(b){b.classList.add('mt-hdr-btn');w.appendChild(b);});
+    w.appendChild(um);
+  }
+  place();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',place);
+})();
+</script>
 </body>
 </html>
 <script>

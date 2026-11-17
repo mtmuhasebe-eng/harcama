@@ -664,8 +664,8 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
 
         <h2 id="authTitle" style="color:var(--primary-color); margin-top:0;">🔐 Giriş Yap</h2>
         <form id="authForm">
-            <input type="text" id="authUsername" placeholder="Kullanıcı Adı" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-            <input type="password" id="authPassword" placeholder="Şifre" required>
+            <input type="text" id="authUsername" name="username" placeholder="Kullanıcı Adı" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+            <input type="password" id="authPassword" name="password" placeholder="Şifre" autocomplete="current-password" required>
             <div id="mtRememberRow" style="display:flex;align-items:center;margin:2px 1px 9px;">
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:#8fa3bd;user-select:none;">
                 <input type="checkbox" id="mtRememberUsername" style="width:15px!important;height:15px!important;margin:0!important;accent-color:#2587ff;">
@@ -823,7 +823,7 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
             </div>
             <div class="mt-report-grid">
                 <section class="mt-report-panel mt-report-wide"><div class="mt-report-title"><b>Aylık Harcama Trendi</b><span id="mtRptTrendLabel">Son 12 ay</span></div><div id="mtRptBars" class="mt-report-bars"></div></section>
-                <section class="mt-report-panel"><div class="mt-report-title"><b>Kategori Dağılımı</b><span>Harcama payları</span></div><div id="mtRptCategories" class="mt-report-list"></div></section>
+                <section class="mt-report-panel"><div class="mt-report-title"><b>Kategori Dağılımı</b><span>Harcama payları</span></div><div class="mt-report-donut-wrap"><div id="mtRptCatDonut" class="mt-report-donut" role="img" aria-label="Kategori harcama dağılımı"><div class="mt-report-donut-center"><strong id="mtRptCatDonutTotal">0 TL</strong><small>Toplam</small></div></div></div><div id="mtRptCategories" class="mt-report-list"></div></section>
                 <section class="mt-report-panel"><div class="mt-report-title"><b>Banka / Kart Dağılımı</b><span>Kullanım özeti</span></div><div id="mtRptBanks" class="mt-report-list"></div></section>
             </div>
             <section class="mt-report-panel mt-report-monthly-panel"><div class="mt-report-title"><b>Geçmiş Aylar Toplamı</b><span>Ay ay gelir, harcama ve kalan</span></div><div class="mt-report-table-wrap"><table class="mt-report-table"><thead><tr><th>Ay</th><th>Toplam Gelir</th><th>Toplam Harcama</th><th>Kalan</th><th>İşlem</th></tr></thead><tbody id="mtRptMonthlyRows"></tbody></table></div></section>
@@ -3010,6 +3010,27 @@ function rd() {
         }
     }
 
+    window.mtAddExpenseFromAssistant = function(data) {
+        if (!currentUser) return false;
+        loadUserData();
+        const date = String(data?.d || ''), category = String(data?.c || ''), bank = String(data?.b || '');
+        let amountText = String(data?.a ?? '').replace(/\s/g, '');
+        if(amountText.includes(',')) amountText = amountText.replace(/\./g, '').replace(',', '.');
+        else if(/^\d{1,3}(?:\.\d{3})+$/.test(amountText)) amountText = amountText.replace(/\./g, '');
+        const amount = Number(amountText);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !category || !bank || !Number.isFinite(amount) || amount <= 0) return false;
+        const bankSelect = document.getElementById('b');
+        if (bankSelect && ![...bankSelect.options].some(o => o.value === bank || o.textContent.trim() === bank)) return false;
+        const itemData = {d:date,c:category,b:bank,a:amount.toFixed(2),inst:'-',x:String(data?.x || '').trim()};
+        const dup = ex.find(e => e.d === itemData.d && e.b === itemData.b && Math.abs((parseFloat(e.a)||0) - amount) < 0.005);
+        if (dup && !confirm('Aynı gün, aynı banka ve aynı tutarda bir kayıt zaten var (' + (dup.x || dup.c) + '). Yine de eklensin mi?')) return false;
+        ex.push(itemData);
+        localStorage.setItem(currentStorageKey('ex'), JSON.stringify(ex));
+        window.ex = ex;
+        if (window.cloudSync) window.cloudSync.pushAll();
+        rd();
+        return true;
+    };
     document.addEventListener('submit', e => {
         if(e.target && e.target.id === 'f') {
             e.preventDefault();
@@ -3382,7 +3403,14 @@ function rd() {
 @media(max-width:900px){#mod_excel .mt-report-kpis{grid-template-columns:1fr 1fr}#mod_excel .mt-report-grid{grid-template-columns:1fr}#mod_excel .mt-report-wide{grid-row:auto}}
 @media(max-width:600px){#mod_excel .mt-report-head{flex-direction:column}#mod_excel .mt-report-tools{width:100%}#mod_excel .mt-report-tools select{flex:1}#mod_excel .mt-report-kpis{grid-template-columns:1fr 1fr;gap:7px}#mod_excel .mt-report-kpi{padding:11px;min-height:82px}#mod_excel .mt-report-kpi strong{font-size:15px}#mod_excel .mt-report-grid{gap:8px}#mod_excel .mt-report-bars{height:210px;gap:3px}.mt-rbar-v{display:none}.mt-rbar-l{font-size:7px}#mod_excel .mt-report-panel{padding:11px}.mt-rlist-row{grid-template-columns:85px 1fr auto}}
 </style>
-<style id="mtHistoryFilterPagingStyle">
+<style id="mtReportDonutStyle">
+#mod_excel .mt-report-donut-wrap{display:flex;justify-content:center;padding:4px 0 16px}
+#mod_excel .mt-report-donut{width:168px;height:168px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(#243b53 0 100%);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+#mod_excel .mt-report-donut-center{width:108px;height:108px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b1b2d;border:1px solid rgba(125,160,190,.2);text-align:center;padding:8px}
+#mod_excel .mt-report-donut-center strong{font-size:15px;line-height:1.2;color:#f1f7ff;max-width:100%;overflow-wrap:anywhere}
+#mod_excel .mt-report-donut-center small{font-size:9px;color:#8fa9c1;margin-top:4px;text-transform:uppercase;letter-spacing:.7px}
+@media(max-width:600px){#mod_excel .mt-report-donut{width:148px;height:148px}#mod_excel .mt-report-donut-center{width:96px;height:96px}#mod_excel .mt-report-donut-center strong{font-size:13px}}
+</style><style id="mtHistoryFilterPagingStyle">
 .mt-history-pagination{display:flex;justify-content:center;align-items:center;gap:5px;flex-wrap:wrap;margin-top:10px}.mt-history-pagination button{width:auto!important;min-width:32px;padding:5px 9px!important;margin:0!important;background:var(--tc191,#102a43);color:#dcecff;border:1px solid var(--tc192,#2b5578);border-radius:6px;font-size:10px}.mt-history-pagination button.active{background:var(--tc193,#2478e8);border-color:var(--tc193,#2478e8)}.mt-history-pagination button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:600px){#historyCategoryFilter,#historyBankFilter,#historyPageSize{min-width:120px!important;flex:1}.mt-report-tools select,.mt-report-tools button{min-width:calc(50% - 5px)!important;flex:1}}
 </style>
@@ -3428,6 +3456,13 @@ function rd() {
    if(useDateRange)keys=Object.keys(monthMap).sort();else if(chosenMonth)keys=[chosenMonth];else if(period==='all')keys=Object.keys(monthMap).sort();else for(let i=(+period)-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);keys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
    const peak=Math.max(1,...keys.map(k=>monthMap[k]||0)),bars=document.getElementById('mtRptBars');if(bars)bars.innerHTML=keys.map(k=>`<div class="mt-rbar"><span class="mt-rbar-v">${moneyR(monthMap[k]||0).replace(' TL','')}</span><div class="mt-rbar-fill" style="height:${Math.max(2,((monthMap[k]||0)/peak)*82)}%"></div><span class="mt-rbar-l">${monthLabelR(k)}</span></div>`).join('');set('mtRptTrendLabel',useDateRange?'Seçilen tarih aralığı':(chosenMonth?monthLabelR(chosenMonth):(period==='all'?'Tüm zamanlar':'Son '+period+' ay')));
    function dist(id,field){const map={};rows.forEach(x=>{const k=String(x[field]||'Belirsiz');map[k]=(map[k]||0)+numR(x.a)});const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]),el=document.getElementById(id);if(!el)return;el.innerHTML=arr.length?arr.slice(0,7).map(([k,v])=>`<div class="mt-rlist-row"><span class="mt-rlist-name">${escR(k)}</span><div class="mt-rlist-track"><div class="mt-rlist-fill" style="width:${total?Math.max(2,v/total*100):0}%"></div></div><span class="mt-rlist-val">${moneyR(v)}</span></div>`).join(''):'<div class="mt-report-empty">Bu dönem için harcama yok.</div>'}dist('mtRptCategories','c');dist('mtRptBanks','b');
+    const categoryMap={};rows.forEach(x=>{const k=String(x.c||'Belirsiz');categoryMap[k]=(categoryMap[k]||0)+numR(x.a)});
+    const categoryEntries=Object.entries(categoryMap).sort((a,b)=>b[1]-a[1]);
+    const chartColors=['#4f9cff','#38d9c5','#a78bfa','#f59e0b','#fb7185','#60a5fa','#a3e635','#f472b6','#22d3ee','#f97316','#c084fc','#34d399'];
+    let chartPct=0;
+    const chartStops=categoryEntries.map(([name,value],i)=>{const start=chartPct;chartPct+=total?value/total*100:0;return `${chartColors[i%chartColors.length]} ${start}% ${chartPct}%`;});
+    const donut=document.getElementById('mtRptCatDonut');if(donut){donut.style.background=chartStops.length?`conic-gradient(${chartStops.join(',')})`:'conic-gradient(#243b53 0 100%)';donut.setAttribute('aria-label',categoryEntries.map(([name,value])=>name+': '+moneyR(value)).join(', ')||'Bu dönem için harcama yok');}
+    const donutTotal=document.getElementById('mtRptCatDonutTotal');if(donutTotal)donutTotal.textContent=moneyR(total);
    const tbody=document.getElementById('mtRptRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,100).map(x=>`<tr><td>${escR(x.d||'—')}</td><td>${escR(x.c||'—')}</td><td>${escR(x.b||'—')}</td><td>${escR(x.x||'—')}</td><td class="mt-report-amount">${moneyR(numR(x.a))}</td></tr>`).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Bu dönem için işlem bulunamadı.</div></td></tr>';set('mtRptTableCount',rows.length+' kayıt');set('mtRptGrandTotal',moneyR(total));
  };
  const root=document.getElementById('mod_excel');if(root){new MutationObserver(()=>{if(root.classList.contains('app-page-visible'))setTimeout(window.mtRenderReports,0)}).observe(root,{attributes:true,attributeFilter:['class']});}
@@ -4530,7 +4565,7 @@ function rd() {
   <div class="mtc-head"><div>🤖 Harcama Asistanı<small>Sorularını yaz, verilerinden cevaplayayım</small></div><div><button type="button" id="mtChatClear" title="Sohbeti temizle">🗑</button><button type="button" id="mtChatClose" title="Kapat">✕</button></div></div>
   <div id="mtChatMsgs"></div>
   <div id="mtChatChips"></div>
-  <div class="mtc-in"><input id="mtChatIn" type="text" placeholder="Örn: bu ay ne kadar harcadım?" autocomplete="off" enterkeyhint="send"><button type="button" id="mtChatSend">Gönder</button></div>
+  <div class="mtc-in"><input id="mtChatIn" type="text" placeholder="Örn: Bugün markete 420 TL harcadım" autocomplete="off" enterkeyhint="send"><button type="button" id="mtChatSend">Gönder</button></div>
 </div>
 <script id="mtAssistant">
 (function(){
@@ -4688,6 +4723,8 @@ function rd() {
     return Math.max(1, Math.round((b - a) / 86400000) + 1);
   }
   const line = it => fd(it.d) + ' · ' + money(amt(it)) + ' · ' + (it.c || '-') + ' · ' + (it.b || '-') + (it.x ? ' · ' + it.x : '');
+  const detailLine = it => fd(it.d) + ' · ' + (it.b || '-') + ' · ' + (it.c || '-') + ' · ' + money(amt(it));
+  function detailAnswer(title, list){ const rows=[...list].sort((a,b)=>String(b.d).localeCompare(String(a.d))); return title + (rows.length ? '\n' + rows.map(detailLine).join('\n') + '\n\nToplam: ' + money(sum(rows)) : '\nBu dönemde kayıt bulamadım.'); }
   function head(range, cat, bank, term, today, only){
     const extra = [];
     if (cat) extra.push(cat.name); if (bank) extra.push(bank.name); if (term) extra.push('"' + term.join(' ') + '"');
@@ -4774,9 +4811,11 @@ function rd() {
     if (!range) range = term ? {from: '0000-00-00', to: '9999-99-99', label: 'Tüm zamanlar'} : {kind: 'stmt', offset: 0, label: 'Bu ay (hesap kesim dönemi)'};
 
     /* Güncel borç özeti ve detay (Ana Sayfa'daki banka kartlarıyla aynı mantık) */
-    const hasDetail = /detay|ayrinti|dokum|listele|harcamalarini goster|harcamalari goster/.test(q);
+    const hasDetail = /detay|ayrinti|dokum|listele|harcamalarini goster|harcamalari goster|harcamalarim|harcamalar|harcama|harcadim/.test(q);
     const isThisMonth = !hadRange || (range && range.kind === 'stmt' && !range.offset);
     const wantNext = /gelecek|sonraki ekstre|ileri/.test(q);
+    if (hasDetail && !wantNext && !/borc|borcum/.test(q)) return detailAnswer(head(range, cat, bank, term, today), filterItems(items, range, cat, bank, term, today));
+
     if (ctx.bankStats && !cat && !term && !special && isThisMonth) {
       const rows = ctx.rows || [];
       const banksAll = Object.keys(ctx.bankStats).filter(b => ctx.bankStats[b].total > 0)
@@ -4786,15 +4825,17 @@ function rd() {
       const cyc = wantNext ? ['nextMonth'] : ['thisMonth', 'past'];
       if (hasDetail) {
         let out = '🧾 ' + (wantNext ? 'Gelecek ekstre' : 'Güncel borç (bu ekstre)') + ' detayı';
-        const cap = sel.length === 1 ? 40 : 10;
+        let detailTotal = 0, shown = 0;
+        const cap = sel.length === 1 ? 40 : 20;
         sel.forEach(b => {
           const l2 = rows.filter(x => x.b === b && !x.statementPaid && cyc.includes(x.cycle)).sort((a, z) => String(z.d).localeCompare(String(a.d)));
           if (!l2.length) return;
-          out += '\n\n💳 ' + b + ' — ' + money(sum(l2)) + ' (' + l2.length + ' işlem)';
-          l2.slice(0, cap).forEach(it => { out += '\n' + fd(it.d) + ' · ' + money(amt(it)) + ' · ' + (it.c || '-') + (it.x ? ' · ' + it.x : ''); });
-          if (l2.length > cap) out += '\n… ve ' + (l2.length - cap) + ' kayıt daha' + (sel.length > 1 ? ' ("' + b + ' detay" yaz)' : '');
+          out += '\n\n💳 ' + b;
+          l2.slice(0, cap).forEach(it => { out += '\n' + detailLine(it); shown++; });
+          detailTotal += sum(l2);
+          if (l2.length > cap) out += '\n… ve ' + (l2.length - cap) + ' kayıt daha';
         });
-        return out.indexOf('💳') < 0 ? out + '\nBu ekstrede kayıt yok. Sonraki dönem için "gelecek ekstre detay" yaz.' : out;
+        return !shown ? out + '\nBu ekstrede kayıt yok. Sonraki dönem için "gelecek ekstre detay" yaz.' : out + '\n\nToplam: ' + money(detailTotal);
       }
       let totThis = 0, totNext = 0, out = '💳 Güncel borç (ödenmemiş ekstre)';
       sel.forEach(b => {
@@ -4847,6 +4888,9 @@ function rd() {
       return h + '\nBu filtrede kayıt bulamadım.';
     }
 
+    const asksExpenseList = hasDetail || /harcadim|harcadigim|harcamalarimi/.test(q);
+    const genericCalendarRange = range && range.kind !== 'stmt' && /bugun|bu hafta|son hafta|gecen hafta|takvim ay/.test(q);
+    if (asksExpenseList || genericCalendarRange) return detailAnswer(h, list);
     if (asksTop) {
       let n = 5; const mn = q.replace(/son \d+ (gun|ay)/g, '').match(/\b(\d{1,2})\b/); if (mn) n = Math.min(20, Math.max(1, +mn[1]));
       if (/\ben (buyuk|yuksek|pahali) (harcamam|harcama|islem)\b(?!lar)/.test(q) && !mn && !/harcamalar/.test(q)) n = 1;
@@ -4898,7 +4942,7 @@ function rd() {
     try { loadUserData(); } catch (_) {}
     try { if (!window.__mtBankStats && typeof rd === 'function') rd(); } catch (_) {}
     const c = {now: new Date(), ex: (typeof ex !== 'undefined' ? ex : []) || [], bankStats: window.__mtBankStats, rows: window.__mtIndexedEx};
-    try { c.cutoffs = Object.assign({}, typeof bankCutoffDays !== 'undefined' ? bankCutoffDays : {}); c.banks = Object.keys(c.cutoffs); } catch (_) { c.banks = []; c.cutoffs = {}; }
+    try { c.cutoffs = Object.assign({}, typeof bankCutoffDays !== 'undefined' ? bankCutoffDays : {}); c.banks = [...(document.getElementById('b')?.options || [])].map(o => o.value || o.textContent.trim()).filter(Boolean); if(!c.banks.length)c.banks = Object.keys(c.cutoffs); c.categories = [...(document.getElementById('c')?.options || [])].map(o => o.value || o.textContent.trim()).filter(Boolean); } catch (_) { c.banks = []; c.categories = []; c.cutoffs = {}; }
     try { if (typeof topThisMonthByBankCutoff === 'function') c.homeMonth = topThisMonthByBankCutoff(); } catch (_) {}
     try {
       const cm = ymd(c.now).slice(0, 7);
@@ -4916,17 +4960,58 @@ function rd() {
     box.appendChild(b);
     box.scrollTop = box.scrollHeight;
   }
-  function ask(text){
+  function parseNaturalExpense(raw, ctx){
+    const q=nz(raw), command=/harcama ekle|harcama kaydet|masraf ekle|kaydet harcama/.test(q);
+    const intent=command||/harcad|harcadigim|od edim|odedim|aldim|satin aldim|harcamaya kaydet/.test(q);
+    if(!intent)return null;
+    const dateMatch=String(raw).match(/\b(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4})\b/);
+    const withoutDate=String(raw).replace(dateMatch?.[0]||'',' ');
+    let am=withoutDate.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(?:₺|TL|lira)(?![a-z])/i);
+    if(!am)am=withoutDate.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/);
+    let amount='';
+    if(am){let n=am[1].replace(/\s/g,'');if(n.includes(','))n=n.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(?:\.\d{3})+$/.test(n))n=n.replace(/\./g,'');amount=String(Number(n)||'');}
+    if(!amount&&!command)return null;
+    const now=ctx.now||new Date();let date=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    if(/\bdun\b/.test(q)){const d=new Date(now);d.setDate(d.getDate()-1);date=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+    if(dateMatch){const p=dateMatch[0];if(/^\d{4}-/.test(p)){const z=p.split('-').map(Number);date=z[0]+'-'+String(z[1]).padStart(2,'0')+'-'+String(z[2]).padStart(2,'0');}else{const z=p.split(/[.\/-]/).map(Number);date=z[2]+'-'+String(z[1]).padStart(2,'0')+'-'+String(z[0]).padStart(2,'0');}}
+    const banks=ctx.banks||[],cats=ctx.categories||[];
+    const bank=banks.find(v=>q.includes(nz(v)))||(banks.length===1?banks[0]:'');
+    let category=cats.find(v=>nz(v)!=='diger'&&q.includes(nz(v)))||'';
+    if(!category){const hints=[[/market|bakkal/,'market'],[/kahve|yemek|restoran|kafe|lokanta/,'yemek'],[/ulasim|benzin|taksi|otobus|otopark|akaryakit/,'ulasim'],[/fatura|internet|telefon|elektrik|su faturasi/,'fatura'],[/alisveris|giyim|kiyafet/,'alisveris']];const hit=hints.find(([re])=>re.test(q));if(hit)category=cats.find(v=>nz(v)===hit[1])||'';}
+    const amountText=am?am[0]:'';
+    let desc=String(raw).replace(amountText,' ').replace(dateMatch?.[0]||'',' ').replace(/\b(bugun|bugün|dun|dün|harcadim|harcadım|harcadigim|harcadığım|harcadik|harcadık|odedim|ödedim|aldim|aldım|satin aldim|satın aldım|harcama|ekle|kaydet|tl|lira)\b/gi,' ').replace(/[₺]/g,' ').replace(/\s+/g,' ').trim().replace(/^[,.;:-]+|[,.;:-]+$/g,'');
+    return {d:date,c:category,b:bank,a:amount,x:desc};
+  }
+  function addExpenseDraft(data,ctx){
+    const box=$('mtChatMsgs');if(!box)return;
+    const card=document.createElement('div');card.className='mtc-b bot mtc-expense-draft';card.style.maxWidth='100%';card.style.width='100%';card.style.boxSizing='border-box';
+    const title=document.createElement('strong');title.textContent='Harcama taslağı · kontrol edip kaydet';title.style.display='block';title.style.marginBottom='8px';card.appendChild(title);
+    const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:7px';card.appendChild(grid);
+    const field=(labelText,el)=>{const wrap=document.createElement('label');wrap.style.cssText='display:grid;gap:3px;font-size:10px;opacity:.9';const label=document.createElement('span');label.textContent=labelText;wrap.appendChild(label);el.style.cssText+=';width:100%;min-width:0;box-sizing:border-box;margin:0;padding:7px;border:1px solid var(--border-color);border-radius:7px;background:var(--box-bg);color:var(--text-color);font-size:13px';wrap.appendChild(el);grid.appendChild(wrap);};
+    const date=document.createElement('input');date.type='date';date.value=data.d;field('Tarih',date);
+    const bank=document.createElement('select');bank.required=true;const b0=document.createElement('option');b0.value='';b0.textContent='Banka seç';bank.appendChild(b0);(ctx.banks||[]).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;bank.appendChild(o);});bank.value=data.b||'';field('Banka',bank);
+    const cat=document.createElement('select');cat.required=true;const c0=document.createElement('option');c0.value='';c0.textContent='Kategori seç';cat.appendChild(c0);(ctx.categories||[]).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;cat.appendChild(o);});cat.value=data.c||'';field('Kategori',cat);
+    const amount=document.createElement('input');amount.type='text';amount.inputMode='decimal';amount.placeholder='Tutar (TL)';amount.value=data.a||'';field('Tutar',amount);
+    const desc=document.createElement('input');desc.type='text';desc.placeholder='Açıklama';desc.value=data.x||'';const descWrap=document.createElement('label');descWrap.style.cssText='display:grid;gap:3px;font-size:10px;opacity:.9;grid-column:1/-1';const descLabel=document.createElement('span');descLabel.textContent='Açıklama';descWrap.appendChild(descLabel);desc.style.cssText='width:100%;box-sizing:border-box;margin:0;padding:7px;border:1px solid var(--border-color);border-radius:7px;background:var(--box-bg);color:var(--text-color);font-size:13px';descWrap.appendChild(desc);grid.appendChild(descWrap);
+    const status=document.createElement('div');status.style.cssText='font-size:11px;color:#f0b35b;margin-top:6px;display:none';card.appendChild(status);
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;margin-top:8px';card.appendChild(actions);
+    const save=document.createElement('button');save.type='button';save.textContent='Kaydet';save.style.cssText='flex:1;padding:8px;border:0;border-radius:8px;background:#168653;color:#fff;font-weight:700';
+    const cancel=document.createElement('button');cancel.type='button';cancel.textContent='İptal';cancel.style.cssText='padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-color)';
+    actions.append(save,cancel);
+    save.addEventListener('click',()=>{const value={d:date.value,c:cat.value,b:bank.value,a:amount.value,x:desc.value};if(!value.d||!value.c||!value.b||!(Number(String(value.a).replace(/\s/g,'').replace(',','.'))>0)){status.textContent='Tarih, banka, kategori ve geçerli tutarı doldur.';status.style.display='block';return;}if(typeof window.mtAddExpenseFromAssistant!=='function'||!window.mtAddExpenseFromAssistant(value)){status.textContent='Kayıt eklenemedi. Bilgileri kontrol edip tekrar dene.';status.style.display='block';return;}card.remove();addMsg('✅ Harcama kaydedildi: '+value.d+' · '+value.b+' · '+value.c+' · '+money(Number(String(value.a).replace(',','.'))),'bot');});
+    cancel.addEventListener('click',()=>card.remove());box.appendChild(card);box.scrollTop=box.scrollHeight;
+  }  function ask(text){
     text = String(text || '').trim();
     if (!text) return;
     addMsg(text, 'me');
     let res;
-    try { res = answer(text, ctxNow()); } catch (e) { console.error(e); res = 'Bu soruyu cevaplarken bir hata oldu. Başka türlü sormayı dener misin?'; }
+    const ctx=ctxNow();
+    try { const draft=parseNaturalExpense(text,ctx); if(draft){addExpenseDraft(draft,ctx);return;} res = answer(text, ctx); } catch (e) { console.error(e); res = 'Bu soruyu cevaplarken bir hata oldu. Başka türlü sormayı dener misin?'; }
     addMsg(res, 'bot');
   }
   function reset(){
     const box = $('mtChatMsgs'); if (box) box.innerHTML = '';
-    addMsg('Merhaba! Harcamalarınla ilgili soru sorabilirsin. Aşağıdaki örneklere dokunabilir ya da kendin yazabilirsin.', 'bot');
+    addMsg('Merhaba! Harcamalarınla ilgili soru sorabilir, “Bugün markete 420 TL harcadım” gibi yazarak yeni kayıt oluşturabilirsin. Kayıt onayından önce bilgileri kontrol edebilirsin.', 'bot');
   }
   function fitPanel(){
     const p = $('mtChat'); if (!p || !p.classList.contains('open')) return;
@@ -4953,7 +5038,7 @@ function rd() {
     if (!vis) toggle(false);
   }
   function init(){
-    const chips = ['Bu ay', 'Bu ay detay', 'Geçen aya göre', 'En büyük 5 harcama', 'Kategori dağılımı', 'Taksitlerim', 'Son harcamalarım'];
+    const chips = ['Bu ay', 'Bu ay detay', 'Bugün ne harcadım?', 'Geçen aya göre', 'En büyük 5 harcama', 'Kategori dağılımı', 'Taksitlerim', 'Son harcamalarım'];
     const cb = $('mtChatChips');
     if (cb) chips.forEach(t => { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.addEventListener('click', () => ask(t)); cb.appendChild(b); });
     $('mtChatBtn').addEventListener('click', () => toggle());

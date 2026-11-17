@@ -2076,56 +2076,25 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head
         }, 0);
     }
 
-    // Yalnızca ANA SAYFA üstteki "BU AY" kartı için:
-    // Her banka kendi hesap kesim gününe göre değerlendirilir.
-    // Örn. kesim 4 => ayın 5'i ve sonrası; kesim 6 => ayın 7'si ve sonrası.
-    // Düzenli/taksit otomatik kayıtlarında varsa statementMonth önceliklidir.
+    // Ana sayfa toplamlarında son ödeme ayı esas alınır; banka kesim tarihleri
+    // getItemDueDateDetails içinde uygulanır.
     function topThisMonthByBankCutoff() {
         const now = new Date();
-        const cm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        const cm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
         return ex.reduce((sum, x) => {
             const cutoff = parseInt(bankCutoffDays[x.b], 10) || 0;
-            let statementMonth = '';
-
-            if (x.statementMonth) {
-                statementMonth = String(x.statementMonth);
-            } else {
-                const ds = String(x.d || '');
-                const parts = ds.split('-').map(Number);
-                if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return sum;
-
-                let y = parts[0], m = parts[1], d = parts[2];
-                if (cutoff >= 1 && cutoff <= 31 && d <= cutoff) {
-                    m -= 1;
-                    if (m === 0) { m = 12; y -= 1; }
-                }
-                statementMonth = `${y}-${String(m).padStart(2,'0')}`;
-            }
-
-            if (statementMonth !== cm) return sum;
-
-            const details = getItemDueDateDetails(x, cutoff);
-            if (isStatementPaid(x.b, details.dueDateStr)) return sum;
-
+            const dueDate = getItemDueDateDetails(x, cutoff).dueDateStr;
+            if (!dueDate || String(dueDate).slice(0, 7) !== cm) return sum;
+            if (isStatementPaid(x.b, dueDate)) return sum;
             return sum + (Number(String(x.a).replace(',', '.')) || 0);
         }, 0);
     }
 
     function currentMonthExpenseAfterPayments() {
-        // Üstteki “BU AY” kartı yalnızca takvim ayını esas alır:
-        // ayın 1'i ile son günü arasındaki, henüz ödenmemiş işlemler.
-        // Banka hesap kesim günü bu karta etki etmez.
-        const cm = new Date().toISOString().slice(0,7);
-        return ex.reduce((sum, x) => {
-            if (monthKey(x.d) !== cm) return sum;
-            const cutoff = bankCutoffDays[x.b] !== undefined ? bankCutoffDays[x.b] : 0;
-            const details = getItemDueDateDetails(x, cutoff);
-            if (isStatementPaid(x.b, details.dueDateStr)) return sum;
-            return sum + (Number(String(x.a).replace(',', '.')) || 0);
-        }, 0);
+        // Gelir/Kalan kartı ile ana sayfadaki Bu Ay kartı aynı ekstre hesabını kullanır.
+        return topThisMonthByBankCutoff();
     }
-
     function activeStatementSummary() {
         const items = ex.map((item, index) => {
             const cutoff = bankCutoffDays[item.b] !== undefined ? bankCutoffDays[item.b] : 0;
@@ -5171,10 +5140,24 @@ function rd() {
 </script>
 
 <style id="mtHdrToolsCss">
-.mt-hdr-right{display:flex;align-items:center;gap:8px;flex:none}
-#mtEyeBtn.mt-hdr-btn{position:static!important;width:88px!important;min-width:88px!important;height:42px!important;aspect-ratio:auto!important;right:auto!important;bottom:auto!important;box-shadow:none!important;flex:none}
-#mtChatBtn.mt-hdr-btn{position:static!important;width:38px!important;height:38px!important;right:auto!important;bottom:auto!important;box-shadow:none!important;flex:none;font-size:18px}
-</style>
+.mt-hdr-right{display:flex;align-items:center;gap:9px;flex:none}
+#mtEyeBtn.mt-hdr-btn{position:static!important;width:82px!important;min-width:82px!important;height:40px!important;aspect-ratio:auto!important;right:auto!important;bottom:auto!important;box-shadow:none!important;flex:none}
+#mtEyeBtn.mt-hdr-btn .mt-hide-track{width:78px;height:40px;padding:4px}
+#mtEyeBtn.mt-hdr-btn .mt-hide-knob{width:30px;height:30px}
+#mtEyeBtn.mt-hdr-btn .mt-hide-knob svg{width:18px;height:18px}
+#mtEyeBtn.mt-hdr-btn.is-on .mt-hide-knob{transform:translateX(38px)}
+#mtChatBtn.mt-hdr-btn{position:static!important;width:40px!important;height:40px!important;right:auto!important;bottom:auto!important;box-shadow:0 5px 16px rgba(91,43,163,.24)!important;flex:none;font-size:18px;background:linear-gradient(145deg,#873bf4,#6425d0)!important;border:1px solid rgba(207,178,255,.38)!important;border-radius:50%!important;color:#fff!important;transition:transform .16s ease,box-shadow .16s ease}
+#mtChatBtn.mt-hdr-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(117,59,202,.36)!important}
+#mtChatBtn.mt-hdr-btn:focus-visible,#mtEyeBtn.mt-hdr-btn:focus-visible{outline:2px solid #c7a3ff;outline-offset:3px}
+@media(max-width:600px){
+  .mt-hdr-right{gap:5px}
+  #mtEyeBtn.mt-hdr-btn{width:66px!important;min-width:66px!important;height:34px!important}
+  #mtEyeBtn.mt-hdr-btn .mt-hide-track{width:62px;height:34px;padding:3px}
+  #mtEyeBtn.mt-hdr-btn .mt-hide-knob{width:26px;height:26px}
+  #mtEyeBtn.mt-hdr-btn .mt-hide-knob svg{width:16px;height:16px}
+  #mtEyeBtn.mt-hdr-btn.is-on .mt-hide-knob{transform:translateX(30px)}
+  #mtChatBtn.mt-hdr-btn{width:34px!important;height:34px!important;font-size:16px}
+}</style>
 <script id="mtHeaderTools">
 (function(){
   function place(){

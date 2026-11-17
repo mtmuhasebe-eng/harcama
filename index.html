@@ -666,10 +666,14 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
         <form id="authForm">
             <input type="text" id="authUsername" name="username" placeholder="Kullanıcı Adı" autocomplete="username" autocapitalize="none" spellcheck="false" required>
             <input type="password" id="authPassword" name="password" placeholder="Şifre" autocomplete="current-password" required>
-            <div id="mtRememberRow" style="display:flex;align-items:center;margin:2px 1px 9px;">
+            <div id="mtRememberRow" style="display:flex;flex-direction:column;align-items:flex-start;gap:7px;margin:2px 1px 9px;">
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:#8fa3bd;user-select:none;">
                 <input type="checkbox" id="mtRememberUsername" style="width:15px!important;height:15px!important;margin:0!important;accent-color:#2587ff;">
                 Kullanıcı adımı hatırla
+              </label>
+              <label title="Yalnızca kişisel, ekran kilidi olan cihazında seç. Şifren uygulamada saklanmaz; oturum açık kalır." style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:#8fa3bd;user-select:none;">
+                <input type="checkbox" id="mtRememberSession" style="width:15px!important;height:15px!important;margin:0!important;accent-color:#2587ff;">
+                Bu cihazda oturumu açık tut <span style="opacity:.7">(kişisel cihaz)</span>
               </label>
             </div>
 
@@ -1268,10 +1272,16 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
             check.checked = true;
         }
     }
+    function loadRememberedSessionPreference() {
+        const check = document.getElementById("mtRememberSession");
+        if (!check) return;
+        try { check.checked = localStorage.getItem("mtRememberSession") === "1"; } catch (_) { check.checked = false; }
+    }
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", loadRememberedUsername);
+        document.addEventListener("DOMContentLoaded", () => { loadRememberedUsername(); loadRememberedSessionPreference(); });
     } else {
         loadRememberedUsername();
+        loadRememberedSessionPreference();
     }
     function isAdminUser() { return String(currentUser || '').toLocaleLowerCase('tr-TR') === ADMIN_USERNAME.toLocaleLowerCase('tr-TR'); }
     const ADMIN_REGISTRY_KEY='mtAdminUserRegistryV2';
@@ -1342,8 +1352,9 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
         document.getElementById('loginScreen').style.display = 'block';
         const form = document.getElementById('authForm');
         if (form) form.reset();
-        // Form sıfırlansa bile cihazda hatırlanan kullanıcı adını yeniden yükle.
+        // Form sıfırlansa bile cihaz tercihlerini yeniden yükle.
         loadRememberedUsername();
+        loadRememberedSessionPreference();
         const adminBtn=document.getElementById('adminUsersBtn'); if(adminBtn) adminBtn.style.display='none';
         const adminDrop=document.getElementById('adminUsersDropdownItem'); if(adminDrop) adminDrop.style.display='none';
     }
@@ -1416,6 +1427,9 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
         btn.textContent = "İşleniyor...";
 
         try {
+            const keepSession = !!document.getElementById('mtRememberSession')?.checked;
+            await window.fbAuth.setPersistence(keepSession ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
+            try { localStorage.setItem('mtRememberSession', keepSession ? '1' : '0'); } catch (_) {}
             let cred;
             try {
                 cred = await window.fbAuth.signInWithEmailAndPassword(email, password);
@@ -1470,10 +1484,10 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
             return;
         }
 
-        // Oturum aynı tarayıcı sekmesinde sayfa yenilendiğinde korunur.
-        // Tarayıcı/sekme oturumu sona erdiğinde Firebase oturumu da kalıcı tutulmaz.
+        // Kullanıcı yalnızca kişisel cihazda seçtiyse Firebase oturumu tarayıcı kapanınca da korunur.
         try {
-            await window.fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+            const keepSession = localStorage.getItem('mtRememberSession') === '1';
+            await window.fbAuth.setPersistence(keepSession ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION);
         } catch (e) {
             console.error("Oturum kalıcılığı ayarlanamadı:", e);
         }
@@ -3492,6 +3506,9 @@ function rd() {
   function resetIdleTimer(){
     if (!window.currentAuthUser) return;
     clearTimeout(idleTimer);
+    let keepSession = false;
+    try { keepSession = localStorage.getItem('mtRememberSession') === '1'; } catch (_) {}
+    if (keepSession) return;
     idleTimer = setTimeout(async () => {
       if (!window.currentAuthUser) return;
       try { await logout(); } catch (_) { try { await window.fbAuth.signOut(); } catch(__) {} setSignedOutUI(); }

@@ -715,7 +715,20 @@ body[data-theme="dark"] .pro-sidebar{background:linear-gradient(180deg,#121d2c,#
 body[data-theme="dark"] .pro-banner{background:linear-gradient(110deg,rgba(22,37,56,.96),rgba(14,24,37,.92))!important;border-color:#293b52!important}
 body[data-theme="dark"] .dropdown-content,body[data-theme="dark"] .modal-content{background:linear-gradient(145deg,#172538,#0f1927)!important;border-color:#31465f!important}
 body[data-theme="dark"] h2,body[data-theme="dark"] .pro-banner strong{color:#dceaff!important}
-body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head>
+body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style id="mtActiveStatementHomeCss">
+.mt-active-statement-list{margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color)}
+.mt-active-list-title{font-size:12px;font-weight:700;color:var(--text-color);margin:2px 0 8px}
+.mt-active-statement-group{margin:8px 0;border:1px solid var(--border-color);border-radius:10px;background:var(--card-bg);overflow:hidden}
+.mt-active-statement-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 10px;background:rgba(47,140,255,.07)}
+.mt-active-statement-head strong{display:block;font-size:12px;color:var(--text-color)}.mt-active-statement-head small{display:block;font-size:10px;color:var(--muted);margin-top:3px}
+.mt-active-statement-head>b{font-size:12px;white-space:nowrap;color:var(--text-color)}
+.mt-active-paid{min-height:32px!important;padding:5px 9px!important;font-size:11px!important;border-radius:8px!important;background:linear-gradient(135deg,#16875f,#22ad79)!important;white-space:nowrap}
+.mt-active-expense-row{display:grid;grid-template-columns:74px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid var(--border-color);font-size:11px}
+.mt-active-expense-row time{color:var(--muted);font-size:10px}.mt-active-expense-row strong{display:block;color:var(--text-color);font-size:11px}.mt-active-expense-row small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.mt-active-expense-row>b{white-space:nowrap;color:var(--text-color);font-size:11px}
+.mt-active-empty{font-size:11px;color:var(--muted);padding:8px 2px}
+@media(max-width:600px){.mt-active-statement-head{grid-template-columns:minmax(0,1fr) auto;gap:7px}.mt-active-paid{grid-column:1/-1;width:100%!important}.mt-active-expense-row{grid-template-columns:58px minmax(0,1fr) auto;gap:6px;padding:7px 8px}}
+</style>
+</head>
 <body id="mainBody" data-theme="light">
     <div id="sessionLoadingScreen" aria-live="polite">
       <div class="session-loading-inner">
@@ -1026,8 +1039,9 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head
                 <div class="income-cards">
                     <div class="income-card"><small>Ekstre Geliri</small><b id="statementIncomeCard">0.00 TL</b></div>
                     <div class="income-card"><small>Ekstre Harcanan</small><b id="statementExpenseCard">0.00 TL</b></div>
-                    <div class="income-card"><small>Ekstre Kalan</small><b id="statementRemainingCard">0.00 TL</b></div>
+                    <div class="income-card"><small>Aktif Ekstre Kalan</small><b id="statementRemainingCard">0.00 TL</b></div>
                 </div>
+                <div id="activeStatementExpenseList" class="mt-active-statement-list" aria-live="polite"></div>
             </div>
         </div>
 
@@ -2076,24 +2090,14 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head
         }, 0);
     }
 
-    // Ana sayfa toplamlarında son ödeme ayı esas alınır; banka kesim tarihleri
-    // getItemDueDateDetails içinde uygulanır.
+    // Ana sayfa toplamında her bankanın en eski ödenmemiş ekstresi kullanılır.
+    // Ödeme işaretlenince aynı bankanın sıradaki ekstresi aktif olur.
     function topThisMonthByBankCutoff() {
-        const now = new Date();
-        const cm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-        return ex.reduce((sum, x) => {
-            const cutoff = parseInt(bankCutoffDays[x.b], 10) || 0;
-            const dueDate = getItemDueDateDetails(x, cutoff).dueDateStr;
-            if (!dueDate || String(dueDate).slice(0, 7) !== cm) return sum;
-            if (isStatementPaid(x.b, dueDate)) return sum;
-            return sum + (Number(String(x.a).replace(',', '.')) || 0);
-        }, 0);
+        return activeStatementSummary().expense;
     }
 
     function currentMonthExpenseAfterPayments() {
-        // Gelir/Kalan kartı ile ana sayfadaki Bu Ay kartı aynı ekstre hesabını kullanır.
-        return topThisMonthByBankCutoff();
+        return activeStatementSummary().expense;
     }
     function activeStatementSummary() {
         const items = ex.map((item, index) => {
@@ -2101,29 +2105,27 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head
             const details = getItemDueDateDetails(item, cutoff);
             return { ...item, originalIndex:index, dueDate:details.dueDateStr, statementPaid:isStatementPaid(item.b, details.dueDateStr) };
         });
-
-        // Her banka için en eski ödenmemiş ekstre aktif kalır. "Ödendi" denince
-        // aynı bankanın sıradaki ekstresi otomatik olarak aktif olur.
         const activeDueByBank = {};
         items.forEach(item => {
             if (item.statementPaid) return;
             if (!activeDueByBank[item.b] || item.dueDate < activeDueByBank[item.b]) activeDueByBank[item.b] = item.dueDate;
         });
-
         let expense = 0;
         const periodLabels = [];
+        const statements = [];
         Object.keys(activeDueByBank).sort((a,b)=>a.localeCompare(b,'tr')).forEach(bank => {
             const dueDate = activeDueByBank[bank];
-            const bankItems = items.filter(x => x.b === bank && !x.statementPaid && x.dueDate === dueDate);
-            bankItems.forEach(x => expense += Number(String(x.a).replace(',', '.')) || 0);
-
+            const bankItems = items.filter(x => x.b === bank && !x.statementPaid && x.dueDate === dueDate)
+                .sort((a,b)=>String(b.d).localeCompare(String(a.d)));
+            const amount = bankItems.reduce((sum,x)=>sum+(Number(String(x.a).replace(',', '.'))||0),0);
+            expense += amount;
             const cutoff = parseInt(bankCutoffDays[bank],10) || 0;
+            let period = 'Kesim günü yok';
             if (cutoff >= 1 && cutoff <= 31 && bankItems.length) {
-                // Dönem, bu ekstreye ait ilk gün ile kesim günü arasındadır.
                 const end = new Date(bankItems[0].d + 'T00:00:00');
-                const d = end.getDate();
+                const day = end.getDate();
                 let endY=end.getFullYear(), endM=end.getMonth();
-                if (d > cutoff) { endM += 1; if(endM>11){endM=0;endY+=1;} }
+                if (day > cutoff) { endM += 1; if(endM>11){endM=0;endY+=1;} }
                 const endLast = new Date(endY,endM+1,0).getDate();
                 const endDate = new Date(endY,endM,Math.min(cutoff,endLast));
                 let startY=endDate.getFullYear(), startM=endDate.getMonth()-1;
@@ -2132,20 +2134,33 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head
                 const startDate=new Date(startY,startM,Math.min(cutoff,startLast));
                 startDate.setDate(startDate.getDate()+1);
                 const fmt=x=>`${String(x.getDate()).padStart(2,'0')}.${String(x.getMonth()+1).padStart(2,'0')}.${x.getFullYear()}`;
-                periodLabels.push(`${bank}: ${fmt(startDate)}–${fmt(endDate)}`);
-            } else {
-                periodLabels.push(`${bank}: kesim günü yok`);
+                period = `${fmt(startDate)}–${fmt(endDate)}`;
             }
+            periodLabels.push(`${bank}: ${period}`);
+            statements.push({bank,dueDate,amount,period,items:bankItems});
         });
-
-        // Gelir kartı mevcut gelir mantığını korur; aktif ekstre borcu buna karşı gösterilir.
         const now = new Date();
-        const cm = now.toISOString().slice(0,7);
+        const cm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         const monthlyExtra = extraIncomes.filter(x => monthKey(x.date) === cm).reduce((sum,x)=>sum+(Number(x.amount)||0),0);
         const income = salary + monthlyExtra;
-        return { income, expense, remaining: income-expense, label: periodLabels.length ? periodLabels.join(' • ') : 'Aktif ödenmemiş ekstre yok' };
+        return { income, expense, remaining: income-expense, label: periodLabels.length ? periodLabels.join(' • ') : 'Aktif ödenmemiş ekstre yok', statements };
     }
 
+    function renderActiveStatementExpenses(statements) {
+        const root = document.getElementById('activeStatementExpenseList');
+        if (!root) return;
+        const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        const dateLabel = value => { const p=String(value||'').slice(0,10).split('-'); return p.length===3 ? `${p[2]}.${p[1]}.${p[0]}` : esc(value); };
+        if (!statements.length) { root.innerHTML = '<div class="mt-active-empty">Aktif ödenmemiş ekstre yok.</div>'; return; }
+        root.innerHTML = '<div class="mt-active-list-title">Kesim dönemine ait harcamalar</div>' + statements.map(statement => `
+            <section class="mt-active-statement-group">
+              <div class="mt-active-statement-head"><div><strong>${esc(statement.bank)}</strong><small>${esc(statement.period)} · Son ödeme ${dateLabel(statement.dueDate)}</small></div><b>${money(statement.amount)}</b><button type="button" class="mt-active-paid" data-active-paid data-bank="${esc(statement.bank)}" data-due="${esc(statement.dueDate)}" data-amount="${statement.amount}">✓ Ödendi</button></div>
+              <div class="mt-active-expense-rows">${statement.items.map(item => `<div class="mt-active-expense-row"><time>${dateLabel(item.d)}</time><div><strong>${esc(item.c || 'Harcama')}</strong><small>${esc(item.x || '')}</small></div><b>${money(Number(String(item.a).replace(',', '.')) || 0)}</b></div>`).join('')}</div>
+            </section>`).join('');
+        root.querySelectorAll('[data-active-paid]').forEach(button => button.addEventListener('click', () => {
+            if (typeof window.markStatementPaid === 'function') window.markStatementPaid(encodeURIComponent(button.dataset.bank || ''), button.dataset.due || '', Number(button.dataset.amount) || 0);
+        }));
+    }
     function updateIncomeCards() {
         if(!currentUser) return;
         loadUserData();
@@ -2162,7 +2177,9 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head
         // Ana sayfadaki "Bu Ay Harcama", satın alma tarihinin ayı değil,
         // henüz ödenmemiş GÜNCEL / GECİKMİŞ ekstre borcudur.
         // Böylece "Ödendi" denilen ekstre anında bu toplamdan çıkar.
-        const monthlyExpense = currentMonthExpenseAfterPayments();
+        const statementSummary = activeStatementSummary();
+        const monthlyExpense = statementSummary.expense;
+        renderActiveStatementExpenses(statementSummary.statements);
 
         const remaining = monthlyIncome - monthlyExpense;
 
@@ -2175,7 +2192,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style></head
         setText('incomeExpenseCard', monthlyExpense);
         setText('incomeRemainingCard', remaining);
 
-        const statementSummary = activeStatementSummary();
+
         setText('statementIncomeCard', statementSummary.income);
         setText('statementExpenseCard', statementSummary.expense);
         setText('statementRemainingCard', statementSummary.remaining);

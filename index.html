@@ -622,6 +622,7 @@ td{padding:9px 7px!important;background:var(--tc52,rgba(10,31,51,.72));border-bo
 #mod_stmtcheck .sc-fix-inputs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 #mod_stmtcheck .sc-fix-inputs select,#mod_stmtcheck .sc-fix-inputs input{flex:1;min-width:140px;margin:0}
 #mod_stmtcheck .sc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 10px}
+#mod_stmtcheck .sc-summary.two{grid-template-columns:repeat(2,1fr)}
 #mod_stmtcheck .sc-sum{padding:10px 8px;border-radius:12px;background:var(--card-bg);border:1px solid var(--border-color);text-align:center}
 #mod_stmtcheck .sc-sum b{display:block;font-size:22px;line-height:1.1}#mod_stmtcheck .sc-sum span{font-size:11px;color:var(--muted)}
 #mod_stmtcheck .sc-sum.good b{color:#6fe3a2}#mod_stmtcheck .sc-sum.warn b{color:#ffc470}#mod_stmtcheck .sc-sum.bad b{color:#ff8e8a}
@@ -715,19 +716,7 @@ body[data-theme="dark"] .pro-sidebar{background:linear-gradient(180deg,#121d2c,#
 body[data-theme="dark"] .pro-banner{background:linear-gradient(110deg,rgba(22,37,56,.96),rgba(14,24,37,.92))!important;border-color:#293b52!important}
 body[data-theme="dark"] .dropdown-content,body[data-theme="dark"] .modal-content{background:linear-gradient(145deg,#172538,#0f1927)!important;border-color:#31465f!important}
 body[data-theme="dark"] h2,body[data-theme="dark"] .pro-banner strong{color:#dceaff!important}
-body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style id="mtActiveStatementHomeCss">
-.mt-active-statement-list{margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color)}
-.mt-active-list-title{font-size:12px;font-weight:700;color:var(--text-color);margin:2px 0 8px}
-.mt-active-statement-group{margin:8px 0;border:1px solid var(--border-color);border-radius:10px;background:var(--card-bg);overflow:hidden}
-.mt-active-statement-head{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 10px;background:rgba(47,140,255,.07)}
-.mt-active-statement-head strong{display:block;font-size:12px;color:var(--text-color)}.mt-active-statement-head small{display:block;font-size:10px;color:var(--muted);margin-top:3px}
-.mt-active-statement-head>b{font-size:12px;white-space:nowrap;color:var(--text-color)}
-.mt-active-paid{min-height:32px!important;padding:5px 9px!important;font-size:11px!important;border-radius:8px!important;background:linear-gradient(135deg,#16875f,#22ad79)!important;white-space:nowrap}
-.mt-active-expense-row{display:grid;grid-template-columns:74px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid var(--border-color);font-size:11px}
-.mt-active-expense-row time{color:var(--muted);font-size:10px}.mt-active-expense-row strong{display:block;color:var(--text-color);font-size:11px}.mt-active-expense-row small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.mt-active-expense-row>b{white-space:nowrap;color:var(--text-color);font-size:11px}
-.mt-active-empty{font-size:11px;color:var(--muted);padding:8px 2px}
-@media(max-width:600px){.mt-active-statement-head{grid-template-columns:minmax(0,1fr) auto;gap:7px}.mt-active-paid{grid-column:1/-1;width:100%!important}.mt-active-expense-row{grid-template-columns:58px minmax(0,1fr) auto;gap:6px;padding:7px 8px}}
-</style>
+body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style>
 </head>
 <body id="mainBody" data-theme="light">
     <div id="sessionLoadingScreen" aria-live="polite">
@@ -887,9 +876,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
                 <div class="mt-report-tools">
                     <label class="mt-report-date-filter"><span>Başlangıç</span><input id="mtReportDateStart" type="date" onchange="mtRenderReports()" aria-label="Rapor başlangıç tarihi"></label>
                     <label class="mt-report-date-filter"><span>Bitiş</span><input id="mtReportDateEnd" type="date" onchange="mtRenderReports()" aria-label="Rapor bitiş tarihi"></label>
-                    <select id="mtReportPeriod" onchange="mtRenderReports()">
-                        <option value="1">Bu Ay</option><option value="3">Son 3 Ay</option><option value="6">Son 6 Ay</option><option value="12" selected>Son 12 Ay</option><option value="all">Tüm Zamanlar</option>
-                    </select>
+                    
                     <select id="mtReportMonth" onchange="mtRenderReports()"><option value="">Geçmiş Ay Seç</option></select>
                     <select id="mtReportCategory" onchange="mtRenderReports()"><option value="all">Tüm Kategoriler</option></select>
                     <select id="mtReportBank" onchange="mtRenderReports()"><option value="all">Tüm Bankalar</option></select>
@@ -1041,7 +1028,6 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
                     <div class="income-card"><small>Ekstre Harcanan</small><b id="statementExpenseCard">0.00 TL</b></div>
                     <div class="income-card"><small>Aktif Ekstre Kalan</small><b id="statementRemainingCard">0.00 TL</b></div>
                 </div>
-                <div id="activeStatementExpenseList" class="mt-active-statement-list" aria-live="polite"></div>
             </div>
         </div>
 
@@ -1142,7 +1128,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
 
         <div id="mod_stmtcheck" class="draggable-module" draggable="false">
             <h2>🧾 Ekstre Kontrol</h2>
-            <p class="sc-hint">Banka ekstresi PDF'ini yükle (Garanti BBVA / Yapı Kredi); sistem harcamalarını ekstreyle satır satır karşılaştırıp yanlış kart, tarih, taksit numarası ve tutarı, çift kayıtları ve eksikleri bulur. PDF'ler yalnızca tarayıcında okunur, hiçbir yere gönderilmez. İki bankanın ekstresini birlikte yüklersen kartlar arası karışıklıklar da yakalanır.</p>
+            <p class="sc-hint">Banka ekstresi PDF'ini yükle (Garanti BBVA / Yapı Kredi); sistem ekstredeki harcamaları tutar ve tarihe göre kayıtlarınla karşılaştırıp uygulamada kaydı olmayanları gösterir. PDF'ler yalnızca tarayıcında okunur, hiçbir yere gönderilmez. İki bankanın ekstresini birlikte yüklersen kartlar arası karışıklıklar da yakalanır.</p>
             <label class="sc-drop" id="scDrop">
                 <input type="file" id="scFile" accept="application/pdf,.pdf" multiple hidden>
                 <b>＋ Ekstre PDF'lerini seç</b>
@@ -1186,6 +1172,31 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
         </div>
     </div>
 
+<script id="mtUtil">
+/* MTmuhasebe: yerel saate göre tarih/ay + ayraç duyarlı tutar okuma */
+(function(){
+  var pad=function(n){return String(n).padStart(2,'0');};
+  window.mtToday=function(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
+  window.mtMonthNow=function(){return window.mtToday().slice(0,7);};
+  window.mtNum=function(v){
+    if(typeof v==='number')return isFinite(v)?v:0;
+    var t=String(v==null?'':v).trim().replace(/\s/g,'').replace(/TL|₺/gi,'').replace(/[^\d.,-]/g,'');
+    if(!t)return 0;
+    var lc=t.lastIndexOf(','),ld=t.lastIndexOf('.');
+    if(lc>=0&&ld>=0)t=lc>ld?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');
+    else if(lc>=0)t=t.replace(',','.');
+    else if((t.match(/\./g)||[]).length>1)t=t.replace(/\./g,'');
+    var z=Number(t);return isFinite(z)?z:0;
+  };
+  /* ay ekleme: 31 Ocak + 1 ay = 28/29 Şubat (taşma yok) */
+  window.mtAddMonthsISO=function(iso,k){
+    var p=String(iso).split('-').map(Number),y=p[0],m=p[1]-1+k,d=p[2];
+    y+=Math.floor(m/12);m=((m%12)+12)%12;
+    var last=new Date(y,m+1,0).getDate();
+    return y+'-'+pad(m+1)+'-'+pad(Math.min(d,last));
+  };
+})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -1263,6 +1274,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
     function proSetDate(){
         const d=document.getElementById('proToday');
         if(d) d.textContent=new Date().toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
+        if(!window._proDateTimer) window._proDateTimer=setInterval(proSetDate,60000);
     }
     // Sadece sayı ve ondalık ayracı (nokta/virgül) girişine izin veren fonksiyon
     function isNumberKey(evt) {
@@ -1614,8 +1626,8 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
         
         let dInput = document.getElementById('d');
         let idStartD = document.getElementById('idStartD');
-        if(dInput && !dInput.value) dInput.valueAsDate = new Date();
-        if(idStartD && !idStartD.value) idStartD.valueAsDate = new Date();
+        if(dInput && !dInput.value) dInput.value = mtToday();
+        if(idStartD && !idStartD.value) idStartD.value = mtToday();
         
         loadTheme();
         if (window.cloudSync && window.cloudSync.cloudReady) window.cloudSync.syncCurrentUser();
@@ -1822,7 +1834,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
         activeBanks = JSON.parse(localStorage.getItem(currentStorageKey('activeBanks')) || JSON.stringify(Object.keys(allBanks)));
         bankCutoffDays = JSON.parse(localStorage.getItem(currentStorageKey('bankCutoffDays')) || JSON.stringify(allBanks));
         ex = JSON.parse(localStorage.getItem(currentStorageKey('ex')) || '[]');
-        salary = Number(String(localStorage.getItem(currentStorageKey('salary')) || '0').replace(',', '.')) || 0;
+        salary = mtNum(localStorage.getItem(currentStorageKey('salary')) || '0');
         extraIncomes = JSON.parse(localStorage.getItem(currentStorageKey('extraIncomes')) || '[]');
         recurringExpenses = JSON.parse(localStorage.getItem(currentStorageKey('recurringExpenses')) || '[]');
         paidStatements = JSON.parse(localStorage.getItem(currentStorageKey('paidStatements')) || '[]');
@@ -2083,9 +2095,10 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
     }
 
     function paidThisMonthTotal() {
-        const cm = new Date().toISOString().slice(0,7);
+        const cm = mtMonthNow();
         return paidStatements.reduce((sum, p) => {
-            const paidMonth = String(p.paidAt || '').slice(0,7);
+            const pd = new Date(p.paidAt);
+            const paidMonth = isNaN(pd) ? String(p.paidAt || '').slice(0,7) : pd.getFullYear() + '-' + String(pd.getMonth()+1).padStart(2,'0');
             return sum + (paidMonth === cm ? (Number(p.amount) || 0) : 0);
         }, 0);
     }
@@ -2117,7 +2130,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
             const dueDate = activeDueByBank[bank];
             const bankItems = items.filter(x => x.b === bank && !x.statementPaid && x.dueDate === dueDate)
                 .sort((a,b)=>String(b.d).localeCompare(String(a.d)));
-            const amount = bankItems.reduce((sum,x)=>sum+(Number(String(x.a).replace(',', '.'))||0),0);
+            const amount = bankItems.reduce((sum,x)=>sum+mtNum(x.a),0);
             expense += amount;
             const cutoff = parseInt(bankCutoffDays[bank],10) || 0;
             let period = 'Kesim günü yok';
@@ -2146,27 +2159,12 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
         return { income, expense, remaining: income-expense, label: periodLabels.length ? periodLabels.join(' • ') : 'Aktif ödenmemiş ekstre yok', statements };
     }
 
-    function renderActiveStatementExpenses(statements) {
-        const root = document.getElementById('activeStatementExpenseList');
-        if (!root) return;
-        const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-        const dateLabel = value => { const p=String(value||'').slice(0,10).split('-'); return p.length===3 ? `${p[2]}.${p[1]}.${p[0]}` : esc(value); };
-        if (!statements.length) { root.innerHTML = '<div class="mt-active-empty">Aktif ödenmemiş ekstre yok.</div>'; return; }
-        root.innerHTML = '<div class="mt-active-list-title">Kesim dönemine ait harcamalar</div>' + statements.map(statement => `
-            <section class="mt-active-statement-group">
-              <div class="mt-active-statement-head"><div><strong>${esc(statement.bank)}</strong><small>${esc(statement.period)} · Son ödeme ${dateLabel(statement.dueDate)}</small></div><b>${money(statement.amount)}</b><button type="button" class="mt-active-paid" data-active-paid data-bank="${esc(statement.bank)}" data-due="${esc(statement.dueDate)}" data-amount="${statement.amount}">✓ Ödendi</button></div>
-              <div class="mt-active-expense-rows">${statement.items.map(item => `<div class="mt-active-expense-row"><time>${dateLabel(item.d)}</time><div><strong>${esc(item.c || 'Harcama')}</strong><small>${esc(item.x || '')}</small></div><b>${money(Number(String(item.a).replace(',', '.')) || 0)}</b></div>`).join('')}</div>
-            </section>`).join('');
-        root.querySelectorAll('[data-active-paid]').forEach(button => button.addEventListener('click', () => {
-            if (typeof window.markStatementPaid === 'function') window.markStatementPaid(encodeURIComponent(button.dataset.bank || ''), button.dataset.due || '', Number(button.dataset.amount) || 0);
-        }));
-    }
     function updateIncomeCards() {
         if(!currentUser) return;
         loadUserData();
 
         const now = new Date();
-        const cm = now.toISOString().split('T')[0].substring(0,7);
+        const cm = mtMonthNow();
 
         const monthlyExtra = extraIncomes
             .filter(x => monthKey(x.date) === cm)
@@ -2179,7 +2177,6 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
         // Böylece "Ödendi" denilen ekstre anında bu toplamdan çıkar.
         const statementSummary = activeStatementSummary();
         const monthlyExpense = statementSummary.expense;
-        renderActiveStatementExpenses(statementSummary.statements);
 
         const remaining = monthlyIncome - monthlyExpense;
 
@@ -2209,7 +2206,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
 
     function saveSalary() {
         if(!currentUser) return;
-        const value = Number(String(document.getElementById('salaryAmount').value || '').replace(',', '.')) || 0;
+        const value = mtNum(document.getElementById('salaryAmount').value);
         salary = value;
         localStorage.setItem(currentStorageKey('salary'), String(salary));
         window.salary = salary;
@@ -2220,8 +2217,8 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
 
     function addExtraIncome() {
         if(!currentUser) return;
-        const date = document.getElementById('extraIncomeDate').value || new Date().toISOString().split('T')[0];
-        const amount = Number(String(document.getElementById('extraIncomeAmount').value || '').replace(',', '.')) || 0;
+        const date = document.getElementById('extraIncomeDate').value || mtToday();
+        const amount = mtNum(document.getElementById('extraIncomeAmount').value);
         const desc = document.getElementById('extraIncomeDesc').value.trim();
         if(amount <= 0) { alert('Lütfen geçerli bir ek gelir tutarı girin.'); return; }
 
@@ -2452,7 +2449,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
                 e.preventDefault();
                 const item=recurringExpenses.find(x=>String(x.id)===String(modal.querySelector('#mtRecEditId').value));
                 if(!item) return close();
-                const amount=parseFloat(String(modal.querySelector('#mtRecEditAmount').value).replace(',','.'))||0;
+                const amount=mtNum(modal.querySelector('#mtRecEditAmount').value);
                 if(amount<=0){alert('Geçerli bir tutar girin.');return}
                 const name=modal.querySelector('#mtRecEditName').value.trim();
                 if(!name){alert('Harcama adını girin.');return}
@@ -2504,7 +2501,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
         if(e.target && e.target.id === 'recurringForm') {
             e.preventDefault();
             loadUserData();
-            const amount = parseFloat(String(document.getElementById('recAmount').value).replace(',','.')) || 0;
+            const amount = mtNum(document.getElementById('recAmount').value);
             if(amount <= 0) { alert('Geçerli bir tutar girin.'); return; }
             const frequency = document.getElementById('recFrequency')?.value || 'monthly';
             const item = {
@@ -2562,7 +2559,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style><style
         const compact=raw.replace(/\D/g,'');
         if(compact.length===9 && compact[4]==='2' && /^20\d{2}$/.test(compact.slice(5))) raw=compact.slice(0,4)+compact.slice(5);
         if(!raw){dateEl.value='';if(error)error.textContent='';mtHistoryPage=1;rd();return;}
-        const m=raw.match(/^(\\d{1,2})[.\\/\\-](\\d{1,2})[.\\/\\-](\\d{4})$/);
+        const m=raw.match(/^(\d{1,2})[.\\/\\-](\d{1,2})[.\\/\\-](\d{4})$/);
         if(!m){if(error)error.textContent='Tarihi GG.AA.YYYY biçiminde yazın.';return;}
         const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]);
         const d=new Date(year,month-1,day);
@@ -2619,7 +2616,7 @@ function rd() {
         }
 
         let ts = 0, ms = 0, futureTotal = 0, filteredTotal = 0;
-        let ds = new Date().toISOString().split('T')[0];
+        let ds = mtToday();
         let cm = ds.substring(0, 7);
         
         let tb = document.getElementById('tb');
@@ -2789,7 +2786,7 @@ function rd() {
         let displayRows = [];
 
         indexedEx.forEach((item) => {
-            let amtNum = Number(String(item.a).replace(',', '.')) || 0;
+            let amtNum = mtNum(item.a);
 
             // Ana sayfada yalnızca güncel, henüz ödenmemiş harcamalar gösterilir.
             if (!item.statementPaid) {
@@ -2942,7 +2939,7 @@ function rd() {
             activeBanks.forEach(bank => {
                 let data = bankStats[bank];
                 if (data && data.total > 0) {
-                    const todayStr = new Date().toISOString().split('T')[0];
+                    const todayStr = mtToday();
                     const overdue = Object.values(statementGroups)
                         .filter(g => g.bank === bank && g.cutoffDate && g.cutoffDate < todayStr && !isStatementPaid(g.bank, g.dueDate))
                         .sort((a,b) => a.dueDate.localeCompare(b.dueDate));
@@ -3079,7 +3076,7 @@ function rd() {
         document.getElementById('saveBtn').textContent = "Kaydet";
         document.getElementById('cancelEdit').style.display = 'none';
         let dInput = document.getElementById('d');
-        if(dInput) dInput.valueAsDate = new Date();
+        if(dInput) dInput.value = mtToday();
     }
 
     window.dl = function(index) {
@@ -3154,7 +3151,7 @@ function rd() {
             let startD = document.getElementById('idStartD').value;
             let c = document.getElementById('idC').value;
             let b = document.getElementById('idB').value;
-            let totalA = parseFloat(document.getElementById('idTotalA').value.replace(',', '.')) || 0;
+            let totalA = mtNum(document.getElementById('idTotalA').value);
             let count = parseInt(document.getElementById('idCount').value);
             let x = document.getElementById('idX').value;
 
@@ -3164,12 +3161,8 @@ function rd() {
             }
 
             let monthlyA = (totalA / count).toFixed(2);
-            let startDate = new Date(startD);
-
             for(let i = 0; i < count; i++) {
-                let dCopy = new Date(startDate);
-                dCopy.setMonth(dCopy.getMonth() + i);
-                let dateStr = dCopy.toISOString().split('T')[0];
+                let dateStr = mtAddMonthsISO(startD, i);
 
                 ex.push({
                     d: dateStr,
@@ -3199,7 +3192,7 @@ function rd() {
             if (window.cloudSync) window.cloudSync.pushAll();
             document.getElementById('installmentForm').reset();
             let idStartD = document.getElementById('idStartD');
-            if(idStartD) idStartD.valueAsDate = new Date();
+            if(idStartD) idStartD.value = mtToday();
             rd();
             alert("Taksitler başarıyla oluşturuldu!");
         }
@@ -3509,34 +3502,55 @@ function rd() {
 <script id="mtReportsOnlyScript">
 (function(){
  const moneyR=v=>(Number(v)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';
- const numR=v=>Number(String(v??0).replace(',','.'))||0;
+ const numR=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;let t=String(v??'').trim().replace(/\s/g,'').replace(/TL/gi,'').replace(/[^\d.,-]/g,'');if(!t)return 0;const lc=t.lastIndexOf(','),ld=t.lastIndexOf('.');if(lc>=0&&ld>=0)t=lc>ld?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'');else if(lc>=0)t=t.replace(',','.');const z=Number(t);return Number.isFinite(z)?z:0;};
  const escR=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const mkeyR=d=>String(d||'').slice(0,7);
+ // Raporlarda ay = işlemin takvim ayı (işlem tarihine göre). Kesim günü ayarına bağlı değildir.
+ const statementMonthR=x=>mkeyR(x&&x.d);
+ window.mtStatementMonthR=statementMonthR;
  const monthLabelR=k=>{if(!k)return '—';const [y,m]=k.split('-');const a=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];return (a[(+m)-1]||m)+' '+y};
  function refill(id,values,allLabel){const el=document.getElementById(id);if(!el)return;const prev=el.value;el.innerHTML=`<option value="all">${allLabel}</option>`+values.map(v=>`<option value="${escR(v)}">${escR(v)}</option>`).join('');el.value=values.includes(prev)?prev:'all';}
- function fillMonths(all){const el=document.getElementById('mtReportMonth');if(!el)return;const prev=el.value;const keys=[...new Set(all.map(x=>mkeyR(x.d)).filter(Boolean))].sort().reverse();el.innerHTML='<option value="">Geçmiş Ay Seç</option>'+keys.map(k=>`<option value="${k}">${monthLabelR(k)}</option>`).join('');if(keys.includes(prev))el.value=prev;}
- window.mtClearReportFilters=function(){const p=document.getElementById('mtReportPeriod'),m=document.getElementById('mtReportMonth'),c=document.getElementById('mtReportCategory'),b=document.getElementById('mtReportBank'),ds=document.getElementById('mtReportDateStart'),de=document.getElementById('mtReportDateEnd');if(p)p.value='12';if(m)m.value='';if(c)c.value='all';if(b)b.value='all';if(ds)ds.value='';if(de)de.value='';mtRenderReports();};
+ function fillMonths(all){const el=document.getElementById('mtReportMonth');if(!el)return;const prev=el.value;const keys=[...new Set(all.map(x=>statementMonthR(x)).filter(Boolean))].sort().reverse();el.innerHTML='<option value="">Geçmiş Ay Seç</option>'+keys.map(k=>`<option value="${k}">${monthLabelR(k)}</option>`).join('');if(keys.includes(prev))el.value=prev;}
+ window.mtClearReportFilters=function(){const p=document.getElementById('mtReportPeriod'),m=document.getElementById('mtReportMonth'),c=document.getElementById('mtReportCategory'),b=document.getElementById('mtReportBank'),ds=document.getElementById('mtReportDateStart'),de=document.getElementById('mtReportDateEnd');if(m)m.value='';if(c)c.value='all';if(b)b.value='all';if(ds)ds.value='';if(de)de.value='';mtRenderReports();};
  window.mtRenderReports=function(){
    const root=document.getElementById('mod_excel'); if(!root||!root.classList.contains('app-page-visible'))return;
    if(typeof loadUserData==='function')loadUserData();
    const all=(Array.isArray(window.ex)?window.ex:(typeof ex!=='undefined'?ex:[])); fillMonths(all);
    refill('mtReportCategory',[...new Set(all.map(x=>String(x.c||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')),'Tüm Kategoriler');
    refill('mtReportBank',[...new Set(all.map(x=>String(x.b||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')),'Tüm Bankalar');
-   const period=document.getElementById('mtReportPeriod')?.value||'12', chosenMonth=document.getElementById('mtReportMonth')?.value||'', cat=document.getElementById('mtReportCategory')?.value||'all', bank=document.getElementById('mtReportBank')?.value||'all', dateStart=document.getElementById('mtReportDateStart')?.value||'', dateEnd=document.getElementById('mtReportDateEnd')?.value||'';
+   const period='all', chosenMonth=document.getElementById('mtReportMonth')?.value||'', cat=document.getElementById('mtReportCategory')?.value||'all', bank=document.getElementById('mtReportBank')?.value||'all', dateStart=document.getElementById('mtReportDateStart')?.value||'', dateEnd=document.getElementById('mtReportDateEnd')?.value||'';
    const useDateRange=!!(dateStart||dateEnd);
    const rangeBox=document.getElementById('mtReportRangeTotal'); if(rangeBox)rangeBox.style.display=useDateRange?'flex':'none';
    const rangeLabel=document.getElementById('mtReportRangeLabel'); if(rangeLabel)rangeLabel.textContent=(dateStart||'En eski tarih')+' – '+(dateEnd||'Bugüne kadar');
    const now=new Date(),cur=now.getFullYear()*12+now.getMonth();
-   let rows=all.filter(x=>{if(!useDateRange && chosenMonth && mkeyR(x.d)!==chosenMonth)return false;if(!chosenMonth&&period!=='all'){if(useDateRange){const day=String(x.d||'').slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return false;if(dateStart&&day<dateStart)return false;if(dateEnd&&day>dateEnd)return false;}else{const d=new Date(String(x.d||'')+'T00:00:00');if(isNaN(d))return false;const mi=d.getFullYear()*12+d.getMonth();if(!(mi<=cur&&mi>cur-(+period)))return false;}}if(cat!=='all'&&String(x.c||'')!==cat)return false;if(bank!=='all'&&String(x.b||'')!==bank)return false;return true;}).sort((a,b)=>String(b.d).localeCompare(String(a.d)));
-   const total=rows.reduce((a,x)=>a+numR(x.a),0),max=rows.reduce((a,x)=>numR(x.a)>numR(a?.a)?x:a,null),months=[...new Set(rows.map(x=>mkeyR(x.d)).filter(Boolean))];
+   const mkKey=(y,m)=>y+'-'+String(m).padStart(2,'0');
+   const curKey=mkKey(now.getFullYear(),now.getMonth()+1);
+   const firstKey=all.map(x=>statementMonthR(x)).filter(k=>/^\d{4}-\d{2}$/.test(k)).sort()[0]||'';
+   const monthsBetween=(s0,e0)=>{const out=[];if(!s0||!e0||s0>e0)return out;let [y,m]=s0.split('-').map(Number);const [ey,em]=e0.split('-').map(Number);while(y<ey||(y===ey&&m<=em)){out.push(mkKey(y,m));m++;if(m>12){m=1;y++;}}return out;};
+   // Filtre önceliği: tarih aralığı > seçilen ay > son N ay. Kategori ve banka her durumda ayrıca uygulanır.
+   let rows=all.filter(x=>{
+     if(useDateRange){const day=String(x.d||'').slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(day))return false;if(dateStart&&day<dateStart)return false;if(dateEnd&&day>dateEnd)return false;}
+     else if(chosenMonth){if(statementMonthR(x)!==chosenMonth)return false;}
+     else if(period!=='all'){const sk=statementMonthR(x),sp=sk.split('-').map(Number);if(sp.length!==2||!sp[0]||!sp[1])return false;const mi=sp[0]*12+sp[1]-1;if(!(mi<=cur&&mi>cur-(+period)))return false;}
+     if(cat!=='all'&&String(x.c||'')!==cat)return false;
+     if(bank!=='all'&&String(x.b||'')!==bank)return false;
+     return true;}).sort((a,b)=>String(b.d).localeCompare(String(a.d)));
+   // Gelir ve ortalama yalnızca ilk kaydın bulunduğu aydan itibaren, kayıtlı aylar üzerinden hesaplanır.
+   let periodMonths;
+   if(useDateRange){const s0=dateStart?mkeyR(dateStart):firstKey,e0=dateEnd?mkeyR(dateEnd):curKey;periodMonths=monthsBetween(s0<firstKey?firstKey:s0,e0);}
+   else if(chosenMonth)periodMonths=[chosenMonth];
+   else if(period==='all')periodMonths=monthsBetween(firstKey,curKey);
+   else{const sd=new Date(now.getFullYear(),now.getMonth()-(+period)+1,1),s0=mkKey(sd.getFullYear(),sd.getMonth()+1);periodMonths=monthsBetween(s0<firstKey?firstKey:s0,curKey);}
+   if(!periodMonths.length)periodMonths=[chosenMonth||curKey];
+   const total=rows.reduce((a,x)=>a+numR(x.a),0),max=rows.reduce((a,x)=>numR(x.a)>numR(a?.a)?x:a,null),months=[...new Set(rows.map(x=>statementMonthR(x)).filter(Boolean))];
    if(useDateRange){const ra=document.getElementById('mtReportRangeAmount'),rc=document.getElementById('mtReportRangeCount');if(ra)ra.textContent=moneyR(total);if(rc)rc.textContent=rows.length+' işlem';}
-   const denom=Math.max(1,useDateRange?months.length:(chosenMonth?1:(period==='all'?months.length:+period)));
+   const denom=Math.max(1,periodMonths.length);
    const extras=Array.isArray(window.extraIncomes)?window.extraIncomes:(typeof extraIncomes!=='undefined'?extraIncomes:[]),sal=Number(window.salary??(typeof salary!=='undefined'?salary:0))||0;let inc=0;
    const incomeForMonth=k=>sal+extras.filter(x=>mkeyR(x.date)===k).reduce((a,x)=>a+numR(x.amount),0);
-   if(chosenMonth)inc=incomeForMonth(chosenMonth);else if(period==='all'){inc=sal*Math.max(1,months.length)+extras.reduce((a,x)=>a+numR(x.amount),0);}else for(let i=0;i<+period;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);inc+=incomeForMonth(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
+   periodMonths.forEach(k=>{inc+=incomeForMonth(k);});
    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};set('mtRptTotal',moneyR(total));set('mtRptCount',rows.length+' işlem');set('mtRptAvg',moneyR(total/denom));set('mtRptMax',moneyR(max?numR(max.a):0));set('mtRptMaxInfo',max?(max.c||'Harcama')+' • '+(max.d||''):'—');set('mtRptRemain',moneyR(inc-total));set('mtRptIncome','Gelir: '+moneyR(inc));
-   const monthMap={};rows.forEach(x=>monthMap[mkeyR(x.d)]=(monthMap[mkeyR(x.d)]||0)+numR(x.a));let keys=[];
-   if(useDateRange)keys=Object.keys(monthMap).sort();else if(chosenMonth)keys=[chosenMonth];else if(period==='all')keys=Object.keys(monthMap).sort();else for(let i=(+period)-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);keys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
+   const monthMap={};rows.forEach(x=>monthMap[statementMonthR(x)]=(monthMap[statementMonthR(x)]||0)+numR(x.a));let keys=[];
+   keys=periodMonths.slice();Object.keys(monthMap).forEach(k=>{if(k&&!keys.includes(k))keys.push(k);});keys.sort();
    const peak=Math.max(1,...keys.map(k=>monthMap[k]||0)),bars=document.getElementById('mtRptBars');if(bars)bars.innerHTML=keys.map(k=>`<div class="mt-rbar"><span class="mt-rbar-v">${moneyR(monthMap[k]||0).replace(' TL','')}</span><div class="mt-rbar-fill" style="height:${Math.max(2,((monthMap[k]||0)/peak)*82)}%"></div><span class="mt-rbar-l">${monthLabelR(k)}</span></div>`).join('');set('mtRptTrendLabel',useDateRange?'Seçilen tarih aralığı':(chosenMonth?monthLabelR(chosenMonth):(period==='all'?'Tüm zamanlar':'Son '+period+' ay')));
    function dist(id,field){const map={};rows.forEach(x=>{const k=String(x[field]||'Belirsiz');map[k]=(map[k]||0)+numR(x.a)});const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]),el=document.getElementById(id);if(!el)return;el.innerHTML=arr.length?arr.slice(0,7).map(([k,v])=>`<div class="mt-rlist-row"><span class="mt-rlist-name">${escR(k)}</span><div class="mt-rlist-track"><div class="mt-rlist-fill" style="width:${total?Math.max(2,v/total*100):0}%"></div></div><span class="mt-rlist-val">${moneyR(v)}</span></div>`).join(''):'<div class="mt-report-empty">Bu dönem için harcama yok.</div>'}dist('mtRptCategories','c');dist('mtRptBanks','b');
     const categoryMap={};rows.forEach(x=>{const k=String(x.c||'Belirsiz');categoryMap[k]=(categoryMap[k]||0)+numR(x.a)});
@@ -3638,18 +3652,15 @@ function rd() {
   function renderMonthlyTotals(){
     const body=document.getElementById('mtRptMonthlyRows'); if(!body)return;
     const {expenses,incomes,salary}=data();
-    const cat=document.getElementById('mtReportCategory')?.value||'all';
-    const bank=document.getElementById('mtReportBank')?.value||'all';
+    // Geçmiş ay özeti bütün kategorileri ve bankaları kapsar; dönem, kart kesim gününe göre belirlenir.
     const emap={};
     expenses.forEach(x=>{
-      if(cat!=='all'&&String(x.c||'')!==cat)return;
-      if(bank!=='all'&&String(x.b||'')!==bank)return;
-      const k=monthKey(x.d); if(!k)return;
+      const k=window.mtStatementMonthR(x); if(!k)return;
       (emap[k]??={expense:0,count:0}); emap[k].expense+=amount(x.a); emap[k].count++;
     });
     const imap={}; incomes.forEach(x=>{const k=monthKey(x.date||x.d);if(k)imap[k]=(imap[k]||0)+amount(x.amount??x.a);});
     const now=new Date(), current=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    const keys=[...new Set([...Object.keys(emap),...Object.keys(imap)])].filter(k=>k<current).sort().reverse();
+    const keys=[...new Set([...Object.keys(emap),...Object.keys(imap)])].filter(k=>k<=current).sort().reverse();
     body.innerHTML=keys.length?keys.map(k=>{
       const expense=emap[k]?.expense||0, count=emap[k]?.count||0;
       const income=salary+(imap[k]||0), remain=income-expense;
@@ -3659,7 +3670,7 @@ function rd() {
   window.mtRenderMonthlyTotals=renderMonthlyTotals;
   const original=window.mtRenderReports;
   if(typeof original==='function') window.mtRenderReports=function(){ const r=original.apply(this,arguments); setTimeout(renderMonthlyTotals,0); return r; };
-  document.addEventListener('change',e=>{if(e.target&&['mtReportPeriod','mtReportMonth','mtReportCategory','mtReportBank'].includes(e.target.id))setTimeout(renderMonthlyTotals,0);});
+  document.addEventListener('change',e=>{if(e.target&&['mtReportMonth','mtReportCategory','mtReportBank'].includes(e.target.id))setTimeout(renderMonthlyTotals,0);});
   window.addEventListener('DOMContentLoaded',()=>setTimeout(renderMonthlyTotals,100));
   window.addEventListener('storage',()=>setTimeout(renderMonthlyTotals,50));
 })();
@@ -3897,23 +3908,14 @@ function rd() {
         return 6 + dd;
       }
       var df = Math.abs(dayDiff(a.d, s.d));
-      return df > 7 ? null : df;
+      return df > 15 ? null : df;
     });
     pass('otherbank', function (s, a) {
       if (a.b === s.bank || a.cents !== s.cents) return null;
       if (s.inst) { if (!inWin(s.st, a.d, 10)) return null; return a.inst ? 1 : 3; }
       var df = Math.abs(dayDiff(a.d, s.d));
-      return df > 10 ? null : df;
+      return df > 15 ? null : df;
     });
-    pass('amount', function (s, a) {
-      if (a.b !== s.bank) return null;
-      var df = Math.abs(dayDiff(a.d, s.d)), ratio = Math.min(a.cents, s.cents) / Math.max(a.cents, s.cents || 1);
-      if (s.inst && a.inst && sameFrac(a.inst, s.inst) && inWin(s.st, a.d, 10)) return 0.5;
-      if (s.inst || df > 1) return null;
-      if (ratio >= 0.7) return df + (1 - ratio);
-      return null;
-    });
-
     var results = { ok: [], fix: [], missing: [], extra: [], next: [], cat: [] };
 
     pairs.forEach(function (p) {
@@ -3945,6 +3947,9 @@ function rd() {
       else if (usedA[same.i]) why = 'Aynı tutarlı kayıt (' + same.d + ', ' + same.bRaw + ') başka bir ekstre satırıyla eşleşti; bu satır için ikinci kayıt yok.';
       else if (s.inst) why = 'Aynı tutarlı kayıt var (' + same.d + ', ' + same.bRaw + ') ama dönem aralığı/taksit uyuşmadı.';
       else why = 'Aynı tutarlı en yakın kayıt: ' + same.d + ', ' + same.bRaw + ' — tarih farkı ' + Math.abs(dayDiff(same.d, s.d)) + ' gün.';
+      var near = A.filter(function (a) { return a.b === s.bank && Math.abs(dayDiff(a.d, s.d)) <= 3 && !s.inst; })
+        .map(function (a) { return a.d.slice(5) + ' ' + fmtTL(a.cents); });
+      if (!s.inst) why += near.length ? ' O tarihe yakın ' + s.bank + ' kayıtların: ' + near.join(' • ') : ' O tarihe yakın (±3 gün) ' + s.bank + ' kaydın hiç yok.';
       results.missing.push({ type: 'missing', why: why, s: s, add: { d: s.d, c: s.cat || 'Diğer', b: s.bank, a: cents2str(s.cents), inst: s.inst ? s.inst.n + '/' + s.inst.t + ' Taksit' : '-', x: s.desc + (s.inst ? ' (' + s.inst.n + '/' + s.inst.t + ')' : '') }, conf: 'mid' });
     });
 
@@ -3963,6 +3968,11 @@ function rd() {
     });
 
     results.unread = unread;
+    results.stats = { total: A.length, perStatement: sts.map(function (st) {
+      var inW = A.filter(function (a) { return a.b === st.bank && inWinStrict(st, a.d); });
+      var last = A.filter(function (a) { return a.b === st.bank; }).map(function (a) { return a.d; }).sort().pop() || '-';
+      return { bank: st.bank, cutoff: st.cutoff, inWin: inW.length, stItems: st.items.length, last: last };
+    }) };
     return results;
   }
   function fp(a) { return [a.d, a.b, a.cents, a.x].join('|'); }
@@ -4105,46 +4115,24 @@ function rd() {
     if (typeof currentUser !== 'undefined' && !currentUser) { res.innerHTML = '<div class="sc-warn">Karşılaştırma için önce giriş yapmalısın.</div>'; return; }
 
     var r = C.analyze(ready, currentEx());
-    var sum = '<div class="sc-summary">' +
-      '<div class="sc-sum good"><b>' + r.ok.length + '</b><span>Doğru eşleşen</span></div>' +
-      '<div class="sc-sum ' + (r.fix.length ? 'warn' : 'good') + '"><b>' + r.fix.length + '</b><span>Düzeltilecek</span></div>' +
-      '<div class="sc-sum ' + (r.missing.length ? 'warn' : 'good') + '"><b>' + r.missing.length + '</b><span>Eksik kayıt</span></div>' +
-      '<div class="sc-sum ' + (r.extra.length ? 'bad' : 'good') + '"><b>' + r.extra.length + '</b><span>Ekstrede yok</span></div></div>';
-
-    var fixHtml = r.fix.map(function (f) {
-      return row(f, f.conf === 'high', recLine(f.a), 'Ekstre: ' + esc(f.s.desc) + '<br>' + f.notes.map(function (n) { return chip(n, 'fix'); }).join(' ') + (f.conf !== 'high' ? ' ' + chip('düşük güven — kontrol et', 'low') : ''));
-    }).join('');
-    var missHtml = r.missing.map(function (m) {
-      return row(m, false, stLine(m.s), chip('Uygulamada karşılığı bulunamadı', 'fix') + '<br>' + esc(m.why));
-    }).join('');
-    var extraHtml = r.extra.map(function (e) {
-      return row(e, false, recLine(e.a), chip(e.dup ? 'Olası çift kayıt (aynı tutar ekstrede bir kez geçiyor)' : 'Bu dönemde ekstrede karşılığı yok', 'bad'));
-    }).join('');
-    var catHtml = r.cat.map(function (c) {
-      return row(c, false, recLine(c.a), 'Ekstre: ' + esc(c.s.desc) + '<br>' + chip(c.notes[0], 'cat'));
-    }).join('');
-    var nextHtml = r.next.map(function (n) {
-      return '<div class="sc-row static"><div class="sc-main"><div class="sc-l1">' + recLine(n.a) + '</div></div></div>';
-    }).join('');
-    var okHtml = r.ok.map(function (o) {
-      return '<div class="sc-row static"><div class="sc-main"><div class="sc-l1">' + recLine(o.a) + '</div></div></div>';
-    }).join('');
-
+    var matched = r.ok.length + r.fix.length;
+    var sum = '<div class="sc-summary two">' +
+      '<div class="sc-sum good"><b>' + matched + '</b><span>Uygulamada kaydı olan</span></div>' +
+      '<div class="sc-sum ' + (r.missing.length ? 'warn' : 'good') + '"><b>' + r.missing.length + '</b><span>Kaydı olmayan</span></div></div>';
+    var statNote = '<div class="sc-muted" style="margin:6px 2px">Uygulamadan okunan kayıt: <b>' + r.stats.total + '</b> · ' + r.stats.perStatement.map(function (p) { return esc(p.bank) + ' dönem içinde ' + p.inWin + ' kayıt (ekstrede ' + p.stItems + ' işlem)'; }).join(' · ') + '</div>';
     var unreadNote = r.unread ? '<div class="sc-warn">⚠ ' + r.unread + ' kaydın tarihi/tutarı okunamadı, karşılaştırmaya katılmadı.</div>' : '';
-    var body = sum + unreadNote +
-      section('⚠ Düzeltilmesi gerekenler', r.fix.length, 'warn', fixHtml, true, 'Kart, tarih, taksit no veya tutar ekstreyle uyuşmuyor. Yüksek güvenli olanlar işaretli geliyor.') +
-      section('➕ Ekstrede var, uygulamada yok', r.missing.length, 'warn', missHtml, true, 'İşaretleyip uygularsan kayıt olarak eklenir.') +
-      section('✖ Uygulamada var, ekstrede yok', r.extra.length, 'bad', extraHtml, true, 'Kesim tarihi içinde kalıp ekstrede görünmeyen kayıtlar. İşaretlersen silinir; emin değilsen dokunma.') +
-      section('🏷 Kategori önerileri', r.cat.length, 'cat', catHtml, false, 'Ekstredeki işyeri türüne göre öneri; tutarlar doğru, sadece kategori farkı.') +
-      section('⏭ Sonraki ekstreye ait kayıtlar', r.next.length, 'info', nextHtml, false, 'Kesim tarihinden sonra olduğu için bu ekstrede doğrulanamadı.') +
-      section('✓ Doğru eşleşenler', r.ok.length, 'good', okHtml, false);
-
+    var missHtml = r.missing.map(function (m) {
+      return row(m, true,
+        '<b>' + esc(m.s.bank) + '</b> · <b>' + fmtD(m.s.d) + '</b> · <b>' + fmtC(m.s.cents) + '</b>' + (m.s.inst ? ' · ' + m.s.inst.n + '/' + m.s.inst.t + ' taksit' : ''),
+        '<span class="sc-muted">' + esc(m.s.desc) + '</span><br>' + esc(m.why));
+    }).join('');
+    var body = sum + statNote + unreadNote +
+      section('➕ Ekstrede olup uygulamada kaydı olmayanlar', r.missing.length, 'warn', missHtml, true, 'Tutar ve tarih (±15 gün) eşleşmesine göre karşılığı bulunamayanlar. İşaretlenenler “Seçilenleri ekle” ile kayıt olarak eklenir.');
     var bar = '';
-    if (r.fix.length + r.missing.length + r.extra.length + r.cat.length) {
-      bar = '<div class="sc-bar"><div id="scSelCount" class="sc-muted"></div><div class="sc-bar-btns">' +
-        '<button type="button" id="scApply">Seçilenleri uygula</button></div></div>';
+    if (r.missing.length) {
+      bar = '<div class="sc-bar"><div id="scSelCount" class="sc-muted"></div><div class="sc-bar-btns"><button type="button" id="scApply">Seçilenleri ekle</button></div></div>';
     } else {
-      bar = '<div class="sc-ok sc-big">🎉 Seçili dönemlerde kayıtların ekstrelerle birebir uyumlu.</div>';
+      bar = '<div class="sc-ok sc-big">🎉 Ekstredeki tüm harcamaların uygulamada kaydı var.</div>';
     }
     res.innerHTML = body + bar;
     updateCount();
@@ -4205,7 +4193,7 @@ function rd() {
     adds.forEach(function (a) { list.push(Object.assign({}, a)); });
     dels.sort(function (x, y) { return y - x; }).forEach(function (i) { list.splice(i, 1); });
     persist(list, backup);
-    setStatus('✓ ' + nEdit + ' düzeltme, ' + adds.length + ' ekleme, ' + dels.length + ' silme uygulandı.', 'ok');
+    setStatus('✓ ' + adds.length + ' kayıt eklendi.', 'ok');
     refresh();
   }
 
@@ -4416,7 +4404,7 @@ function rd() {
     if (!cur.length) { box.innerHTML = '<div class="mt-hint">Henüz taksitli kayıt yok.</div>'; return; }
     const today = todayStr();
     box.innerHTML = cur.map((g, gi) => {
-      const total = g.items.reduce((s, r) => s + (parseFloat(r.it.a) || 0), 0);
+      const total = g.items.reduce((s, r) => s + mtNum(r.it.a), 0);
       const left = g.items.filter(r => String(r.it.d) > today).length;
       const title = g.base || 'Taksitli harcama';
       const rows = g.items.map(r => {
@@ -4676,7 +4664,7 @@ function rd() {
   const money = v => (Number(v) || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' TL';
   const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const MKEYS = ['ocak','subat','mart','nisan','mayis','haziran','temmuz','agustos','eylul','ekim','kasim','aralik'];
-  const amt = it => parseFloat(it.a) || 0;
+  const amt = it => mtNum(it.a);
   const monthLabel = (y, m) => MONTHS[m] + ' ' + y;
 
   /* ---------- Tarih aralığı ---------- */

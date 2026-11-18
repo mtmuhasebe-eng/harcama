@@ -2024,11 +2024,33 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style>
     };
 
 
+    window.markStatementDuplicate = function(bankEncoded, dueDate, amount) {
+        const bank = decodeURIComponent(bankEncoded);
+        const key = statementKey(bank, dueDate);
+        if (isStatementPaid(bank, dueDate)) return;
+
+        if (!confirm(`${bank} için ${dueDate} son ödeme tarihli ${money(amount)} ekstre MÜKERRER olarak işaretlensin mi?\n\nHiçbir harcama kaydına dokunulmaz; yalnızca bu ekstre borç hesabından çıkar. Geri Al ile eski haline dönebilirsin.`)) return;
+
+        paidStatements.push({
+            key,
+            bank,
+            dueDate,
+            amount: Number(amount) || 0,
+            paidAt: new Date().toISOString(),
+            status: 'duplicate'
+        });
+        localStorage.setItem(currentStorageKey('paidStatements'), JSON.stringify(paidStatements));
+        window.paidStatements = paidStatements;
+        rd();
+        updateIncomeCards();
+        if (window.cloudSync) window.cloudSync.pushAll();
+    };
+
     window.undoStatementPaid = function(keyEncoded) {
         const key = decodeURIComponent(keyEncoded);
         const rec = paidStatements.find(p => p.key === key);
         if (!rec) return;
-        if (!confirm(`${rec.bank} için ${rec.dueDate} son ödeme tarihli ödeme kaydı geri alınsın mı? Borç tekrar güncel verilere eklenecek.`)) return;
+        if (!confirm(`${rec.bank} için ${rec.dueDate} son ödeme tarihli ${rec.status === 'duplicate' ? 'mükerrer işareti' : 'ödeme kaydı'} geri alınsın mı? Borç tekrar güncel verilere eklenecek.`)) return;
 
         paidStatements = paidStatements.filter(p => p.key !== key);
         window.paidStatements = paidStatements;
@@ -2057,7 +2079,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style>
                             <th>Banka / Kart</th>
                             <th>Son Ödeme</th>
                             <th>Tutar</th>
-                            <th>Ödendiği Tarih</th>
+                            <th>İşlem Tarihi</th>
                             <th>Durum</th>
                             <th>İşlem</th>
                         </tr>
@@ -2071,7 +2093,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style>
                                 <td>${p.dueDate}</td>
                                 <td>${money(p.amount)}</td>
                                 <td>${paidText}</td>
-                                <td><span style="color:#27ae60;font-weight:700;">Ödendi</span></td>
+                                <td>${p.status === 'duplicate' ? '<span style="color:#e0a030;font-weight:700;">Mükerrer</span>' : '<span style="color:#27ae60;font-weight:700;">Ödendi</span>'}</td>
                                 <td>
                                     <button type="button"
                                         onclick="undoStatementPaid('${encodeURIComponent(p.key)}')"
@@ -2097,6 +2119,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style>
     function paidThisMonthTotal() {
         const cm = mtMonthNow();
         return paidStatements.reduce((sum, p) => {
+            if (p.status === 'duplicate') return sum;
             const pd = new Date(p.paidAt);
             const paidMonth = isNaN(pd) ? String(p.paidAt || '').slice(0,7) : pd.getFullYear() + '-' + String(pd.getMonth()+1).padStart(2,'0');
             return sum + (paidMonth === cm ? (Number(p.amount) || 0) : 0);
@@ -2949,6 +2972,8 @@ function rd() {
                             <div style="font-size:10px;">Son ödeme: ${g.dueDate} • ${money(g.amount)}</div>
                             <button type="button" onclick="markStatementPaid('${encodeURIComponent(bank)}','${g.dueDate}',${g.amount})"
                                 style="margin-top:5px;padding:5px 8px;background:#27ae60;color:#fff;border:0;border-radius:6px;font-size:10px;">✓ Ödendi</button>
+                            <button type="button" onclick="markStatementDuplicate('${encodeURIComponent(bank)}','${g.dueDate}',${g.amount})"
+                                style="margin-top:5px;margin-left:6px;padding:5px 8px;background:#b9770e;color:#fff;border:0;border-radius:6px;font-size:10px;">⧉ Mükerrer</button>
                         </div>`).join('');
 
                     bankSummaryGrid.innerHTML += `

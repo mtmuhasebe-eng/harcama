@@ -3533,6 +3533,16 @@ function rd() {
  // Raporlarda ay = işlemin takvim ayı (işlem tarihine göre). Kesim günü ayarına bağlı değildir.
  const statementMonthR=x=>mkeyR(x&&x.d);
  window.mtStatementMonthR=statementMonthR;
+ // Mükerrer işaretlenen ekstrelerin kayıtları raporlara hiç dahil edilmez.
+ window.mtReportSource=function(){
+   const list=Array.isArray(window.ex)?window.ex:(typeof ex!=='undefined'?ex:[]);
+   const ps=Array.isArray(window.paidStatements)?window.paidStatements:(typeof paidStatements!=='undefined'?paidStatements:[]);
+   const dups=new Set(ps.filter(p=>p&&p.status==='duplicate').map(p=>p.key));
+   if(!dups.size||typeof getItemDueDateDetails!=='function'||typeof statementKey!=='function')return {rows:list,excluded:0};
+   const cuts=window.bankCutoffDays||{};let excluded=0;
+   const rows=list.filter(x=>{const c=cuts[x.b]!==undefined?cuts[x.b]:0;let k='';try{k=statementKey(x.b,getItemDueDateDetails(x,c).dueDateStr);}catch(_){return true;}if(dups.has(k)){excluded++;return false;}return true;});
+   return {rows,excluded};
+ };
  const monthLabelR=k=>{if(!k)return '—';const [y,m]=k.split('-');const a=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];return (a[(+m)-1]||m)+' '+y};
  function refill(id,values,allLabel){const el=document.getElementById(id);if(!el)return;const prev=el.value;el.innerHTML=`<option value="all">${allLabel}</option>`+values.map(v=>`<option value="${escR(v)}">${escR(v)}</option>`).join('');el.value=values.includes(prev)?prev:'all';}
  function fillMonths(all){const el=document.getElementById('mtReportMonth');if(!el)return;const prev=el.value;const keys=[...new Set(all.map(x=>statementMonthR(x)).filter(Boolean))].sort().reverse();el.innerHTML='<option value="">Geçmiş Ay Seç</option>'+keys.map(k=>`<option value="${k}">${monthLabelR(k)}</option>`).join('');if(keys.includes(prev))el.value=prev;}
@@ -3540,7 +3550,7 @@ function rd() {
  window.mtRenderReports=function(){
    const root=document.getElementById('mod_excel'); if(!root||!root.classList.contains('app-page-visible'))return;
    if(typeof loadUserData==='function')loadUserData();
-   const all=(Array.isArray(window.ex)?window.ex:(typeof ex!=='undefined'?ex:[])); fillMonths(all);
+   const src=mtReportSource(),all=src.rows; fillMonths(all);
    refill('mtReportCategory',[...new Set(all.map(x=>String(x.c||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')),'Tüm Kategoriler');
    refill('mtReportBank',[...new Set(all.map(x=>String(x.b||'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr')),'Tüm Bankalar');
    const period='all', chosenMonth=document.getElementById('mtReportMonth')?.value||'', cat=document.getElementById('mtReportCategory')?.value||'all', bank=document.getElementById('mtReportBank')?.value||'all', dateStart=document.getElementById('mtReportDateStart')?.value||'', dateEnd=document.getElementById('mtReportDateEnd')?.value||'';
@@ -3585,7 +3595,7 @@ function rd() {
     const chartStops=categoryEntries.map(([name,value],i)=>{const start=chartPct;chartPct+=total?value/total*100:0;return `${chartColors[i%chartColors.length]} ${start}% ${chartPct}%`;});
     const donut=document.getElementById('mtRptCatDonut');if(donut){donut.style.background=chartStops.length?`conic-gradient(${chartStops.join(',')})`:'conic-gradient(#243b53 0 100%)';donut.setAttribute('aria-label',categoryEntries.map(([name,value])=>name+': '+moneyR(value)).join(', ')||'Bu dönem için harcama yok');}
     const donutTotal=document.getElementById('mtRptCatDonutTotal');if(donutTotal)donutTotal.textContent=moneyR(total);
-   const tbody=document.getElementById('mtRptRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,100).map(x=>`<tr><td>${escR(x.d||'—')}</td><td>${escR(x.c||'—')}</td><td>${escR(x.b||'—')}</td><td>${escR(x.x||'—')}</td><td class="mt-report-amount">${moneyR(numR(x.a))}</td></tr>`).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Bu dönem için işlem bulunamadı.</div></td></tr>';set('mtRptTableCount',rows.length+' kayıt');set('mtRptGrandTotal',moneyR(total));
+   const tbody=document.getElementById('mtRptRows');if(tbody)tbody.innerHTML=rows.length?rows.slice(0,100).map(x=>`<tr><td>${escR(x.d||'—')}</td><td>${escR(x.c||'—')}</td><td>${escR(x.b||'—')}</td><td>${escR(x.x||'—')}</td><td class="mt-report-amount">${moneyR(numR(x.a))}</td></tr>`).join(''):'<tr><td colspan="5"><div class="mt-report-empty">Bu dönem için işlem bulunamadı.</div></td></tr>';set('mtRptTableCount',rows.length+' kayıt'+(src.excluded?' · '+src.excluded+' mükerrer hariç':''));set('mtRptGrandTotal',moneyR(total));
  };
  const root=document.getElementById('mod_excel');if(root){new MutationObserver(()=>{if(root.classList.contains('app-page-visible'))setTimeout(window.mtRenderReports,0)}).observe(root,{attributes:true,attributeFilter:['class']});}
 })();
@@ -3676,7 +3686,8 @@ function rd() {
   }
   function renderMonthlyTotals(){
     const body=document.getElementById('mtRptMonthlyRows'); if(!body)return;
-    const {expenses,incomes,salary}=data();
+    const {incomes,salary}=data();
+    const expenses=window.mtReportSource().rows;
     // Geçmiş ay özeti bütün kategorileri ve bankaları kapsar; dönem, kart kesim gününe göre belirlenir.
     const emap={};
     expenses.forEach(x=>{

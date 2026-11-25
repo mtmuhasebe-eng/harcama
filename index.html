@@ -1823,7 +1823,7 @@ body[data-theme="dark"] .pro-banner small{color:#9aabc0!important}</style>
 
     const allBanks = {
         "Akbank": 25, "Garanti BBVA": 28, "İş Bankası": 20, 
-        "Yapı Kredi": 15, "Ziraat": 10, "Enpara": 1, "Papara": 31, "Nakit / Diğer": 0
+        "Yapı Kredi": 15, "Ziraat": 10, "VakıfBank": 15, "Enpara": 1, "Papara": 31, "Nakit / Diğer": 0
     };
 
     let activeBanks = [], bankCutoffDays = {}, ex = [];
@@ -3783,6 +3783,7 @@ function rd() {
     if (/AKBANK|AXESS/i.test(text)) return 'Akbank';
     if (/İŞ\s*BANKASI|IS\s*BANKASI|MAXIMUM/i.test(text)) return 'İş Bankası';
     if (/ZİRAAT|ZIRAAT/i.test(text)) return 'Ziraat';
+    if (/VAKIF\s*BANK|VAKIFBANK/i.test(text)) return 'VakıfBank';
     if (/ENPARA/i.test(text)) return 'Enpara';
     return null;
   }
@@ -4114,7 +4115,7 @@ function rd() {
       '<button type="button" class="sc-x" data-rm="' + i + '" title="Bu ekstreyi kaldır">×</button></div>';
     if (st.bank === 'Bilinmeyen' || !st.cutoff) {
       h += '<div class="sc-warn">Banka veya hesap kesim tarihi otomatik okunamadı. Elle seç:</div><div class="sc-fix-inputs">';
-      h += '<select data-bank="' + i + '">' + ['', 'Garanti BBVA', 'Yapı Kredi', 'Akbank', 'İş Bankası', 'Ziraat', 'Enpara'].map(function (b) { return '<option value="' + esc(b) + '"' + (b === st.bank ? ' selected' : '') + '>' + (b || 'Banka seç') + '</option>'; }).join('') + '</select>';
+      h += '<select data-bank="' + i + '">' + ['', 'Garanti BBVA', 'Yapı Kredi', 'Akbank', 'İş Bankası', 'Ziraat', 'VakıfBank', 'Enpara'].map(function (b) { return '<option value="' + esc(b) + '"' + (b === st.bank ? ' selected' : '') + '>' + (b || 'Banka seç') + '</option>'; }).join('') + '</select>';
       h += '<input type="date" data-cut="' + i + '" value="' + esc(st.cutoff || '') + '" title="Hesap kesim tarihi"></div>';
     } else {
       h += '<div class="sc-stmt-meta"><span>Kesim: <b>' + fmtD(st.cutoff) + '</b></span><span>Dönem: ' + fmtD(st.prev) + ' – ' + fmtD(st.cutoff) + '</span><span>' + st.items.length + ' işlem</span></div>';
